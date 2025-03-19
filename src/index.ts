@@ -4,6 +4,7 @@ import { Die } from './Die.js';
 import { ScoringStrategy } from './strategies/ScoringStrategy.js';
 import { UpperScoreStrategy } from './strategies/UpperScoreStrategy.js';
 import { ThreeOfAKindStrategy } from './strategies/ThreeOfAKindStrategy.js';
+import { Categories } from './Categories.js';
 
 // Game state
     class YahtzeeGame {
@@ -73,6 +74,15 @@ import { ThreeOfAKindStrategy } from './strategies/ThreeOfAKindStrategy.js';
                 case 'Threes':
                     strategy = new UpperScoreStrategy(3);
                     break;
+                case 'Fours':
+                    strategy = new UpperScoreStrategy(4);
+                    break;
+                case 'Fives':
+                    strategy = new UpperScoreStrategy(5);
+                    break;
+                case 'Sixes':
+                    strategy = new UpperScoreStrategy(6);
+                    break;
                 case 'Three of a Kind':
                     strategy = new ThreeOfAKindStrategy();
                     break;
@@ -85,6 +95,7 @@ import { ThreeOfAKindStrategy } from './strategies/ThreeOfAKindStrategy.js';
         }
     
         updateScorecard(category: string, score: number) {
+            console.log(`Updating scorecard for category: ${category} with score: ${score}`);
             if (!this.scorecard[category].selected && this.scorecard[category].value === null) {
                 this.scorecard[category].value = score;
                 this.scorecard[category].selected = true;
@@ -127,8 +138,8 @@ function renderDice(dice: Die[]) {
 }
 
 function updateScoreboard() {
-    document.querySelectorAll('.score-cell').forEach(cell => {
-        const category = cell.getAttribute('data-category');
+    document.querySelectorAll('.score-btn').forEach(cell => {
+        const category = cell.getAttribute('data-score');
         if (category != null) {
             const score = game.scorecard[category]?.value || 0;
             cell.textContent = score.toString();

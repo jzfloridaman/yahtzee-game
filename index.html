@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yahtzee Game</title>
+    <script defer src="dist/index.js"></script>
+    <link href="dist/styles.css" rel="stylesheet">
+</head>
+<body>
+    <h1>Yahtzee Game</h1>
+    <div id="game-container">
+        <div id="dice-container"></div>
+        <button id="roll-button">Roll Dice</button>
+        <div id="scorecard">
+            <div class="max-w-4xl mx-auto p-4">
+                <div class="text-center mb-6">
+                  <h2 class="text-2xl font-bold text-gray-800">Yahtzee Scoreboard</h2>
+                  <p class="text-lg text-gray-600">Keep track of your score in each category!</p>
+                </div>
+              
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div class="border p-4 rounded-lg shadow-md bg-white">
+                    <h3 class="text-xl font-semibold text-gray-800">Upper Section</h3>
+                    <table class="w-full mt-4">
+                      <tbody>
+                        <!-- Ones to Sixes -->
+                        <tr class="border-b">
+                          <td class="py-2 font-medium text-gray-800">Ones</td>
+                          <td class="text-center">
+                            <span class="text-gray-600 score-cell" data-category="Ones">0</span> <!-- Replace with dynamic value -->
+                          </td>
+                          <td class="text-center">
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded">Score</button>
+                          </td>
+                        </tr>
+                        <tr class="border-b">
+                          <td class="py-2 font-medium text-gray-800">Twos</td>
+                          <td class="text-center">
+                            <span class="text-gray-600 score-cell" data-category="Twos">0</span> <!-- Replace with dynamic value -->
+                          </td>
+                          <td class="text-center">
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded">Score</button>
+                          </td>
+                        </tr>
+                        <tr class="border-b">
+                          <td class="py-2 font-medium text-gray-800">Threes</td>
+                          <td class="text-center">
+                            <span class="text-gray-600 score-cell" data-category="Threes">0</span> <!-- Replace with dynamic value -->
+                          </td>
+                          <td class="text-center">
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded">Score</button>
+                          </td>
+                        </tr>
+                        <!-- Add more categories for Fours, Fives, Sixes -->
+                      </tbody>
+                    </table>
+                  </div>
+              
+                  <div class="border p-4 rounded-lg shadow-md bg-white">
+                    <h3 class="text-xl font-semibold text-gray-800">Lower Section</h3>
+                    <table class="w-full mt-4">
+                      <tbody>
+                        <!-- Three of a Kind to Yahtzee -->
+                        <tr class="border-b">
+                          <td class="py-2 font-medium text-gray-800">Three of a Kind</td>
+                          <td class="text-center">
+                            <span class="text-gray-600">0</span> <!-- Replace with dynamic value -->
+                          </td>
+                          <td class="text-center">
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded">Score</button>
+                          </td>
+                        </tr>
+                        <tr class="border-b">
+                          <td class="py-2 font-medium text-gray-800">Full House</td>
+                          <td class="text-center">
+                            <span class="text-gray-600">0</span> <!-- Replace with dynamic value -->
+                          </td>
+                          <td class="text-center">
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded">Score</button>
+                          </td>
+                        </tr>
+                        <!-- Add other categories like Small Straight, Large Straight, Yahtzee, Chance -->
+                      </tbody>
+                    </table>
+                  </div>
+              
+                  <div class="border p-4 rounded-lg shadow-md bg-white">
+                    <h3 class="text-xl font-semibold text-gray-800">Color-Based Categories</h3>
+                    <table class="w-full mt-4">
+                      <tbody>
+                        <!-- Color Flush to Color Majority Bonus -->
+                        <tr class="border-b">
+                          <td class="py-2 font-medium text-gray-800">Color Flush</td>
+                          <td class="text-center">
+                            <span class="text-gray-600">0</span> <!-- Replace with dynamic value -->
+                          </td>
+                          <td class="text-center">
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded">Score</button>
+                          </td>
+                        </tr>
+                        <tr class="border-b">
+                          <td class="py-2 font-medium text-gray-800">Color Straight</td>
+                          <td class="text-center">
+                            <span class="text-gray-600">0</span> <!-- Replace with dynamic value -->
+                          </td>
+                          <td class="text-center">
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded">Score</button>
+                          </td>
+                        </tr>
+                        <tr class="border-b">
+                          <td class="py-2 font-medium text-gray-800">Color Majority Bonus</td>
+                          <td class="text-center">
+                            <span class="text-gray-600">0</span> <!-- Replace with dynamic value -->
+                          </td>
+                          <td class="text-center">
+                            <button class="bg-blue-500 text-white px-4 py-2 rounded">Score</button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              
+                <div class="mt-6 text-center">
+                  <button class="bg-green-500 text-white px-6 py-3 rounded-lg text-lg">End Turn</button>
+                </div>
+              </div>
+              
+        </div>
+    </div>
+</body>
+</html>

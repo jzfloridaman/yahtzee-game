@@ -1,0 +1,10 @@
+# Ignore node modules
+node_modules/
+
+# Ignore compiled output
+dist/
+#*.js
+#*.js.map
+
+# Ignore TypeScript build info
+*.tsbuildinfo

@@ -1,0 +1,26 @@
+{
+  "name": "yahtzee-game",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node dist/index.js",
+    "build:ts": "tsc",
+    "build:css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --minify", 
+    "watch:ts": "tsc --watch",  
+    "watch:css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --watch",  
+    "build": "npm run build:ts && npm run build:css",  
+    "dev": "npm run watch:ts & npm run watch:css"
+
+  },
+  "keywords": [],
+  "author": "John Zappone",
+  "license": "ISC",
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.2"
+  }
+}

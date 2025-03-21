@@ -218,3 +218,14 @@ scoreButtons.forEach((button) => {
 
 // Initial render
 renderDice(game.dice);
+
+/* 
+    TODO:
+    - Swap score-cell buttons to main div for each category so it can be clicked anywhere
+    - Add a game over screen
+    - Add a new game button
+    - Add computer player
+    - Add multiplayer
+    - Add animations
+    - Add sounds
+*/

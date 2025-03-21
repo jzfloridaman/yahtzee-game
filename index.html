@@ -11,7 +11,7 @@
     <h1>Yahtzee Game</h1>
     <div id="game-container">
         <div id="dice-container"></div>
-        <button id="roll-button">Roll Dice</button>
+        <button id="roll-button">Roll Dice (2)</button>
         <div id="scorecard" class="w-full max-w-md bg-gray-800 p-4 rounded-lg shadow-md">
             <!-- <h2 class="text-xl font-bold text-center mb-4">Scorecard</h2> -->
             <div class="grid grid-cols-6 gap-2">
@@ -76,23 +76,23 @@
                 </div> 
                 <div class="score-item !bg-blue-500">
                     <div> B </div> 
-                    <button class="score-cell" data-category="Color Flush">-</button>
+                    <button class="score-cell" data-category="blue">-</button>
                 </div> 
                 <div class="score-item !bg-red-500">
                     <div> R </div> 
-                    <button class="score-cell" data-category="Color Straight">-</button>
+                    <button class="score-cell" data-category="red">-</button>
                 </div> 
                 <div class="score-item !bg-green-500">
                     <div> G </div>
-                    <button class="score-cell" data-category="Color Straight">-</button>
+                    <button class="score-cell" data-category="green">-</button>
                 </div> 
                 <div class="score-item !bg-purple-500">
                     <div> FH  </div>
-                    <button class="score-cell" data-category="Color Majority Bonus">-</button>
+                    <button class="score-cell" data-category="Color Full House">-</button>
                 </div> 
                 <div class="score-item">
                     <div> B! </div> 
-                    <button class="score-cell" data-category="Color Majority Bonus">-</button>
+                    <button class="score-cell" data-category="Top Bonus" disabled>-</button>
                 </div> 
 
             </div>

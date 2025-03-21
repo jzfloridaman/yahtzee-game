@@ -3,12 +3,14 @@ import { ScoringStrategy } from './strategies/ScoringStrategy.js';
 import { UpperScoreStrategy } from './strategies/UpperScoreStrategy.js';
 import { ThreeOfAKindStrategy } from './strategies/ThreeOfAKindStrategy.js';
 import { FourOfAKindStrategy } from './strategies/FourOfAKindStrategy.js';
+import { ChanceStrategy } from './strategies/ChanceStrategy.js';
+import { ColorsStrategy } from './strategies/ColorsStrategy.js';    
 import { Categories } from './Categories.js';
 
 // Game state
 class YahtzeeGame {
     dice: Die[] = [];
-    rollsLeft: number = 3;
+    rollsLeft: number = 2;
     scorecard: { [key in Categories]: { value: number | null, selected: boolean } } = {} as any;
 
     constructor() {
@@ -20,12 +22,24 @@ class YahtzeeGame {
         this.dice = Array.from({ length: 5 }, () => this.rollNewDie());
     }
 
+    isGameOver(){
+        // add logic here to loop scorecard and check if all categories are selected
+        return false;
+    }
+
     rollNewDie(): Die {
         return {
             value: Math.floor(Math.random() * 6) + 1,
             color: ['red', 'green', 'blue'][Math.floor(Math.random() * 3)] as 'red' | 'green' | 'blue',
             held: false,
         };
+    }
+
+    startNewRoll(){
+        if(!this.isGameOver()){
+            this.rollsLeft = 2;
+            this.initializeDice();
+        }
     }
 
     rollDice() {
@@ -57,10 +71,11 @@ class YahtzeeGame {
 
             [Categories.Yahtzee]: { value: null, selected: false },
             [Categories.Chance]: { value: null, selected: false },
-            
-            [Categories.ColorFlush]: { value: null, selected: false },
-            [Categories.ColorStraight]: { value: null, selected: false },
-            [Categories.ColorMajorityBonus]: { value: null, selected: false },
+
+            [Categories.Blues]: { value: null, selected: false },
+            [Categories.Reds]: { value: null, selected: false },
+            [Categories.Greens]: { value: null, selected: false },
+            [Categories.ColorFullHouse]: { value: null, selected: false },
         };
     }
 
@@ -93,7 +108,32 @@ class YahtzeeGame {
             case Categories.FourOfAKind:
                 strategy = new FourOfAKindStrategy();
                 break;
-            // Add other strategies here...
+            case Categories.Chance:
+                strategy = new ChanceStrategy();
+                break;
+            // case Categories.FullHouse:
+            //     strategy = new FourOfAKindStrategy();
+            //     break;
+            // case Categories.SmallStraight:
+            //     strategy = new FourOfAKindStrategy();
+            //     break;
+            // case Categories.LargeStraight:
+            //     strategy = new FourOfAKindStrategy();
+            //     break;
+            // case Categories.Yahtzee:
+            //     strategy = new FourOfAKindStrategy();
+            //     break;
+
+            case Categories.Blues:
+                strategy = new ColorsStrategy(Categories.Blues);
+                break;
+            case Categories.Reds:
+                strategy = new ColorsStrategy(Categories.Reds);
+                break;
+            case Categories.Greens:
+                strategy = new ColorsStrategy(Categories.Greens);
+                break;
+
             default:
                 return 0;
         }
@@ -111,16 +151,15 @@ class YahtzeeGame {
     }
 
     updateScorecard(category: Categories, score: number) {
-        //console.log(`Updating scorecard for category: ${category} with score: ${score}`);
         if (!this.scorecard[category].selected ) {  //&& this.scorecard[category].value === null
             this.scorecard[category].value = score;
-            //this.scorecard[category].selected = true;
         }
     }
 
     updateSelectedScore(category: Categories, score: number) {
         this.updateScorecard(category, score);
-        this.scorecard[category].selected = true;
+        this.scorecard[category].selected = true;   // flag as selected
+        this.startNewRoll();    // setup new roll
     }
 
     getTotalScore(): number {
@@ -168,13 +207,20 @@ function updateScoreboard() {
     });
 }
 
-rollButton.addEventListener("click", () => {
-    game.rollDice();
+function updateDice() {
     renderDice(game.dice);
     updateScoreboard();
     console.log(game);
     rollButton.textContent = `Roll Dice (${game.rollsLeft})`
+}
+
+
+/* action listeners */
+rollButton.addEventListener("click", () => {
+    game.rollDice();
+    updateDice();
 });
+
 
 scoreButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -183,7 +229,7 @@ scoreButtons.forEach((button) => {
             button.classList.add('selected');
             const scoreValue = game.calculateScore(scoreType);
             game.updateSelectedScore(scoreType, scoreValue);
-            updateScoreboard();
+            updateDice();
         } else {
             console.error('Score type not found on button.');
         }

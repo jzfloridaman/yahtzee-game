@@ -165,12 +165,14 @@ rollButton.addEventListener("click", () => {
     renderDice(game.dice);
     updateScoreboard();
     console.log(game);
+    rollButton.textContent = `Roll Dice (${game.rollsLeft})`
 });
 
 scoreButtons.forEach((button) => {
     button.addEventListener("click", () => {
         const scoreType = button.getAttribute("data-category") as Categories;
         if (scoreType) {
+            button.classList.add('selected');
             const scoreValue = game.calculateScore(scoreType);
             game.updateSelectedScore(scoreType, scoreValue);
             updateScoreboard();

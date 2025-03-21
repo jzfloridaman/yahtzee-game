@@ -13,24 +13,88 @@
         <div id="dice-container"></div>
         <button id="roll-button">Roll Dice</button>
         <div id="scorecard" class="w-full max-w-md bg-gray-800 p-4 rounded-lg shadow-md">
-            <h2 class="text-xl font-bold text-center mb-4">Scorecard</h2>
-            <div class="grid grid-cols-2 gap-2">
-                <div class="text-left">Ones</div> <button class="score-cell" data-category="Ones">-</button>
-                <div class="text-left">Twos</div> <button class="score-cell" data-category="Twos">-</button>
-                <div class="text-left">Threes</div> <button class="score-cell" data-category="Threes">-</button>
-                <div class="text-left">Fours</div> <button class="score-cell" data-category="Fours">-</button>
-                <div class="text-left">Fives</div> <button class="score-cell" data-category="Fives">-</button>
-                <div class="text-left">Sixes</div> <button class="score-cell" data-category="Sixes">-</button>
-                <div class="text-left">Three of a Kind</div> <button class="score-cell" data-category="Three of a Kind">-</button>
-                <div class="text-left">Four of a Kind</div> <button class="score-cell" data-category="Four of a Kind">-</button>
-                <div class="text-left">Full House</div> <button class="score-cell" data-category="Full House">-</button>
-                <div class="text-left">Small Straight</div> <button class="score-cell" data-category="Small Straight">-</button>
-                <div class="text-left">Large Straight</div> <button class="score-cell" data-category="Large Straight">-</button>
-                <div class="text-left">Yahtzee</div> <button class="score-cell" data-category="Yahtzee">-</button>
-                <div class="text-left">Chance</div> <button class="score-cell" data-category="Chance">-</button>
-                <div class="text-left font-bold">Color Flush</div> <button class="score-cell" data-category="Color Flush">-</button>
-                <div class="text-left font-bold">Color Straight</div> <button class="score-cell" data-category="Color Straight">-</button>
-                <div class="text-left font-bold">Color Majority Bonus</div> <button class="score-cell" data-category="Color Majority Bonus">-</button>
+            <!-- <h2 class="text-xl font-bold text-center mb-4">Scorecard</h2> -->
+            <div class="grid grid-cols-6 gap-2">
+
+                <!-- singles -->
+                <div class="score-item">
+                    <div> ⚀ </div> 
+                    <button class="score-cell" data-category="Ones">-</button>
+                </div> 
+                <div class="score-item">
+                    <div> ⚁</div>
+                    <button class="score-cell" data-category="Twos">-</button>
+                </div> 
+                <div class="score-item">
+                    <div> ⚂ </div>
+                    <button class="score-cell" data-category="Threes">-</button>
+                </div> 
+                <div class="score-item">
+                    <div> ⚃ </div>
+                    <button class="score-cell" data-category="Fours">-</button>
+                </div> 
+                <div class="score-item">
+                    <div> ⚄ </div>
+                    <button class="score-cell" data-category="Fives">-</button>
+                </div> 
+                <div class="score-item">
+                    <div> ⚅ </div>
+                    <button class="score-cell" data-category="Sixes">-</button>
+                </div> 
+
+                <!-- multiples -->
+                <div class="score-item">
+                    <div> 3X </div>
+                    <button class="score-cell" data-category="Three of a Kind">-</button>
+                </div> 
+                <div class="score-item">
+                    <div> 4X </div>
+                    <button class="score-cell" data-category="Four of a Kind">-</button>
+                </div> 
+                <div class="score-item">
+                    <div> FH </div> 
+                    <button class="score-cell" data-category="Full House">-</button>
+                </div> 
+                <div class="score-item">
+                    <div> Sm </div>
+                    <button class="score-cell" data-category="Small Straight">-</button>
+                </div> 
+                <div class="score-item">
+                    <div> Lg </div>
+                    <button class="score-cell" data-category="Large Straight">-</button>
+                </div> 
+                <div class="score-item">
+                    <div> ? </div> 
+                    <button class="score-cell" data-category="Chance">-</button>
+                </div> 
+                
+
+                <!-- colors -->
+                <div class="score-item">
+                    <div> Y! </div> 
+                    <button class="score-cell" data-category="Yahtzee">-</button>
+                </div> 
+                <div class="score-item !bg-blue-500">
+                    <div> B </div> 
+                    <button class="score-cell" data-category="Color Flush">-</button>
+                </div> 
+                <div class="score-item !bg-red-500">
+                    <div> R </div> 
+                    <button class="score-cell" data-category="Color Straight">-</button>
+                </div> 
+                <div class="score-item !bg-green-500">
+                    <div> G </div>
+                    <button class="score-cell" data-category="Color Straight">-</button>
+                </div> 
+                <div class="score-item !bg-purple-500">
+                    <div> FH  </div>
+                    <button class="score-cell" data-category="Color Majority Bonus">-</button>
+                </div> 
+                <div class="score-item">
+                    <div> B! </div> 
+                    <button class="score-cell" data-category="Color Majority Bonus">-</button>
+                </div> 
+
             </div>
         </div>
     </div>

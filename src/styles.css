@@ -27,9 +27,9 @@ body {
 }
 
 .score-item {
-    @apply text-center text-xl rounded-lg border-black border-2 bg-amber-200 text-black;
+    @apply text-center text-xl rounded-lg border-white/50 border-2 bg-white text-black;
 }
 
 .score-item:has(.selected){
-    @apply text-center text-xl rounded-lg border-black border-2 bg-red-800 text-black;
+    @apply text-center text-xl rounded-lg border-black/50 border-2 !bg-gray-100/[.40] text-black;
 }

@@ -8,6 +8,8 @@ import { ColorsStrategy } from './strategies/ColorsStrategy.js';
 import { ColorsFullHouseStrategy } from './strategies/ColorsFullHouseStrategy.js';    
 import { FullHouseStrategy } from './strategies/FullHouseStrategy.js';
 import { YahtzeeStrategy } from './strategies/YahtzeeStrategy.js';
+import { LargeStraightStrategy } from './strategies/LargeStraightStrategy.js';
+import { SmallStraightStrategy } from './strategies/SmallStraightStrategy.js';
 import { Categories } from './Categories.js';
 
 // Game state
@@ -27,6 +29,12 @@ class YahtzeeGame {
 
     isGameOver(){
         // add logic here to loop scorecard and check if all categories are selected
+        const totalCategories = Object.keys(this.scorecard).length;
+        const completedCategories = Object.values(this.scorecard).filter(item => item.selected).length;
+        if(totalCategories === completedCategories){
+            return true;
+        }
+        console.log("Game is not over yet, items remaining " + (totalCategories - completedCategories));
         return false;
     }
 
@@ -106,6 +114,7 @@ class YahtzeeGame {
                 strategy = new UpperScoreStrategy(6);
                 break;
 
+
             case Categories.ThreeOfAKind:
                 strategy = new ThreeOfAKindStrategy();
                 break;
@@ -118,15 +127,16 @@ class YahtzeeGame {
             case Categories.FullHouse:
                 strategy = new FullHouseStrategy();
                 break;
-            // case Categories.SmallStraight:
-            //     strategy = new FourOfAKindStrategy();
-            //     break;
-            // case Categories.LargeStraight:
-            //     strategy = new FourOfAKindStrategy();
-            //     break;
+            case Categories.SmallStraight:
+                strategy = new SmallStraightStrategy();
+                break;
+            case Categories.LargeStraight:
+                strategy = new LargeStraightStrategy();
+                break;
             case Categories.Yahtzee:
                 strategy = new YahtzeeStrategy();
                 break;
+
 
             case Categories.Blues:
                 strategy = new ColorsStrategy(Categories.Blues);

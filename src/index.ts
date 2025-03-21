@@ -32,6 +32,7 @@ class YahtzeeGame {
             this.dice = this.dice.map(die => (die.held ? die : this.rollNewDie()));
             this.rollsLeft--;
         }
+        this.calculateAllScores();
     }
 
     toggleHold(index: number) {
@@ -92,12 +93,26 @@ class YahtzeeGame {
         return strategy.calculateScore(this.dice);
     }
 
-    updateScorecard(category: Categories, score: number) {
-        console.log(`Updating scorecard for category: ${category} with score: ${score}`);
-        if (!this.scorecard[category].selected && this.scorecard[category].value === null) {
-            this.scorecard[category].value = score;
-            this.scorecard[category].selected = true;
+    calculateAllScores() {
+        for (const category in Categories) {
+            if (isNaN(Number(category))) { // Ensure it's a string key, not a numeric index
+                const score = this.calculateScore(Categories[category as keyof typeof Categories]);
+                this.updateScorecard(Categories[category as keyof typeof Categories], score);
+            }
         }
+    }
+
+    updateScorecard(category: Categories, score: number) {
+        //console.log(`Updating scorecard for category: ${category} with score: ${score}`);
+        if (!this.scorecard[category].selected ) {  //&& this.scorecard[category].value === null
+            this.scorecard[category].value = score;
+            //this.scorecard[category].selected = true;
+        }
+    }
+
+    updateSelectedScore(category: Categories, score: number) {
+        this.updateScorecard(category, score);
+        this.scorecard[category].selected = true;
     }
 
     getTotalScore(): number {
@@ -135,6 +150,7 @@ function renderDice(dice: Die[]) {
 }
 
 function updateScoreboard() {
+    game.calculateAllScores();
     document.querySelectorAll('.score-cell').forEach(cell => {
         const category = cell.getAttribute('data-category') as Categories;
         if (category != null) {
@@ -148,6 +164,7 @@ rollButton.addEventListener("click", () => {
     game.rollDice();
     renderDice(game.dice);
     updateScoreboard();
+    console.log(game);
 });
 
 scoreButtons.forEach((button) => {
@@ -155,7 +172,7 @@ scoreButtons.forEach((button) => {
         const scoreType = button.getAttribute("data-category") as Categories;
         if (scoreType) {
             const scoreValue = game.calculateScore(scoreType);
-            game.updateScorecard(scoreType, scoreValue);
+            game.updateSelectedScore(scoreType, scoreValue);
             updateScoreboard();
         } else {
             console.error('Score type not found on button.');

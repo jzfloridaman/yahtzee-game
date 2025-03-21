@@ -4,7 +4,10 @@ import { UpperScoreStrategy } from './strategies/UpperScoreStrategy.js';
 import { ThreeOfAKindStrategy } from './strategies/ThreeOfAKindStrategy.js';
 import { FourOfAKindStrategy } from './strategies/FourOfAKindStrategy.js';
 import { ChanceStrategy } from './strategies/ChanceStrategy.js';
-import { ColorsStrategy } from './strategies/ColorsStrategy.js';    
+import { ColorsStrategy } from './strategies/ColorsStrategy.js';
+import { ColorsFullHouseStrategy } from './strategies/ColorsFullHouseStrategy.js';    
+import { FullHouseStrategy } from './strategies/FullHouseStrategy.js';
+import { YahtzeeStrategy } from './strategies/YahtzeeStrategy.js';
 import { Categories } from './Categories.js';
 
 // Game state
@@ -76,6 +79,7 @@ class YahtzeeGame {
             [Categories.Reds]: { value: null, selected: false },
             [Categories.Greens]: { value: null, selected: false },
             [Categories.ColorFullHouse]: { value: null, selected: false },
+            [Categories.TopBonus]: { value: null, selected: false },
         };
     }
 
@@ -111,18 +115,18 @@ class YahtzeeGame {
             case Categories.Chance:
                 strategy = new ChanceStrategy();
                 break;
-            // case Categories.FullHouse:
-            //     strategy = new FourOfAKindStrategy();
-            //     break;
+            case Categories.FullHouse:
+                strategy = new FullHouseStrategy();
+                break;
             // case Categories.SmallStraight:
             //     strategy = new FourOfAKindStrategy();
             //     break;
             // case Categories.LargeStraight:
             //     strategy = new FourOfAKindStrategy();
             //     break;
-            // case Categories.Yahtzee:
-            //     strategy = new FourOfAKindStrategy();
-            //     break;
+            case Categories.Yahtzee:
+                strategy = new YahtzeeStrategy();
+                break;
 
             case Categories.Blues:
                 strategy = new ColorsStrategy(Categories.Blues);
@@ -132,6 +136,9 @@ class YahtzeeGame {
                 break;
             case Categories.Greens:
                 strategy = new ColorsStrategy(Categories.Greens);
+                break;
+            case Categories.ColorFullHouse: 
+                strategy = new ColorsFullHouseStrategy();
                 break;
 
             default:
@@ -175,6 +182,7 @@ console.log(game);
 const diceContainer = document.getElementById("dice-container") as HTMLDivElement;
 const rollButton = document.getElementById("roll-button") as HTMLButtonElement;
 const scoreButtons = document.querySelectorAll(".score-cell");
+const totalScore = document.getElementById("player-score") as HTMLDivElement;
 
 function renderDice(dice: Die[]) {
     diceContainer.innerHTML = "";
@@ -205,6 +213,7 @@ function updateScoreboard() {
             cell.textContent = score !== null ? score.toString() : '-';
         }
     });
+    totalScore.textContent = game.getTotalScore().toString();
 }
 
 function updateDice() {

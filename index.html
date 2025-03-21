@@ -8,12 +8,14 @@
     <link href="dist/styles.css" rel="stylesheet">
 </head>
 <body>
-    <h1>Yahtzee Game</h1>
     <div id="game-container">
+        <div class="text-center">
+            <h2 class="text-xl font-bold text-center mb-1">Score</h2>
+            <span id="player-score" class="font-bold text-center">0</span>
+        </div>
         <div id="dice-container"></div>
         <button id="roll-button">Roll Dice (2)</button>
         <div id="scorecard" class="w-full max-w-md bg-gray-800 p-4 rounded-lg shadow-md">
-            <!-- <h2 class="text-xl font-bold text-center mb-4">Scorecard</h2> -->
             <div class="grid grid-cols-6 gap-2">
 
                 <!-- singles -->

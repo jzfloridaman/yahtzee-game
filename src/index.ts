@@ -2,6 +2,7 @@ import { Die } from './Die.js';
 import { ScoringStrategy } from './strategies/ScoringStrategy.js';
 import { UpperScoreStrategy } from './strategies/UpperScoreStrategy.js';
 import { ThreeOfAKindStrategy } from './strategies/ThreeOfAKindStrategy.js';
+import { FourOfAKindStrategy } from './strategies/FourOfAKindStrategy.js';
 import { Categories } from './Categories.js';
 
 // Game state
@@ -47,13 +48,16 @@ class YahtzeeGame {
             [Categories.Fours]: { value: null, selected: false },
             [Categories.Fives]: { value: null, selected: false },
             [Categories.Sixes]: { value: null, selected: false },
+
             [Categories.ThreeOfAKind]: { value: null, selected: false },
             [Categories.FourOfAKind]: { value: null, selected: false },
             [Categories.FullHouse]: { value: null, selected: false },
             [Categories.SmallStraight]: { value: null, selected: false },
             [Categories.LargeStraight]: { value: null, selected: false },
+
             [Categories.Yahtzee]: { value: null, selected: false },
             [Categories.Chance]: { value: null, selected: false },
+            
             [Categories.ColorFlush]: { value: null, selected: false },
             [Categories.ColorStraight]: { value: null, selected: false },
             [Categories.ColorMajorityBonus]: { value: null, selected: false },
@@ -82,8 +86,12 @@ class YahtzeeGame {
             case Categories.Sixes:
                 strategy = new UpperScoreStrategy(6);
                 break;
+
             case Categories.ThreeOfAKind:
                 strategy = new ThreeOfAKindStrategy();
+                break;
+            case Categories.FourOfAKind:
+                strategy = new FourOfAKindStrategy();
                 break;
             // Add other strategies here...
             default:

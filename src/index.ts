@@ -1,116 +1,24 @@
-// Basic structure for a single-player Yahtzee game with Rainbow Dice
-// import { Die } from './Die';
-// import { YahtzeeScorecard } from './YahtzeeScorecard'; 
+import { Die } from './Die.js';
+import { ScoringStrategy } from './strategies/ScoringStrategy.js';
+import { UpperScoreStrategy } from './strategies/UpperScoreStrategy.js';
+import { ThreeOfAKindStrategy } from './strategies/ThreeOfAKindStrategy.js';
+import { FourOfAKindStrategy } from './strategies/FourOfAKindStrategy.js';
+import { ChanceStrategy } from './strategies/ChanceStrategy.js';
+import { ColorsStrategy } from './strategies/ColorsStrategy.js';
+import { ColorsFullHouseStrategy } from './strategies/ColorsFullHouseStrategy.js';    
+import { FullHouseStrategy } from './strategies/FullHouseStrategy.js';
+import { YahtzeeStrategy } from './strategies/YahtzeeStrategy.js';
+import { LargeStraightStrategy } from './strategies/LargeStraightStrategy.js';
+import { SmallStraightStrategy } from './strategies/SmallStraightStrategy.js';
+import { Categories } from './Categories.js';
 
-// Define dice properties
-type Die = {
-    value: number;
-    color: 'red' | 'green' | 'blue';
-    held: boolean;
-  };
-
-//   type ScoringCategory = {
-//     name: string;
-//     value: number;
-//     selected: boolean;
-//   };
-  
-//   type Scoreboard = {
-//     upper: ScoringCategory[];
-//     lower: ScoringCategory[];
-//     total: number;
-//     upperTotal: number;
-//     lowerTotal: number;
-//     bonus: number;
-//   };
-
-//   const upperCategories: ScoringCategory[] = [
-//     { name: 'Ones', value: 0, selected: false },
-//     { name: 'Twos', value: 0, selected: false },
-//     { name: 'Threes', value: 0, selected: false },
-//     { name: 'Fours', value: 0, selected: false },
-//     { name: 'Fives', value: 0, selected: false },
-//     { name: 'Sixes', value: 0, selected: false },
-//   ];
-  
-//   const lowerCategories: ScoringCategory[] = [
-//     { name: 'Three of a Kind', value: 0, selected: false },
-//     { name: 'Four of a Kind', value: 0, selected: false },
-//     { name: 'Full House', value: 0, selected: false },
-//     { name: 'Small Straight', value: 0, selected: false },
-//     { name: 'Large Straight', value: 0, selected: false },
-//     { name: 'Yahtzee', value: 0, selected: false },
-//     { name: 'Chance', value: 0, selected: false },
-//   ];
-  
-//   let scoreboard: Scoreboard = {
-//     upper: upperCategories,
-//     lower: lowerCategories,
-//     total: 0,
-//     upperTotal: 0,
-//     lowerTotal: 0,
-//     bonus: 0,
-//   };
-  
-//   function calculateUpperScore(dice: number[], category: 'Ones' | 'Twos' | 'Threes' | 'Fours' | 'Fives' | 'Sixes'): number {
-//     const categoryValue = parseInt(category);
-//     return dice.filter(die => die === categoryValue).length * categoryValue;
-//   }
-  
-//   function calculateThreeOfAKind(dice: number[]): number {
-//     const counts = countDice(dice);
-//     for (let num in counts) {
-//       if (counts[num] >= 3) {
-//         return dice.reduce((sum, die) => sum + die, 0); // Sum all dice if condition is met
-//       }
-//     }
-//     return 0; // No three of a kind
-//   }
-
-//   function calculateFullHouse(dice: number[]): number {
-//     const counts = countDice(dice);
-//     const hasThree = Object.values(counts).includes(3);
-//     const hasPair = Object.values(counts).includes(2);
-  
-//     return hasThree && hasPair ? 25 : 0;
-//   }
-  
-//   function countDice(dice: number[]): Record<number, number> {
-//     const counts: Record<number, number> = {};
-//     for (const die of dice) {
-//       counts[die] = (counts[die] || 0) + 1;
-//     }
-//     return counts;
-//   }
-
-//   function updateScoreboard(category: ScoringCategory, score: number) {
-//     category.value = score;
-//     category.selected = true;
-  
-//     // Update totals
-//     scoreboard.upperTotal = scoreboard.upper.reduce((sum, cat) => cat.selected ? sum + cat.value : sum, 0);
-//     scoreboard.lowerTotal = scoreboard.lower.reduce((sum, cat) => cat.selected ? sum + cat.value : sum, 0);
-  
-//     // Calculate total score
-//     scoreboard.total = scoreboard.upperTotal + scoreboard.lowerTotal;
-  
-//     // Check for bonus
-//     scoreboard.bonus = scoreboard.upperTotal >= 63 ? 35 : 0;
-//   }
-  
-  
-  
-  
 // Game state
 class YahtzeeGame {
     dice: Die[] = [];
-    rollsLeft: number = 3;
-    // scorecard: { [key: string]: number | null } = {};
-    scorecard: { [key: string]: { value: number | null, selected: boolean } } = {};
-    // scorecard: YahtzeeScorecard;
-    
+    rollsLeft: number = 2;
+    scorecard: { [key in Categories]: { value: number | null, selected: boolean } } = {} as any;
+
     constructor() {
-        //this.scorecard = new YahtzeeScorecard();
         this.initializeDice();
         this.initializeScorecard();
     }
@@ -119,200 +27,192 @@ class YahtzeeGame {
         this.dice = Array.from({ length: 5 }, () => this.rollNewDie());
     }
 
+    isGameOver(){
+        // add logic here to loop scorecard and check if all categories are selected
+        const totalCategories = Object.keys(this.scorecard).length;
+        const completedCategories = Object.values(this.scorecard).filter(item => item.selected).length;
+        if(totalCategories === completedCategories){
+            console.log("game is over");
+            return true;
+        }
+
+        // check to see if the last category is just the top bonus
+        if(completedCategories === (totalCategories - 1) && this.scorecard[Categories.TopBonus].selected === false){
+            console.log("game is over due to not selecting top bonus");
+            return true;
+        }   
+        //console.log("Game is not over yet, items remaining " + (totalCategories - completedCategories));
+        return false;
+    }
+
     rollNewDie(): Die {
         return {
-        value: Math.floor(Math.random() * 6) + 1,
-        color: ['red', 'green', 'blue'][Math.floor(Math.random() * 3)] as 'red' | 'green' | 'blue',
-        held: false,
+            value: Math.floor(Math.random() * 6) + 1,
+            color: ['red', 'green', 'blue'][Math.floor(Math.random() * 3)] as 'red' | 'green' | 'blue',
+            held: false,
         };
+    }
+
+    startNewRoll(){
+        if(!this.isGameOver()){
+            this.rollsLeft = 2;
+            this.initializeDice();
+        }
     }
 
     rollDice() {
         if (this.rollsLeft > 0) {
-        this.dice = this.dice.map(die => (die.held ? die : this.rollNewDie()));
-        this.rollsLeft--;
+            this.dice = this.dice.map(die => (die.held ? die : this.rollNewDie()));
+            this.rollsLeft--;
         }
+        this.calculateAllScores();
     }
 
     toggleHold(index: number) {
         this.dice[index].held = !this.dice[index].held;
     }
 
-    // initializeScorecard() {
-    //     this.scorecard = {
-    //     'Ones': null,
-    //     'Twos': null,
-    //     'Threes': null,
-    //     'Fours': null,
-    //     'Fives': null,
-    //     'Sixes': null,
-    //     'Three of a Kind': null,
-    //     'Four of a Kind': null,
-    //     'Full House': null,
-    //     'Small Straight': null,
-    //     'Large Straight': null,
-    //     'Yahtzee': null,
-    //     'Chance': null,
-    //     'Color Flush': null,
-    //     'Color Straight': null,
-    //     'Color Majority Bonus': null,
-    //     };
-    // }
-
-
     initializeScorecard() {
         this.scorecard = {
-            'Ones': { value: null, selected: false },
-            'Twos': { value: null, selected: false },
-            'Threes': { value: null, selected: false },
-            'Fours': { value: null, selected: false },
-            'Fives': { value: null, selected: false },
-            'Sixes': { value: null, selected: false },
-            'Three of a Kind': { value: null, selected: false },
-            'Four of a Kind': { value: null, selected: false },
-            'Full House': { value: null, selected: false },
-            'Small Straight': { value: null, selected: false },
-            'Large Straight': { value: null, selected: false },
-            'Yahtzee': { value: null, selected: false },
-            'Chance': { value: null, selected: false },
-            'Color Flush': { value: null, selected: false },
-            'Color Straight': { value: null, selected: false },
-            'Color Majority Bonus': { value: null, selected: false },
+            [Categories.Ones]: { value: null, selected: false },
+            [Categories.Twos]: { value: null, selected: false },
+            [Categories.Threes]: { value: null, selected: false },
+            [Categories.Fours]: { value: null, selected: false },
+            [Categories.Fives]: { value: null, selected: false },
+            [Categories.Sixes]: { value: null, selected: false },
+
+            [Categories.ThreeOfAKind]: { value: null, selected: false },
+            [Categories.FourOfAKind]: { value: null, selected: false },
+            [Categories.FullHouse]: { value: null, selected: false },
+            [Categories.SmallStraight]: { value: null, selected: false },
+            [Categories.LargeStraight]: { value: null, selected: false },
+
+            [Categories.Yahtzee]: { value: null, selected: false },
+            [Categories.Chance]: { value: null, selected: false },
+
+            [Categories.Blues]: { value: null, selected: false },
+            [Categories.Reds]: { value: null, selected: false },
+            [Categories.Greens]: { value: null, selected: false },
+            [Categories.ColorFullHouse]: { value: null, selected: false },
+            [Categories.TopBonus]: { value: null, selected: false },
         };
     }
 
-    calculateUpperScore(category: 'Ones' | 'Twos' | 'Threes' | 'Fours' | 'Fives' | 'Sixes'): number {
-        //const categoryValue = parseInt(category);
-        //return this.dice.filter(die => die.value === categoryValue).length * categoryValue;
-        const categoryValues: { [key: string]: number } = {
-            'Ones': 1,
-            'Twos': 2,
-            'Threes': 3,
-            'Fours': 4,
-            'Fives': 5,
-            'Sixes': 6,
-        };
-    
-        const categoryValue = categoryValues[category];
-    
-        if (categoryValue) {
-            // Count how many times the category value appears in the dice
-            return this.dice.filter(die => die.value === categoryValue).length * categoryValue;
+    calculateScore(category: Categories): number {
+        let strategy: ScoringStrategy;
+
+        switch (category) {
+            case Categories.Ones:
+                strategy = new UpperScoreStrategy(1);
+                break;
+            case Categories.Twos:
+                strategy = new UpperScoreStrategy(2);
+                break;
+            case Categories.Threes:
+                strategy = new UpperScoreStrategy(3);
+                break;
+            case Categories.Fours:
+                strategy = new UpperScoreStrategy(4);
+                break;
+            case Categories.Fives:
+                strategy = new UpperScoreStrategy(5);
+                break;
+            case Categories.Sixes:
+                strategy = new UpperScoreStrategy(6);
+                break;
+
+
+            case Categories.ThreeOfAKind:
+                strategy = new ThreeOfAKindStrategy();
+                break;
+            case Categories.FourOfAKind:
+                strategy = new FourOfAKindStrategy();
+                break;
+            case Categories.Chance:
+                strategy = new ChanceStrategy();
+                break;
+            case Categories.FullHouse:
+                strategy = new FullHouseStrategy();
+                break;
+            case Categories.SmallStraight:
+                strategy = new SmallStraightStrategy();
+                break;
+            case Categories.LargeStraight:
+                strategy = new LargeStraightStrategy();
+                break;
+            case Categories.Yahtzee:
+                strategy = new YahtzeeStrategy();
+                break;
+
+
+            case Categories.Blues:
+                strategy = new ColorsStrategy(Categories.Blues);
+                break;
+            case Categories.Reds:
+                strategy = new ColorsStrategy(Categories.Reds);
+                break;
+            case Categories.Greens:
+                strategy = new ColorsStrategy(Categories.Greens);
+                break;
+            case Categories.ColorFullHouse: 
+                strategy = new ColorsFullHouseStrategy();
+                break;
+
+            default:
+                return 0;
         }
-        return 0; // If category is invalid, return 0
-    
+
+        return strategy.calculateScore(this.dice);
     }
 
-    calculateThreeOfAKind(): number {
-        const counts = this.countDice();
-        for (let num in counts) {
-            if (counts[num] >= 3) {
-                return this.dice.reduce((sum, die) => sum + die.value, 0); // Sum all dice if condition is met
+    calculateAllScores() {
+        for (const category in Categories) {
+            if (isNaN(Number(category))) { // Ensure it's a string key, not a numeric index
+                const score = this.calculateScore(Categories[category as keyof typeof Categories]);
+                this.updateScorecard(Categories[category as keyof typeof Categories], score);
             }
         }
-        return 0; // No three of a kind
+
+        // check if upper score bonus is applicable
+        this.isUpperScoreBonusApplicable();
+
     }
 
-    calculateFourOfAKind(): number {
-        const counts = this.countDice();
-        for (let num in counts) {
-            if (counts[num] >= 4) {
-                return this.dice.reduce((sum, die) => sum + die.value, 0); // Sum all dice if condition is met
+    isUpperScoreBonusApplicable(){
+        const upperSectionCategories = [
+            Categories.Ones,
+            Categories.Twos,
+            Categories.Threes,
+            Categories.Fours,
+            Categories.Fives,
+            Categories.Sixes
+          ];
+        
+          const totalScore = upperSectionCategories.reduce((sum, category) => {
+            if(this.scorecard[category].selected){
+                return sum + (this.scorecard[category].value || 0);
             }
-        }
-        return 0; // No four of a kind
+            return sum;
+          }, 0);
+
+            if(totalScore >= 63){
+                this.updateSelectedScore(Categories.TopBonus, 35);
+                return true;
+            }else{
+                console.log("Top score counter " + totalScore)
+            }
     }
 
-    calculateFullHouse(): number {
-        const counts = this.countDice();
-        const hasThree = Object.values(counts).includes(3);
-        const hasPair = Object.values(counts).includes(2);
-        return hasThree && hasPair ? 25 : 0;
-    }
-
-    calculateSmallStraight(): number {
-        const distinctDice = [...new Set(this.dice.map(die => die.value))];
-        const smallStraights = [
-            [1, 2, 3, 4],
-            [2, 3, 4, 5],
-            [3, 4, 5, 6],
-        ];
-        return smallStraights.some(straight => straight.every(num => distinctDice.includes(num))) ? 30 : 0;
-    }
-
-    calculateLargeStraight(): number {
-        const distinctDice = [...new Set(this.dice.map(die => die.value))];
-        const largeStraights = [
-            [1, 2, 3, 4, 5],
-            [2, 3, 4, 5, 6],
-        ];
-        return largeStraights.some(straight => straight.every(num => distinctDice.includes(num))) ? 40 : 0;
-    }
-
-    calculateYahtzee(): number {
-        const counts = this.countDice();
-        return Object.values(counts).includes(5) ? 50 : 0;
-    }
-
-    calculateChance(): number {
-        return this.dice.reduce((sum, die) => sum + die.value, 0);
-    }
-
-/*
-    calculateColorFlush(): number {
-        const colors = this.dice.map(die => die.color);
-        const allSameColor = colors.every(color => color === colors[0]);
-        return allSameColor ? 40 : 0;  // Award 40 points for a color flush
-    }
-
-    calculateColorStraight(): number {
-        const colors = this.dice.map(die => die.color);
-        const distinctColors = [...new Set(colors)];
-        if (distinctColors.length !== 1) {
-            return 0;  // Not all dice are the same color
-        }
-    
-        const distinctDice = [...new Set(this.dice.map(die => die.value))];
-        const colorStraights = [
-            [1, 2, 3, 4],  // Small straight
-            [2, 3, 4, 5],
-            [3, 4, 5, 6],
-            [1, 2, 3, 4, 5],  // Large straight
-            [2, 3, 4, 5, 6],
-        ];
-    
-        return colorStraights.some(straight => straight.every(num => distinctDice.includes(num))) ? 30 : 0;
-    }
-
-    calculateColorMajorityBonus(): number {
-        const colorCounts = this.dice.reduce((acc, die) => {
-            acc[die.color] = (acc[die.color] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-    
-        const maxColor = Object.entries(colorCounts).reduce(
-            (max, [color, count]) => (count > max.count ? { color, count } : max),
-            { color: '', count: 0 }
-        );
-    
-        return maxColor.count >= 3 ? 20 : 0;  // 20 points for majority color if it appears at least 3 times
-    }
-*/
-
-    countDice(): Record<number, number> {
-        const counts: Record<number, number> = {};
-        for (const die of this.dice) {
-            counts[die.value] = (counts[die.value] || 0) + 1;
-        }
-        return counts;
-    }
-
-    updateScorecard(category: string, score: number) {
-        if (!this.scorecard[category].selected && this.scorecard[category].value === null) {
+    updateScorecard(category: Categories, score: number) {
+        if (!this.scorecard[category].selected ) {  //&& this.scorecard[category].value === null
             this.scorecard[category].value = score;
-            this.scorecard[category].selected = true;
         }
-        console.log("updating scorecard", category);
+    }
+
+    updateSelectedScore(category: Categories, score: number) {
+        this.updateScorecard(category, score);
+        this.scorecard[category].selected = true;   // flag as selected
+        this.startNewRoll();    // setup new roll
     }
 
     getTotalScore(): number {
@@ -323,11 +223,13 @@ class YahtzeeGame {
 }
 
 const game = new YahtzeeGame();
-console.log(game);  
+console.log(game);
+
 const diceContainer = document.getElementById("dice-container") as HTMLDivElement;
 const rollButton = document.getElementById("roll-button") as HTMLButtonElement;
+const scoreButtons = document.querySelectorAll(".score-cell");
+const totalScore = document.getElementById("player-score") as HTMLDivElement;
 
-// Function to render dice on screen
 function renderDice(dice: Die[]) {
     diceContainer.innerHTML = "";
     dice.forEach((die, index) => {
@@ -336,12 +238,12 @@ function renderDice(dice: Die[]) {
         dieElement.style.backgroundColor = die.color;
         dieElement.classList.add("die");
         if (die.held) dieElement.classList.add("held");
-        
+
         dieElement.addEventListener("click", () => {
             game.toggleHold(index);
             renderDice(game.dice);
         });
-        
+
         diceContainer.appendChild(dieElement);
     });
 
@@ -349,37 +251,44 @@ function renderDice(dice: Die[]) {
 }
 
 function updateScoreboard() {
-
-    const onesScore = game.calculateUpperScore('Ones');
-    const twosScore = game.calculateUpperScore('Twos');
-    const threesScore = game.calculateUpperScore('Threes');
-
-    // console.log("Calculating scores");
-    // console.log(onesScore);
-    // console.log(twosScore);
-    // console.log(threesScore);
-    // console.log("End calculating");
-    game.updateScorecard('Ones', onesScore);
-    game.updateScorecard('Twos', twosScore);
-    game.updateScorecard('Threes', threesScore);
-
+    game.calculateAllScores();
     document.querySelectorAll('.score-cell').forEach(cell => {
-        const category = cell.getAttribute('data-category');
-        if (category != null){
-            const score = game.scorecard[category]?.value || 0;
-            cell.textContent = score.toString();
+        const category = cell.getAttribute('data-category') as Categories;
+        if (category != null) {
+            const score = game.scorecard[category]?.value;
+            cell.textContent = score !== null ? score.toString() : '-';
         }
     });
+    totalScore.textContent = game.getTotalScore().toString();
+}
 
-    console.log(game.scorecard);
+function updateDice() {
+    renderDice(game.dice);
+    updateScoreboard();
+    console.log(game);
+    rollButton.textContent = `Roll Dice (${game.rollsLeft})`
 }
 
 
-// Hook up roll button
+/* action listeners */
 rollButton.addEventListener("click", () => {
     game.rollDice();
-    renderDice(game.dice);
-    updateScoreboard();
+    updateDice();
+});
+
+
+scoreButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+        const scoreType = button.getAttribute("data-category") as Categories;
+        if (scoreType) {
+            button.classList.add('selected');
+            const scoreValue = game.calculateScore(scoreType);
+            game.updateSelectedScore(scoreType, scoreValue);
+            updateDice();
+        } else {
+            console.error('Score type not found on button.');
+        }
+    });
 });
 
 // Initial render

@@ -25,3 +25,11 @@ body {
 #roll-button {
     @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mt-4;
 }
+
+.score-item {
+    @apply text-center text-xl rounded-lg border-white/50 border-2 bg-white text-black;
+}
+
+.score-item:has(.selected){
+    @apply text-center text-xl rounded-lg border-black/50 border-2 !bg-gray-100/[.40] text-black;
+}

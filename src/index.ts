@@ -32,9 +32,16 @@ class YahtzeeGame {
         const totalCategories = Object.keys(this.scorecard).length;
         const completedCategories = Object.values(this.scorecard).filter(item => item.selected).length;
         if(totalCategories === completedCategories){
+            console.log("game is over");
             return true;
         }
-        console.log("Game is not over yet, items remaining " + (totalCategories - completedCategories));
+
+        // check to see if the last category is just the top bonus
+        if(completedCategories === (totalCategories - 1) && this.scorecard[Categories.TopBonus].selected === false){
+            console.log("game is over due to not selecting top bonus");
+            return true;
+        }   
+        //console.log("Game is not over yet, items remaining " + (totalCategories - completedCategories));
         return false;
     }
 
@@ -165,6 +172,35 @@ class YahtzeeGame {
                 this.updateScorecard(Categories[category as keyof typeof Categories], score);
             }
         }
+
+        // check if upper score bonus is applicable
+        this.isUpperScoreBonusApplicable();
+
+    }
+
+    isUpperScoreBonusApplicable(){
+        const upperSectionCategories = [
+            Categories.Ones,
+            Categories.Twos,
+            Categories.Threes,
+            Categories.Fours,
+            Categories.Fives,
+            Categories.Sixes
+          ];
+        
+          const totalScore = upperSectionCategories.reduce((sum, category) => {
+            if(this.scorecard[category].selected){
+                return sum + (this.scorecard[category].value || 0);
+            }
+            return sum;
+          }, 0);
+
+            if(totalScore >= 63){
+                this.updateSelectedScore(Categories.TopBonus, 35);
+                return true;
+            }else{
+                console.log("Top score counter " + totalScore)
+            }
     }
 
     updateScorecard(category: Categories, score: number) {

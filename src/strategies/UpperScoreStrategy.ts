@@ -1,5 +1,5 @@
 import { ScoringStrategy } from './ScoringStrategy.js';
-import { Die } from '../Die.js';
+import { Die } from '../enums/Die.js';
 
 export class UpperScoreStrategy implements ScoringStrategy {
     private value: number;

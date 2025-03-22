@@ -13,6 +13,6 @@ export class ColorsFullHouseStrategy implements ScoringStrategy {
             colorCounts.set(die.color, (colorCounts.get(die.color) || 0) + 1);
         }
         // Check if any color counts match 2 and 3
-        return [...colorCounts.values()].sort().join() === "2,3" ? 25 : 0;
+        return [...colorCounts.values()].sort().join() === "2,3" ? 15 : 0;
     }
 }

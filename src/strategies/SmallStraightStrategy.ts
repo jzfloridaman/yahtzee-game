@@ -12,6 +12,6 @@ export class SmallStraightStrategy implements ScoringStrategy {
           [3, 4, 5, 6]
         ];
       
-        return straights.some(straight => straight.every(num => values.includes(num))) ? 35 : 0;
+        return straights.some(straight => straight.every(num => values.includes(num))) ? 30 : 0;
     }
 }

@@ -165,7 +165,8 @@ function renderDice(dice: Die[]) {
     diceContainer.innerHTML = "";
     dice.forEach((die, index) => {
         const dieElement = document.createElement("div");
-        dieElement.textContent = `${die.value}`;
+        //dieElement.textContent = `${die.value}`;
+        setDieIcon(dieElement, die.value);
         dieElement.classList.add("die");
         setDieColor(dieElement, die.color);
         if (die.held) dieElement.classList.add("held");
@@ -184,6 +185,29 @@ function renderDice(dice: Die[]) {
 function setDieColor(el: HTMLDivElement, color: string) {
     el.classList.remove('red', 'green', 'blue');
     el.classList.add(color);
+}
+
+function setDieIcon(el: HTMLDivElement, value: number) {
+    switch(value){
+        case 1:
+            el.textContent = '⚀';
+            break;
+        case 2:
+            el.textContent = '⚁';
+            break;
+        case 3:
+            el.textContent = '⚂';
+            break;
+        case 4:
+            el.textContent = '⚃';
+            break;
+        case 5:
+            el.textContent = '⚄';
+            break;
+        case 6:
+            el.textContent = '⚅';
+            break; 
+    }
 }
 
 function updateScoreboard() {

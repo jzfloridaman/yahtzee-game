@@ -15,7 +15,7 @@ body {
 }
 
 .die {
-    @apply w-16 h-16 flex items-center justify-center text-xl font-bold rounded-lg cursor-pointer;
+    @apply w-20 h-20 flex items-center justify-center text-5xl rounded-lg cursor-pointer text-black font-mono;
 }
     .die.blue {
         @apply bg-blue-500;
@@ -39,6 +39,13 @@ body {
 .score-item {
     @apply text-center text-xl rounded-lg border-white/50 border-2 bg-white text-black cursor-pointer;
 }
+.score-cell{
+    margin-top: -0.5rem;
+}
+.category-icon {
+    @apply text-3xl;
+    text-transform: uppercase;
+}
 
 .score-item:hover{
     @apply !bg-gray-100/[.80] text-black;
@@ -48,5 +55,5 @@ body {
 }
 
 #scorecard {
-    @apply w-full max-w-md bg-gray-800 rounded-lg shadow-md;
+    @apply w-full bg-gray-800 rounded-lg shadow-md;
 }

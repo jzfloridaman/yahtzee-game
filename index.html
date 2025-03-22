@@ -8,7 +8,25 @@
     <link href="dist/styles.css" rel="stylesheet">
 </head>
 <body>
+
+    <div id="game-mode-container">
+        <h1 class="text-3xl font-bold text-center">Yahtzee Game</h1>
+        <div class="text-center">
+            <button class="game-mode-button w-full" data-mode="sp">Single Player</button>
+            <button class="game-mode-button w-full cursor-not-allowed" data-mode="mp" disabled>Multi Player</button>
+        </div>
+    </div>
+
+    <div id="game-over-container">
+        <h1 class="text-3xl font-bold text-center">Game Over</h1>
+        <div class="text-center">
+            <p>You scored <span class="final-score">0</span> points!</p>
+            <button class="game-mode-button w-full" data-mode="MainMenu">Play Again</button>
+        </div>
+    </div>
+
     <div id="game-container">
+
         <div class="text-center">
             <h2 class="text-xl font-bold text-center mb-1">Score</h2>
             <span id="player-score" class="font-bold text-center">0</span>

@@ -1,20 +1,52 @@
 import { Die } from './types/Die.js';
 import { Categories } from './enums/Categories.js';
 import { useCalculateScore } from './utils/CalculateScore.js';
+import { GameState } from './enums/GameState.js';
 
 // Game state
 class YahtzeeGame {
     dice: Die[] = [];
     rollsLeft: number = 2;
     scorecard: { [key in Categories]: { value: number | null, selected: boolean } } = {} as any;
+    private _state: GameState = GameState.MainMenu;
+    private stateChangeCallbacks: Array<(newState: GameState) => void> = [];
+
+    get state(): GameState {
+        return this._state;
+    }
+
+    set state(newState: GameState) {
+        this._state = newState;
+        this.notifyStateChange(newState);
+    }
+
+    onStateChange(callback: (newState: GameState) => void) {
+        this.stateChangeCallbacks.push(callback);
+    }
+
+    private notifyStateChange(newState: GameState) {
+        this.stateChangeCallbacks.forEach(callback => callback(newState));
+    }
 
     constructor() {
+        // this.initializeDice();
+        // this.initializeScorecard();
+    }
+
+    startNewGame(){
         this.initializeDice();
         this.initializeScorecard();
+        this.startNewRoll();
+        this.state = GameState.Playing;
     }
 
     initializeDice() {
         this.dice = Array.from({ length: 5 }, () => this.rollNewDie());
+    }
+
+    setGameOver(){
+        console.log("Game is over");
+        this.state = GameState.GameOver;
     }
 
     isGameOver(){
@@ -22,14 +54,15 @@ class YahtzeeGame {
         const totalCategories = Object.keys(this.scorecard).length;
         const completedCategories = Object.values(this.scorecard).filter(item => item.selected).length;
         if(totalCategories === completedCategories){
-            console.log("game is over");
+            this.setGameOver();
             return true;
         }
 
         // check to see if the last category is just the top bonus
         if(completedCategories === (totalCategories - 1) && this.scorecard[Categories.TopBonus].selected === false){
-            console.log("game is over due to not selecting top bonus");
-            this.isUpperScoreBonusApplicable(); // or this.calculateAllScores();
+            this.isUpperScoreBonusApplicable(); 
+            this.calculateAllScores();
+            this.setGameOver();
             return true;
         }   
         return false;
@@ -157,10 +190,22 @@ class YahtzeeGame {
 
 const game = new YahtzeeGame();
 
+const gameContainer = document.getElementById("game-container") as HTMLDivElement;
+const gameModeContainer = document.getElementById("game-mode-container") as HTMLDivElement;
+const gameOverContainer = document.getElementById("game-over-container") as HTMLDivElement;
+
 const diceContainer = document.getElementById("dice-container") as HTMLDivElement;
 const rollButton = document.getElementById("roll-button") as HTMLButtonElement;
 const scoreButtons = document.querySelectorAll(".score-item");
+const gameActionButtons = document.querySelectorAll(".game-mode-button");
 const totalScore = document.getElementById("player-score") as HTMLDivElement;
+
+
+function run(){
+    gameContainer.style.display = "none"; 
+    gameOverContainer.style.display = "none"; 
+}
+
 
 function renderDice(dice: Die[]) {
     diceContainer.innerHTML = "";
@@ -241,13 +286,20 @@ function updateDice() {
     }
 }
 
+function setupUI(){
+    scoreButtons.forEach((button) => {
+        button.classList.remove('selected');
+    });
+    rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+}
+
+
 
 /* action listeners */
 rollButton.addEventListener("click", () => {
     game.rollDice();
     updateDice();
 });
-
 
 scoreButtons.forEach((button) => {
     button.addEventListener("click", () => {
@@ -263,17 +315,51 @@ scoreButtons.forEach((button) => {
     });
 });
 
-// Initial render
-renderDice(game.dice);
+gameActionButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+        const action = button.getAttribute("data-mode");
+        if (action === 'sp') {
+            game.startNewGame();
+            gameContainer.style.display = "block";
+            gameModeContainer.style.display = "none";
+            renderDice(game.dice);
+        }
 
-// start game function, remove initial roll.
+        if(action === 'MainMenu'){
+            game.state = GameState.MainMenu;
+        }
+    });
+});
+
+game.onStateChange((newState) => {
+    console.log(`Game state changed to: ${newState}`);
+    switch(newState){
+        case GameState.MainMenu:
+            gameContainer.style.display = "none";
+            gameOverContainer.style.display = "none";
+            gameModeContainer.style.display = "block";
+            break;
+        case GameState.Playing:
+            gameContainer.style.display = "block";
+            gameModeContainer.style.display = "none";
+            gameOverContainer.style.display = "none";
+            setupUI();
+            break;
+        case GameState.GameOver:  
+            gameOverContainer.style.display = "block";
+            gameContainer.style.display = "none";
+            gameModeContainer.style.display = "none";
+            document.getElementsByClassName("final-score")[0].textContent = game.getTotalScore().toString();
+            break;
+    }
+});
+
+// Initial render
+run();
 
 /* 
     TODO:
-    - Add a game over screen
-    - Add a new game button
     - Add computer player
-    - Add multiplayer
     - Add animations
     - Add sounds
 */

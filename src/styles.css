@@ -6,7 +6,7 @@ body {
     @apply bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen;
 }
 
-#game-container {
+#game-container, #game-mode-container, #game-over-container {
     @apply bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col items-center;
 }
 
@@ -56,4 +56,8 @@ body {
 
 #scorecard {
     @apply w-full bg-gray-800 rounded-lg shadow-md;
+}
+
+.game-mode-button {
+    @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mt-4 w-full;
 }

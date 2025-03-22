@@ -33,7 +33,7 @@ body {
 }
 
 #roll-button {
-    @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mt-4;
+    @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mb-8 w-full;
 }
 
 .score-item {
@@ -45,4 +45,8 @@ body {
 }
 .score-item:has(.selected), .score-item.selected, .score-item.disabled{
     @apply text-center text-xl rounded-lg border-black/50 border-2 !bg-gray-100/[.40] text-black !cursor-not-allowed;
+}
+
+#scorecard {
+    @apply w-full max-w-md bg-gray-800 rounded-lg shadow-md;
 }

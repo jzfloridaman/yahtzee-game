@@ -199,12 +199,21 @@ function updateScoreboard() {
         }
     });
     totalScore.textContent = game.getTotalScore().toString();
+
+    if(game.isGameOver()){
+        rollButton.textContent = `Game Over`;
+        rollButton.disabled = true;
+    }
 }
 
 function updateDice() {
-    renderDice(game.dice);
-    updateScoreboard();
-    rollButton.textContent = `Roll Dice (${game.rollsLeft})`
+    if(!game.isGameOver()){
+        renderDice(game.dice);
+        updateScoreboard();
+        rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+    }else{
+        rollButton.textContent = `Game Over`;
+    }
 }
 
 

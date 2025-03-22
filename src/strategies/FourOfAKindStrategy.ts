@@ -1,5 +1,5 @@
 import { ScoringStrategy } from './ScoringStrategy.js';
-import { Die } from '../enums/Die.js';
+import { Die } from '../types/Die.js';
 
 export class FourOfAKindStrategy implements ScoringStrategy {
     calculateScore(dice: Die[]): number {

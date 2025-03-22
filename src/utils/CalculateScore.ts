@@ -1,4 +1,4 @@
-import { Die } from '../enums/Die.js';
+import { Die } from '../types/Die.js';
 import { ScoringStrategy } from '../strategies/ScoringStrategy.js';
 import { UpperScoreStrategy } from '../strategies/UpperScoreStrategy.js';
 import { ThreeOfAKindStrategy } from '../strategies/ThreeOfAKindStrategy.js';
@@ -10,7 +10,7 @@ import { FullHouseStrategy } from '../strategies/FullHouseStrategy.js';
 import { YahtzeeStrategy } from '../strategies/YahtzeeStrategy.js';
 import { LargeStraightStrategy } from '../strategies/LargeStraightStrategy.js';
 import { SmallStraightStrategy } from '../strategies/SmallStraightStrategy.js';
-import { Categories } from '../types/Categories.js';
+import { Categories } from '../enums/Categories.js';
 
 export function useCalculateScore(category: Categories, dice: Die[]): number{
     let strategy: ScoringStrategy;

@@ -1,5 +1,5 @@
-import { Die } from './enums/Die.js';
-import { Categories } from './types/Categories.js';
+import { Die } from './types/Die.js';
+import { Categories } from './enums/Categories.js';
 import { useCalculateScore } from './utils/CalculateScore.js';
 
 // Game state
@@ -29,6 +29,7 @@ class YahtzeeGame {
         // check to see if the last category is just the top bonus
         if(completedCategories === (totalCategories - 1) && this.scorecard[Categories.TopBonus].selected === false){
             console.log("game is over due to not selecting top bonus");
+            this.isUpperScoreBonusApplicable(); // or this.calculateAllScores();
             return true;
         }   
         return false;

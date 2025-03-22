@@ -50,11 +50,11 @@ class YahtzeeGame {
     }
 
     rollDice() {
-        if (this.rollsLeft > 0) {
+        if (this.rollsLeft > 0 && !this.isGameOver()) {
             this.dice = this.dice.map(die => (die.held ? die : this.rollNewDie()));
             this.rollsLeft--;
         }
-        this.calculateAllScores();
+        //this.calculateAllScores();
     }
 
     toggleHold(index: number) {
@@ -115,17 +115,18 @@ class YahtzeeGame {
         ];
         
         const totalScore = upperSectionCategories.reduce((sum, category) => {
-        if(this.scorecard[category].selected){
-            return sum + (this.scorecard[category].value || 0);
-        }
-        return sum;
+            if(this.scorecard[category].selected){
+                return sum + (this.scorecard[category].value || 0);
+            }
+            return sum;
         }, 0);
 
         if(totalScore >= 63){
-            this.updateSelectedScore(Categories.TopBonus, 35);
+            // make sure it doesnt roll the die after selection.
+            this.updateSelectedScore(Categories.TopBonus, 35, false);
             return true;
         }else{
-            console.log("Top score counter " + totalScore)
+            console.log("Top score counter " + totalScore);
         }
     }
 
@@ -135,10 +136,15 @@ class YahtzeeGame {
         }
     }
 
-    updateSelectedScore(category: Categories, score: number) {
+    updateSelectedScore(category: Categories, score: number, roll: boolean = true){ 
+        if(this.scorecard[category].selected){
+            return;
+        }
         this.updateScorecard(category, score);
         this.scorecard[category].selected = true; 
-        this.startNewRoll();
+        if(roll){
+            this.startNewRoll();
+        }
     }
 
     getTotalScore(): number {
@@ -152,7 +158,7 @@ const game = new YahtzeeGame();
 
 const diceContainer = document.getElementById("dice-container") as HTMLDivElement;
 const rollButton = document.getElementById("roll-button") as HTMLButtonElement;
-const scoreButtons = document.querySelectorAll(".score-cell");
+const scoreButtons = document.querySelectorAll(".score-item");
 const totalScore = document.getElementById("player-score") as HTMLDivElement;
 
 function renderDice(dice: Die[]) {
@@ -160,8 +166,8 @@ function renderDice(dice: Die[]) {
     dice.forEach((die, index) => {
         const dieElement = document.createElement("div");
         dieElement.textContent = `${die.value}`;
-        dieElement.style.backgroundColor = die.color;
         dieElement.classList.add("die");
+        setDieColor(dieElement, die.color);
         if (die.held) dieElement.classList.add("held");
 
         dieElement.addEventListener("click", () => {
@@ -175,13 +181,21 @@ function renderDice(dice: Die[]) {
     updateScoreboard();
 }
 
+function setDieColor(el: HTMLDivElement, color: string) {
+    el.classList.remove('red', 'green', 'blue');
+    el.classList.add(color);
+}
+
 function updateScoreboard() {
     game.calculateAllScores();
-    document.querySelectorAll('.score-cell').forEach(cell => {
+    document.querySelectorAll('.score-item').forEach(cell => {
         const category = cell.getAttribute('data-category') as Categories;
         if (category != null) {
             const score = game.scorecard[category]?.value;
-            cell.textContent = score !== null ? score.toString() : '-';
+            const cellScore = cell.querySelector('.score-cell');
+            if(cellScore){
+                cellScore.textContent = score !== null ? score.toString() : '-';
+            }
         }
     });
     totalScore.textContent = game.getTotalScore().toString();
@@ -190,7 +204,6 @@ function updateScoreboard() {
 function updateDice() {
     renderDice(game.dice);
     updateScoreboard();
-    console.log(game);
     rollButton.textContent = `Roll Dice (${game.rollsLeft})`
 }
 
@@ -205,7 +218,7 @@ rollButton.addEventListener("click", () => {
 scoreButtons.forEach((button) => {
     button.addEventListener("click", () => {
         const scoreType = button.getAttribute("data-category") as Categories;
-        if (scoreType) {
+        if (scoreType && scoreType !== 'Top Bonus') {
             button.classList.add('selected');
             const scoreValue = game.calculateScore(scoreType);
             game.updateSelectedScore(scoreType, scoreValue);
@@ -219,9 +232,10 @@ scoreButtons.forEach((button) => {
 // Initial render
 renderDice(game.dice);
 
+// start game function, remove initial roll.
+
 /* 
     TODO:
-    - Swap score-cell buttons to main div for each category so it can be clicked anywhere
     - Add a game over screen
     - Add a new game button
     - Add computer player

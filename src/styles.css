@@ -17,6 +17,16 @@ body {
 .die {
     @apply w-16 h-16 flex items-center justify-center text-xl font-bold rounded-lg cursor-pointer;
 }
+    .die.blue {
+        @apply bg-blue-500;
+    }
+
+    .die.red{
+        @apply bg-red-500;
+    }
+    .die.green{
+        @apply bg-green-500;
+    }
 
 .held {
     @apply ring-4 ring-yellow-500;
@@ -27,12 +37,12 @@ body {
 }
 
 .score-item {
-    @apply text-center text-xl rounded-lg border-white/50 border-2 bg-white text-black;
+    @apply text-center text-xl rounded-lg border-white/50 border-2 bg-white text-black cursor-pointer;
 }
 
 .score-item:hover{
     @apply !bg-gray-100/[.80] text-black;
 }
-.score-item:has(.selected){
-    @apply text-center text-xl rounded-lg border-black/50 border-2 !bg-gray-100/[.40] text-black;
+.score-item:has(.selected), .score-item.selected, .score-item.disabled{
+    @apply text-center text-xl rounded-lg border-black/50 border-2 !bg-gray-100/[.40] text-black !cursor-not-allowed;
 }

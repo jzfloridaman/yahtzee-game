@@ -309,6 +309,7 @@ function setupUI(){
         button.classList.remove('selected');
     });
     rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+    rollButton.disabled = false;
 }
 function resetDiceUI(){
     game.dice.forEach(die => {

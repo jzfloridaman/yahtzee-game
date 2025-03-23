@@ -211,7 +211,6 @@ function renderDice(dice: Die[]) {
     diceContainer.innerHTML = "";
     dice.forEach((die, index) => {
         const dieElement = document.createElement("div");
-        //dieElement.textContent = `${die.value}`;
         setDieIcon(dieElement, die.value);
         dieElement.classList.add("die");
         setDieColor(dieElement, die.color);
@@ -226,6 +225,16 @@ function renderDice(dice: Die[]) {
     });
 
     updateScoreboard();
+}
+
+function animateDice() {
+    const diceElements = document.querySelectorAll(".die");
+    diceElements.forEach(die => {
+        die.classList.add("roll");
+        die.addEventListener("animationend", () => {
+            die.classList.remove("roll");
+        }, { once: true });
+    });
 }
 
 function setDieColor(el: HTMLDivElement, color: string) {
@@ -278,9 +287,12 @@ function updateScoreboard() {
 
 function updateDice() {
     if(!game.isGameOver()){
-        renderDice(game.dice);
-        updateScoreboard();
-        rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+        animateDice();
+        setTimeout(() => {
+            renderDice(game.dice);
+            updateScoreboard();
+            rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+        }, 500); // Match the duration of the CSS animation
     }else{
         rollButton.textContent = `Game Over`;
     }
@@ -292,7 +304,12 @@ function setupUI(){
     });
     rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
 }
-
+function resetDiceUI(){
+    game.dice.forEach(die => {
+        die.held = false;
+    });
+    renderDice(game.dice);
+}
 
 
 /* action listeners */
@@ -308,6 +325,7 @@ scoreButtons.forEach((button) => {
             button.classList.add('selected');
             const scoreValue = game.calculateScore(scoreType);
             game.updateSelectedScore(scoreType, scoreValue);
+            resetDiceUI();
             updateDice();
         } else {
             console.error('Score type not found on button.');

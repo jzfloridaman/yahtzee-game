@@ -28,6 +28,18 @@ body {
         @apply bg-green-500;
     }
 
+@keyframes roll {
+    0% { transform: rotate(0deg); }
+    25% { transform: rotate(90deg); }
+    50% { transform: rotate(180deg); }
+    75% { transform: rotate(270deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.die.roll:not(.held) {
+    animation: roll 0.5s ease-in-out;
+}
+
 .held {
     @apply ring-4 ring-yellow-500;
 }

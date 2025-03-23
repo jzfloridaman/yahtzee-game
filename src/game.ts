@@ -160,7 +160,7 @@ class YahtzeeGame {
             this.updateSelectedScore(Categories.TopBonus, 35, false);
             return true;
         }else{
-            console.log("Top score counter " + totalScore);
+            //console.log("Top score counter " + totalScore);
         }
     }
 
@@ -243,26 +243,34 @@ function setDieColor(el: HTMLDivElement, color: string) {
 }
 
 function setDieIcon(el: HTMLDivElement, value: number) {
+
+    el.innerHTML = ""; // Clear any existing content
+    const icon = document.createElement("i");
+    icon.classList.add("fas");
+    icon.classList.add("text-white");
+
     switch(value){
         case 1:
-            el.textContent = '⚀';
+            icon.classList.add("fa-dice-one");
             break;
         case 2:
-            el.textContent = '⚁';
+            icon.classList.add("fa-dice-two");
             break;
         case 3:
-            el.textContent = '⚂';
+            icon.classList.add("fa-dice-three");
             break;
         case 4:
-            el.textContent = '⚃';
+            icon.classList.add("fa-dice-four");
             break;
         case 5:
-            el.textContent = '⚄';
+            icon.classList.add("fa-dice-five");
             break;
         case 6:
-            el.textContent = '⚅';
+            icon.classList.add("fa-dice-six");
             break; 
     }
+
+    el.appendChild(icon);
 }
 
 function updateScoreboard() {

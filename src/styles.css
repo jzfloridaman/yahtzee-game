@@ -28,16 +28,54 @@ body {
         @apply bg-green-500;
     }
 
-@keyframes roll {
-    0% { transform: rotate(0deg); }
-    25% { transform: rotate(90deg); }
-    50% { transform: rotate(180deg); }
-    75% { transform: rotate(270deg); }
-    100% { transform: rotate(360deg); }
-}
+    @keyframes roll {
+        0% { transform: rotate(0deg) scale(1); }
+        25% { transform: rotate(90deg) scale(1.2); }
+        50% { transform: rotate(180deg) scale(1); }
+        75% { transform: rotate(270deg) scale(1.2); }
+        100% { transform: rotate(360deg) scale(1); }
+    }
+    
+    @keyframes roll-b {
+        0% { transform: rotate(360deg) scale(1); }
+        20% { transform: rotate(270deg) scale(1.2); }
+        60% { transform: rotate(180deg) scale(1); }
+        80% { transform: rotate(90deg) scale(1.2); }
+        100% { transform: rotate(0deg) scale(1); }
+    }
 
-.die.roll:not(.held) {
-    animation: roll 0.5s ease-in-out;
+    @keyframes colorFade {
+        0% { background-color: red; }
+        33% { background-color: blue; }
+        66% { background-color: green; }
+        100% { background-color: red; }
+    }
+    @keyframes colorFade-b {
+        0% { background-color: green; }
+        33% { background-color: red; }
+        66% { background-color: blue; }
+        100% { background-color: green; }
+    }
+
+.die.roll:not(.held):nth-child(1) {
+    animation: roll-b 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+    -webkit-animation: roll-b 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+}
+.die.roll:not(.held):nth-child(2) {
+    animation: roll 0.5s ease-in-out, colorFade-b 0.5s ease-in-out;
+    -webkit-animation: roll 0.5s ease-in-out, colorFade-b 0.5s ease-in-out;
+}
+.die.roll:not(.held):nth-child(3) {
+    animation: roll 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+    -webkit-animation: roll 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+}
+.die.roll:not(.held):nth-child(4) {
+    animation: roll-b 0.5s ease-in-out, colorFade-b 0.5s ease-in-out;
+    -webkit-animation: roll-b 0.5s ease-in-out, colorFade-b 0.5s ease-in-out;
+}
+.die.roll:not(.held):nth-child(5) {
+    animation: roll 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+    -webkit-animation: roll 0.5s ease-in-out, colorFade 0.5s ease-in-out;
 }
 
 .held {

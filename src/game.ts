@@ -135,7 +135,6 @@ class YahtzeeGame {
 
         // check if upper score bonus is applicable
         this.isUpperScoreBonusApplicable();
-
     }
 
     isUpperScoreBonusApplicable(){
@@ -156,7 +155,6 @@ class YahtzeeGame {
         }, 0);
 
         if(totalScore >= 63){
-            // make sure it doesnt roll the die after selection.
             this.updateSelectedScore(Categories.TopBonus, 35, false);
             return true;
         }else{
@@ -322,6 +320,9 @@ function resetDiceUI(){
 
 /* action listeners */
 rollButton.addEventListener("click", () => {
+    if(game.rollsLeft === 0){
+        return;
+    }
     game.rollDice();
     updateDice();
 });
@@ -330,6 +331,9 @@ scoreButtons.forEach((button) => {
     button.addEventListener("click", () => {
         const scoreType = button.getAttribute("data-category") as Categories;
         if (scoreType && scoreType !== 'Top Bonus') {
+            if(game.scorecard[scoreType].selected){
+                return;
+            }
             button.classList.add('selected');
             const scoreValue = game.calculateScore(scoreType);
             game.updateSelectedScore(scoreType, scoreValue);

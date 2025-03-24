@@ -15,7 +15,7 @@ body {
 }
 
 .die {
-    @apply w-20 h-20 flex items-center justify-center text-5xl rounded-lg cursor-pointer text-black font-mono;
+    @apply w-20 h-20 flex items-center justify-center text-5xl rounded-lg cursor-pointer text-black font-mono shadow-lg drop-shadow-lg;
 }
     .die.blue {
         @apply bg-blue-500;

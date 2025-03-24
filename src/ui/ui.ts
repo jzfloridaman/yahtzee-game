@@ -1,0 +1,206 @@
+import { Die } from '../types/Die';
+import { Categories } from '../enums/Categories';
+import { YahtzeeGame } from '../game';
+import { GameState } from '../enums/GameState.js';
+
+const gameContainer = document.getElementById("game-container") as HTMLDivElement;
+const gameModeContainer = document.getElementById("game-mode-container") as HTMLDivElement;
+const gameOverContainer = document.getElementById("game-over-container") as HTMLDivElement;
+
+const diceContainer = document.getElementById("dice-container") as HTMLDivElement;
+const rollButton = document.getElementById("roll-button") as HTMLButtonElement;
+const scoreButtons = document.querySelectorAll(".score-item");
+const gameActionButtons = document.querySelectorAll(".game-mode-button");
+const totalScore = document.getElementById("player-score") as HTMLDivElement;
+
+function run() {
+    gameContainer.style.display = "none"; 
+    gameOverContainer.style.display = "none"; 
+}
+
+function renderDice(game: YahtzeeGame, dice: Die[]) {
+    diceContainer.innerHTML = "";
+    dice.forEach((die, index) => {
+        const dieElement = document.createElement("div");
+        setDieIcon(dieElement, die.value);
+        dieElement.classList.add("die");
+        setDieColor(dieElement, die.color);
+        if (die.held) dieElement.classList.add("held");
+
+        dieElement.addEventListener("click", () => {
+            game.toggleHold(index);
+            renderDice(game, game.dice());
+        });
+
+        diceContainer.appendChild(dieElement);
+    });
+
+    updateScoreboard(game);
+}
+
+function animateDice() {
+    const diceElements = document.querySelectorAll(".die");
+    diceElements.forEach(die => {
+        die.classList.add("roll");
+        die.addEventListener("animationend", () => {
+            die.classList.remove("roll");
+        }, { once: true });
+    });
+}
+
+function setDieColor(el: HTMLDivElement, color: string) {
+    el.classList.remove('red', 'green', 'blue');
+    el.classList.add(color);
+}
+
+function setDieIcon(el: HTMLDivElement, value: number) {
+    el.innerHTML = ""; // Clear any existing content
+    const icon = document.createElement("i");
+    icon.classList.add("fas", "text-white");
+
+    switch(value){
+        case 1:
+            icon.classList.add("fa-dice-one");
+            break;
+        case 2:
+            icon.classList.add("fa-dice-two");
+            break;
+        case 3:
+            icon.classList.add("fa-dice-three");
+            break;
+        case 4:
+            icon.classList.add("fa-dice-four");
+            break;
+        case 5:
+            icon.classList.add("fa-dice-five");
+            break;
+        case 6:
+            icon.classList.add("fa-dice-six");
+            break; 
+    }
+
+    el.appendChild(icon);
+}
+
+function updateScoreboard(game: YahtzeeGame) {
+    game.calculateAllScores();
+    document.querySelectorAll('.score-item').forEach(cell => {
+        const category = cell.getAttribute('data-category') as Categories;
+        if (category != null) {
+            const score = game.getScoreByCategory(category);
+            const cellScore = cell.querySelector('.score-cell');
+            if(cellScore){
+                cellScore.textContent = score !== null ? score.toString() : '-';
+            }
+        }
+    });
+    totalScore.textContent = game.getTotalScore().toString();
+
+    if(game.isGameOver()){
+        rollButton.textContent = `Game Over`;
+        rollButton.disabled = true;
+    }
+}
+
+function updateDice(game: YahtzeeGame) {
+    if(!game.isGameOver()){
+        animateDice();
+        setTimeout(() => {
+            renderDice(game, game.dice());
+            updateScoreboard(game);
+            rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+        }, 500); // Match the duration of the CSS animation
+    }else{
+        rollButton.textContent = `Game Over`;
+    }
+}
+
+function setupUI(game: YahtzeeGame){
+    scoreButtons.forEach((button) => {
+        button.classList.remove('selected');
+    });
+    rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+    rollButton.disabled = false;
+}
+
+function resetDiceUI(game: YahtzeeGame){
+    game.dice().forEach(die => {
+        die.held = false;
+    });
+    renderDice(game, game.dice());
+}
+
+/* action listeners */
+function initializeEventListeners(game: YahtzeeGame) {
+    rollButton.addEventListener("click", () => {
+        if(game.rollsLeft === 0){
+            return;
+        }
+        game.rollDice();
+        updateDice(game);
+    });
+
+    scoreButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            const scoreType = button.getAttribute("data-category") as Categories;
+            if (scoreType && scoreType !== 'Top Bonus') {
+                if(game.isCategorySelected(scoreType)){
+                    return;
+                }
+                button.classList.add('selected');
+                const scoreValue = game.calculateScore(scoreType);
+                game.updateSelectedScore(scoreType, scoreValue);
+                resetDiceUI(game);
+                updateDice(game);
+            } else {
+                console.error('Score type not found on button.');
+            }
+        });
+    });
+
+    gameActionButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            const action = button.getAttribute("data-mode");
+            if (action === 'sp') {
+                game.startNewGame();
+                gameContainer.style.display = "block";
+                gameModeContainer.style.display = "none";
+                renderDice(game, game.dice());
+            }
+
+            if(action === 'MainMenu'){
+                game.state = GameState.MainMenu;
+            }
+        });
+    });
+
+    game.onStateChange((newState) => {
+        console.log(`Game state changed to: ${newState}`);
+        switch(newState){
+            case GameState.MainMenu:
+                gameContainer.style.display = "none";
+                gameOverContainer.style.display = "none";
+                gameModeContainer.style.display = "block";
+                break;
+            case GameState.Playing:
+                gameContainer.style.display = "block";
+                gameModeContainer.style.display = "none";
+                gameOverContainer.style.display = "none";
+                setupUI(game);
+                break;
+            case GameState.GameOver:  
+                gameOverContainer.style.display = "block";
+                gameContainer.style.display = "none";
+                gameModeContainer.style.display = "none";
+                document.getElementsByClassName("final-score")[0].textContent = game.getTotalScore().toString();
+                break;
+        }
+    });
+
+    // Initial render
+    run();
+}
+
+export function initializeUI(game: YahtzeeGame) {
+    initializeEventListeners(game);
+}

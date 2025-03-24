@@ -93,12 +93,20 @@ function updateScoreboard(game: YahtzeeGame) {
         if (category != null) {
             const score = game.getScoreByCategory(category);
             const cellScore = cell.querySelector('.score-cell');
+            const selected = game.isCategorySelected(category);
+            if(selected){
+                cell.classList.add('disabled');
+            }else{
+                cell.classList.remove('disabled');
+            }
+
             if(cellScore){
                 cellScore.textContent = score !== null ? score.toString() : '-';
             }
         }
     });
-    totalScore.textContent = game.getTotalScore().toString();
+    //totalScore.textContent = game.getTotalScore().toString();
+    updatePlayerScore(game);
     upperScore.textContent = game.getTotalTopScore().toString();
 
     if(game.isGameOver()){
@@ -172,6 +180,22 @@ function changePlayer(game: YahtzeeGame){
         }else{
             playerDiv.classList.remove('active');
         }
+
+        // reload the scorecard.
+        setupUI(game);
+
+    });
+}
+
+function updatePlayerScore(game: YahtzeeGame){
+    const players = playersContainer.querySelectorAll('.player-data');
+    players.forEach((el, index) => {
+        let playerDiv = players[index] as HTMLDivElement;
+        // update points
+        let playerScoreDiv = playerDiv.querySelector('span.player-score');
+        if(playerScoreDiv){
+            playerScoreDiv.textContent = game.getPlayerScore(index).toString();
+        }
     });
 }
 
@@ -195,11 +219,12 @@ function initializeEventListeners(game: YahtzeeGame) {
                 button.classList.add('selected');
                 const scoreValue = game.calculateScore(scoreType);
                 game.updateSelectedScore(scoreType, scoreValue);
+                //updatePlayerScore(game);
                 resetDiceUI(game);
                 updateDice(game);
 
                 if(game.gameType === GameMode.MultiPlayer){
-                    game.nextPlayer();
+                    updatePlayerScore(game);
                     changePlayer(game);
                 }
             } else {
@@ -215,8 +240,8 @@ function initializeEventListeners(game: YahtzeeGame) {
 
             if (action === 'sp') {
                 game.setGameMode(GameMode.SinglePlayer);
-                game.setPlayers(1);
-                game.startNewGame();
+                //game.setPlayers(1);
+                game.startNewGame(1);
                 setupPlayersUI(game);
                 gameContainer.style.display = "block";
                 gameModeContainer.style.display = "none";
@@ -225,9 +250,10 @@ function initializeEventListeners(game: YahtzeeGame) {
 
             if(action === 'mp'){
                 game.setGameMode(GameMode.MultiPlayer);
-                game.setPlayers(4);
-                game.startNewGame();
+                //game.setPlayers(4);
+                game.startNewGame(4);
                 setupPlayersUI(game);
+                updatePlayerScore(game);
                 gameContainer.style.display = "block";
                 gameModeContainer.style.display = "none";
                 renderDice(game, game.dice());

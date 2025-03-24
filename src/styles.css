@@ -11,7 +11,7 @@ body {
 }
 
 #dice-container {
-    @apply flex gap-4 my-4;
+    @apply flex gap-4 my-4 justify-center mx-auto;
 }
 
 .die {
@@ -110,4 +110,12 @@ body {
 
 .game-mode-button {
     @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mt-4 w-full;
+}
+
+.player-data {
+    @apply gap-4 p-2 rounded-lg;
+}
+
+.player-data.active {
+    @apply bg-gray-700;
 }

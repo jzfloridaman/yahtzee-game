@@ -2,6 +2,7 @@ import { Die } from '../types/Die';
 import { Categories } from '../enums/Categories';
 import { YahtzeeGame } from '../game';
 import { GameState } from '../enums/GameState.js';
+import { GameMode } from '../enums/GameMode.js';
 
 const gameContainer = document.getElementById("game-container") as HTMLDivElement;
 const gameModeContainer = document.getElementById("game-mode-container") as HTMLDivElement;
@@ -13,6 +14,8 @@ const scoreButtons = document.querySelectorAll(".score-item");
 const gameActionButtons = document.querySelectorAll(".game-mode-button");
 const totalScore = document.getElementById("player-score") as HTMLDivElement;
 const upperScore = document.getElementById("score-upper") as HTMLSpanElement;
+
+const playersContainer = document.getElementById("players-container") as HTMLDivElement;
 
 function run() {
     gameContainer.style.display = "none"; 
@@ -97,7 +100,7 @@ function updateScoreboard(game: YahtzeeGame) {
     });
     totalScore.textContent = game.getTotalScore().toString();
     upperScore.textContent = game.getTotalTopScore().toString();
-    
+
     if(game.isGameOver()){
         rollButton.textContent = `Game Over`;
         rollButton.disabled = true;
@@ -132,6 +135,46 @@ function resetDiceUI(game: YahtzeeGame){
     renderDice(game, game.dice());
 }
 
+function setupPlayersUI(game: YahtzeeGame){
+    // change style to show grid for # of players
+    if(game.gameType === GameMode.SinglePlayer){
+        console.log("setting up single player mode");
+        playersContainer.classList.remove('grid-cols-4');
+        playersContainer.classList.add('grid-cols-1');
+        // hide players 2-4
+        const players = playersContainer.querySelectorAll('.player-data');
+        players.forEach((player, index) => {
+            if(index > 0){
+                let player = players[index] as HTMLDivElement;
+                player.style.display = "none";
+            }
+        });
+    }
+
+    if(game.gameType === GameMode.MultiPlayer){
+        console.log("setting up multi player mode");
+        playersContainer.classList.remove('grid-cols-1');
+        playersContainer.classList.add('grid-cols-4');
+        const players = playersContainer.querySelectorAll('.player-data');
+        players.forEach((player, index) => {
+            let playerDiv = players[index] as HTMLDivElement;
+            playerDiv.style.display = "block";
+        });
+    }
+}
+
+function changePlayer(game: YahtzeeGame){
+    const players = playersContainer.querySelectorAll('.player-data');
+    players.forEach((player, index) => {
+        let playerDiv = players[index] as HTMLDivElement;
+        if(index === game.currentPlayer){
+            playerDiv.classList.add('active');
+        }else{
+            playerDiv.classList.remove('active');
+        }
+    });
+}
+
 /* action listeners */
 function initializeEventListeners(game: YahtzeeGame) {
     rollButton.addEventListener("click", () => {
@@ -154,6 +197,11 @@ function initializeEventListeners(game: YahtzeeGame) {
                 game.updateSelectedScore(scoreType, scoreValue);
                 resetDiceUI(game);
                 updateDice(game);
+
+                if(game.gameType === GameMode.MultiPlayer){
+                    game.nextPlayer();
+                    changePlayer(game);
+                }
             } else {
                 console.error('Score type not found on button.');
             }
@@ -162,9 +210,24 @@ function initializeEventListeners(game: YahtzeeGame) {
 
     gameActionButtons.forEach((button) => {
         button.addEventListener("click", () => {
+
             const action = button.getAttribute("data-mode");
+
             if (action === 'sp') {
+                game.setGameMode(GameMode.SinglePlayer);
+                game.setPlayers(1);
                 game.startNewGame();
+                setupPlayersUI(game);
+                gameContainer.style.display = "block";
+                gameModeContainer.style.display = "none";
+                renderDice(game, game.dice());
+            }
+
+            if(action === 'mp'){
+                game.setGameMode(GameMode.MultiPlayer);
+                game.setPlayers(4);
+                game.startNewGame();
+                setupPlayersUI(game);
                 gameContainer.style.display = "block";
                 gameModeContainer.style.display = "none";
                 renderDice(game, game.dice());

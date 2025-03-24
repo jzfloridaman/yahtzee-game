@@ -14,7 +14,7 @@
         <h1 class="text-3xl font-bold text-center">Yahtzee Game</h1>
         <div class="text-center">
             <button class="game-mode-button w-full" data-mode="sp">Single Player</button>
-            <button class="game-mode-button w-full cursor-not-allowed" data-mode="mp" disabled>Multi Player</button>
+            <button class="game-mode-button w-full" data-mode="mp">Multi Player</button>
         </div>
     </div>
 
@@ -28,9 +28,23 @@
 
     <div id="game-container">
 
-        <div class="text-center">
-            <h2 class="text-xl font-bold text-center mb-1">Score</h2>
-            <span id="player-score" class="font-bold text-center">0</span>
+        <div id="players-container" class="text-center grid grid-cols-4 gap-2">
+            <div class="player-data active">
+                <h2 class="text-xl font-bold text-center mb-1">Player 1</h2>
+                <span id="player-score" class="font-bold text-center">0</span>
+            </div>
+            <div class="player-data">
+                <h2 class="text-xl font-bold text-center mb-1">Player 2</h2>
+                <span id="player-score-2" class="font-bold text-center">0</span>
+            </div>
+            <div class="player-data">
+                <h2 class="text-xl font-bold text-center mb-1">Player 3</h2>
+                <span id="player-score-3" class="font-bold text-center">0</span>
+            </div>
+            <div class="player-data">
+                <h2 class="text-xl font-bold text-center mb-1">Player 4</h2>
+                <span id="player-score-4" class="font-bold text-center">0</span>
+            </div>
         </div>
 
         <div id="dice-container"></div>

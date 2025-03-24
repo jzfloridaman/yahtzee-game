@@ -136,9 +136,24 @@ export class YahtzeeGame {
     getTotalTopScore(): number {
         return this.scoreManager.isUpperScoreBonusApplicable();
     }
-    
+
     getTotalScore(): number {
         return this.scoreManager.getTotalScore();
+    }
+
+    setGameMode(mode: GameMode): void {
+        this.gameType = mode;
+    }
+
+    setPlayers(num: number): void {
+        this.players = num;
+    }
+
+    nextPlayer(){
+        this.currentPlayer++;
+        if(this.currentPlayer >= this.players){
+            this.currentPlayer = 0;
+        }
     }
 }
 

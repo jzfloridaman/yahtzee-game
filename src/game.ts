@@ -1,15 +1,25 @@
 import { Die } from './types/Die.js';
 import { Categories } from './enums/Categories.js';
 import { useCalculateScore } from './utils/CalculateScore.js';
+import { DiceManager } from './managers/DiceManager.js';
 import { GameState } from './enums/GameState.js';
 
 // Game state
 class YahtzeeGame {
-    dice: Die[] = [];
+
+    private diceManager: DiceManager;
+
     rollsLeft: number = 2;
     scorecard: { [key in Categories]: { value: number | null, selected: boolean } } = {} as any;
+
     private _state: GameState = GameState.MainMenu;
     private stateChangeCallbacks: Array<(newState: GameState) => void> = [];
+
+    constructor() {
+        // this.initializeDice();
+        // this.initializeScorecard();
+        this.diceManager = new DiceManager();
+    }
 
     get state(): GameState {
         return this._state;
@@ -28,20 +38,19 @@ class YahtzeeGame {
         this.stateChangeCallbacks.forEach(callback => callback(newState));
     }
 
-    constructor() {
-        // this.initializeDice();
-        // this.initializeScorecard();
+    dice(): Die[] {
+        return this.diceManager.getDice();
     }
 
     startNewGame(){
-        this.initializeDice();
+        //this.initializeDice();
         this.initializeScorecard();
         this.startNewRoll();
         this.state = GameState.Playing;
     }
 
     initializeDice() {
-        this.dice = Array.from({ length: 5 }, () => this.rollNewDie());
+        this.diceManager = new DiceManager();
     }
 
     setGameOver(){
@@ -49,7 +58,7 @@ class YahtzeeGame {
         this.state = GameState.GameOver;
     }
 
-    isGameOver(){
+    isGameOver(): Boolean {
         // add logic here to loop scorecard and check if all categories are selected
         const totalCategories = Object.keys(this.scorecard).length;
         const completedCategories = Object.values(this.scorecard).filter(item => item.selected).length;
@@ -68,14 +77,6 @@ class YahtzeeGame {
         return false;
     }
 
-    rollNewDie(): Die {
-        return {
-            value: Math.floor(Math.random() * 6) + 1,
-            color: ['red', 'green', 'blue'][Math.floor(Math.random() * 3)] as 'red' | 'green' | 'blue',
-            held: false,
-        };
-    }
-
     startNewRoll(){
         if(!this.isGameOver()){
             this.rollsLeft = 2;
@@ -85,14 +86,14 @@ class YahtzeeGame {
 
     rollDice() {
         if (this.rollsLeft > 0 && !this.isGameOver()) {
-            this.dice = this.dice.map(die => (die.held ? die : this.rollNewDie()));
+            this.diceManager.rollDice();
             this.rollsLeft--;
         }
         //this.calculateAllScores();
     }
 
     toggleHold(index: number) {
-        this.dice[index].held = !this.dice[index].held;
+        this.diceManager.toggleHold(index);
     }
 
     initializeScorecard() {
@@ -122,7 +123,7 @@ class YahtzeeGame {
     }
 
     calculateScore(category: Categories): number {
-        return useCalculateScore(category, this.dice);
+        return useCalculateScore(category, this.diceManager.getDice());
     }
 
     calculateAllScores() {
@@ -216,7 +217,7 @@ function renderDice(dice: Die[]) {
 
         dieElement.addEventListener("click", () => {
             game.toggleHold(index);
-            renderDice(game.dice);
+            renderDice(game.dice());
         });
 
         diceContainer.appendChild(dieElement);
@@ -295,7 +296,7 @@ function updateDice() {
     if(!game.isGameOver()){
         animateDice();
         setTimeout(() => {
-            renderDice(game.dice);
+            renderDice(game.dice());
             updateScoreboard();
             rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
         }, 500); // Match the duration of the CSS animation
@@ -312,10 +313,10 @@ function setupUI(){
     rollButton.disabled = false;
 }
 function resetDiceUI(){
-    game.dice.forEach(die => {
+    game.dice().forEach(die => {
         die.held = false;
     });
-    renderDice(game.dice);
+    renderDice(game.dice());
 }
 
 
@@ -353,7 +354,7 @@ gameActionButtons.forEach((button) => {
             game.startNewGame();
             gameContainer.style.display = "block";
             gameModeContainer.style.display = "none";
-            renderDice(game.dice);
+            renderDice(game.dice());
         }
 
         if(action === 'MainMenu'){

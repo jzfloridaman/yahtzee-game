@@ -12,6 +12,7 @@ const rollButton = document.getElementById("roll-button") as HTMLButtonElement;
 const scoreButtons = document.querySelectorAll(".score-item");
 const gameActionButtons = document.querySelectorAll(".game-mode-button");
 const totalScore = document.getElementById("player-score") as HTMLDivElement;
+const upperScore = document.getElementById("score-upper") as HTMLSpanElement;
 
 function run() {
     gameContainer.style.display = "none"; 
@@ -95,7 +96,8 @@ function updateScoreboard(game: YahtzeeGame) {
         }
     });
     totalScore.textContent = game.getTotalScore().toString();
-
+    upperScore.textContent = game.getTotalTopScore().toString();
+    
     if(game.isGameOver()){
         rollButton.textContent = `Game Over`;
         rollButton.disabled = true;

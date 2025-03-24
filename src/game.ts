@@ -75,7 +75,6 @@ export class YahtzeeGame {
         // check to see if the last category is just the top bonus
         // this needs a better implementation.
         if(this.scoreManager.getRemainingCategories() === 1 && !this.scoreManager.isCategorySelected(Categories.TopBonus)){
-            this.scoreManager.isUpperScoreBonusApplicable();
             this.calculateAllScores();
             this.setGameOver();
             return true;
@@ -114,8 +113,6 @@ export class YahtzeeGame {
                 this.scoreManager.updateScorecard(Categories[category as keyof typeof Categories], score);
             }
         }
-        // check if upper score bonus is applicable
-        this.scoreManager.isUpperScoreBonusApplicable();
     }
     // update the actual player score based on the selected category
     updateSelectedScore(category: Categories, score: number, roll: boolean = true){ 
@@ -136,6 +133,10 @@ export class YahtzeeGame {
         return this.scoreManager.getScoreByCategory(category);
     }
 
+    getTotalTopScore(): number {
+        return this.scoreManager.isUpperScoreBonusApplicable();
+    }
+    
     getTotalScore(): number {
         return this.scoreManager.getTotalScore();
     }

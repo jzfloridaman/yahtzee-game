@@ -46,6 +46,9 @@ export class ScoreManager implements IScoreManager {
         }
         if(selected){
             this.scorecard[category].selected = selected;
+            if(category !== Categories.TopBonus){
+                this.isUpperScoreBonusApplicable();
+            }
         }   
     }
 
@@ -79,7 +82,7 @@ export class ScoreManager implements IScoreManager {
         return Object.keys(this.scorecard).length;
     }
 
-    isUpperScoreBonusApplicable(){
+    isUpperScoreBonusApplicable(): number {
         const upperSectionCategories = [
             Categories.Ones,
             Categories.Twos,
@@ -97,11 +100,10 @@ export class ScoreManager implements IScoreManager {
         }, 0);
 
         if(totalScore >= 63){
-            this.updateScorecard(Categories.TopBonus, 35, false);
-            return true;
-        }else{
-            //console.log("Top score counter " + totalScore);
+            this.updateScorecard(Categories.TopBonus, 35, true);
         }
+
+        return totalScore;
     }
 
 }

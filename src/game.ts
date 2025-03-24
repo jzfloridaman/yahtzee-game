@@ -3,6 +3,7 @@ import { Categories } from './enums/Categories.js';
 import { useCalculateScore } from './utils/CalculateScore.js';
 import { DiceManager } from './managers/DiceManager.js';
 import { GameState } from './enums/GameState.js';
+import { GameMode } from './enums/GameMode.js';
 
 // Game state
 class YahtzeeGame {
@@ -11,7 +12,8 @@ class YahtzeeGame {
 
     rollsLeft: number = 2;
     scorecard: { [key in Categories]: { value: number | null, selected: boolean } } = {} as any;
-
+    
+    gameType: GameMode = GameMode.SinglePlayer;
     private _state: GameState = GameState.MainMenu;
     private stateChangeCallbacks: Array<(newState: GameState) => void> = [];
 
@@ -43,7 +45,8 @@ class YahtzeeGame {
     }
 
     startNewGame(){
-        //this.initializeDice();
+        // check gamemode
+        // if multiplayer, set up players
         this.initializeScorecard();
         this.startNewRoll();
         this.state = GameState.Playing;
@@ -79,6 +82,7 @@ class YahtzeeGame {
 
     startNewRoll(){
         if(!this.isGameOver()){
+            // if multiplayer, switch to next player, load/save data
             this.rollsLeft = 2;
             this.initializeDice();
         }
@@ -245,8 +249,7 @@ function setDieIcon(el: HTMLDivElement, value: number) {
 
     el.innerHTML = ""; // Clear any existing content
     const icon = document.createElement("i");
-    icon.classList.add("fas");
-    icon.classList.add("text-white");
+    icon.classList.add("fas", "text-white");
 
     switch(value){
         case 1:
@@ -390,8 +393,9 @@ game.onStateChange((newState) => {
 run();
 
 /* 
-    TODO:
+    TODO: 
     - Add computer player
     - Add animations
     - Add sounds
+    - abstract player specific logic to allow for multiplayer
 */

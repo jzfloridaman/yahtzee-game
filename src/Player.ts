@@ -3,5 +3,11 @@ export class Player {
 
     }
 
-    
+    // rolls left,
+    // scorecard
+    // score
+    // is it a local or ai player?
+    // score items left
+    // score items completed
+
 }

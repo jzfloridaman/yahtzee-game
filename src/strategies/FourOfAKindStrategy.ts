@@ -1,4 +1,4 @@
-import { ScoringStrategy } from './ScoringStrategy.js';
+import { ScoringStrategy } from '../interfaces/ScoringStrategy.js';
 import { Die } from '../types/Die.js';
 
 export class FourOfAKindStrategy implements ScoringStrategy {

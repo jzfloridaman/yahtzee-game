@@ -12,6 +12,9 @@ class YahtzeeGame {
 
     rollsLeft: number = 2;
     scorecard: { [key in Categories]: { value: number | null, selected: boolean } } = {} as any;
+
+    players: number = 1;    // array of Player objects
+    currentPlayer: number = 0;  // reference to current player in players array
     
     gameType: GameMode = GameMode.SinglePlayer;
     private _state: GameState = GameState.MainMenu;

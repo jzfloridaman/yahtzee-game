@@ -1,7 +1,7 @@
 import { Die } from './types/Die.js';
 import { Categories } from './enums/Categories.js';
-import { useCalculateScore } from './utils/CalculateScore.js';
 import { DiceManager } from './managers/DiceManager.js';
+import { ScoreManager } from './managers/ScoreManager.js';
 import { GameState } from './enums/GameState.js';
 import { GameMode } from './enums/GameMode.js';
 
@@ -9,21 +9,19 @@ import { GameMode } from './enums/GameMode.js';
 class YahtzeeGame {
 
     private diceManager: DiceManager;
+    private scoreManager: ScoreManager;
 
     rollsLeft: number = 2;
-    scorecard: { [key in Categories]: { value: number | null, selected: boolean } } = {} as any;
-
     players: number = 1;    // array of Player objects
     currentPlayer: number = 0;  // reference to current player in players array
-    
     gameType: GameMode = GameMode.SinglePlayer;
+
     private _state: GameState = GameState.MainMenu;
     private stateChangeCallbacks: Array<(newState: GameState) => void> = [];
 
     constructor() {
-        // this.initializeDice();
-        // this.initializeScorecard();
         this.diceManager = new DiceManager();
+        this.scoreManager = new ScoreManager();
     }
 
     get state(): GameState {
@@ -59,27 +57,29 @@ class YahtzeeGame {
         this.diceManager = new DiceManager();
     }
 
+    initializeScorecard() {
+        this.scoreManager = new ScoreManager();
+    }
+
     setGameOver(){
-        console.log("Game is over");
         this.state = GameState.GameOver;
     }
 
     isGameOver(): Boolean {
-        // add logic here to loop scorecard and check if all categories are selected
-        const totalCategories = Object.keys(this.scorecard).length;
-        const completedCategories = Object.values(this.scorecard).filter(item => item.selected).length;
-        if(totalCategories === completedCategories){
+        if(this.scoreManager.getRemainingCategories() === 0){
             this.setGameOver();
             return true;
         }
 
         // check to see if the last category is just the top bonus
-        if(completedCategories === (totalCategories - 1) && this.scorecard[Categories.TopBonus].selected === false){
-            this.isUpperScoreBonusApplicable(); 
+        // this needs a better implementation.
+        if(this.scoreManager.getRemainingCategories() === 1 && !this.scoreManager.isCategorySelected(Categories.TopBonus)){
+            this.scoreManager.isUpperScoreBonusApplicable();
             this.calculateAllScores();
             this.setGameOver();
             return true;
-        }   
+        }
+
         return false;
     }
 
@@ -96,101 +96,47 @@ class YahtzeeGame {
             this.diceManager.rollDice();
             this.rollsLeft--;
         }
-        //this.calculateAllScores();
     }
 
     toggleHold(index: number) {
         this.diceManager.toggleHold(index);
     }
 
-    initializeScorecard() {
-        this.scorecard = {
-            [Categories.Ones]: { value: null, selected: false },
-            [Categories.Twos]: { value: null, selected: false },
-            [Categories.Threes]: { value: null, selected: false },
-            [Categories.Fours]: { value: null, selected: false },
-            [Categories.Fives]: { value: null, selected: false },
-            [Categories.Sixes]: { value: null, selected: false },
-
-            [Categories.ThreeOfAKind]: { value: null, selected: false },
-            [Categories.FourOfAKind]: { value: null, selected: false },
-            [Categories.FullHouse]: { value: null, selected: false },
-            [Categories.SmallStraight]: { value: null, selected: false },
-            [Categories.LargeStraight]: { value: null, selected: false },
-
-            [Categories.Yahtzee]: { value: null, selected: false },
-            [Categories.Chance]: { value: null, selected: false },
-
-            [Categories.Blues]: { value: null, selected: false },
-            [Categories.Reds]: { value: null, selected: false },
-            [Categories.Greens]: { value: null, selected: false },
-            [Categories.ColorFullHouse]: { value: null, selected: false },
-            [Categories.TopBonus]: { value: null, selected: false },
-        };
-    }
-
+    // generate score for the scorecard ui board based on current dice roll.
     calculateScore(category: Categories): number {
-        return useCalculateScore(category, this.diceManager.getDice());
+        return this.scoreManager.calculateScore(category, this.diceManager.getDice());
     }
-
     calculateAllScores() {
         for (const category in Categories) {
             if (isNaN(Number(category))) { // Ensure it's a string key, not a numeric index
                 const score = this.calculateScore(Categories[category as keyof typeof Categories]);
-                this.updateScorecard(Categories[category as keyof typeof Categories], score);
+                this.scoreManager.updateScorecard(Categories[category as keyof typeof Categories], score);
             }
         }
-
         // check if upper score bonus is applicable
-        this.isUpperScoreBonusApplicable();
+        this.scoreManager.isUpperScoreBonusApplicable();
     }
-
-    isUpperScoreBonusApplicable(){
-        const upperSectionCategories = [
-            Categories.Ones,
-            Categories.Twos,
-            Categories.Threes,
-            Categories.Fours,
-            Categories.Fives,
-            Categories.Sixes
-        ];
-        
-        const totalScore = upperSectionCategories.reduce((sum, category) => {
-            if(this.scorecard[category].selected){
-                return sum + (this.scorecard[category].value || 0);
-            }
-            return sum;
-        }, 0);
-
-        if(totalScore >= 63){
-            this.updateSelectedScore(Categories.TopBonus, 35, false);
-            return true;
-        }else{
-            //console.log("Top score counter " + totalScore);
-        }
-    }
-
-    updateScorecard(category: Categories, score: number) {
-        if (!this.scorecard[category].selected ) { 
-            this.scorecard[category].value = score;
-        }
-    }
-
+    // update the actual player score based on the selected category
     updateSelectedScore(category: Categories, score: number, roll: boolean = true){ 
-        if(this.scorecard[category].selected){
+        if(this.scoreManager.isCategorySelected(category)){
             return;
         }
-        this.updateScorecard(category, score);
-        this.scorecard[category].selected = true; 
+        this.scoreManager.updateScorecard(category, score, true);
         if(roll){
             this.startNewRoll();
         }
     }
 
+    isCategorySelected(category: Categories): boolean {
+        return this.scoreManager.isCategorySelected(category);
+    }
+
+    getScoreByCategory(category: Categories): number | null {
+        return this.scoreManager.getScoreByCategory(category);
+    }
+
     getTotalScore(): number {
-        return Object.values(this.scorecard)
-            .filter(item => item.selected)
-            .reduce((total, item) => total + (item.value || 0), 0);
+        return this.scoreManager.getTotalScore();
     }
 }
 
@@ -283,7 +229,7 @@ function updateScoreboard() {
     document.querySelectorAll('.score-item').forEach(cell => {
         const category = cell.getAttribute('data-category') as Categories;
         if (category != null) {
-            const score = game.scorecard[category]?.value;
+            const score = game.getScoreByCategory(category);
             const cellScore = cell.querySelector('.score-cell');
             if(cellScore){
                 cellScore.textContent = score !== null ? score.toString() : '-';
@@ -339,7 +285,7 @@ scoreButtons.forEach((button) => {
     button.addEventListener("click", () => {
         const scoreType = button.getAttribute("data-category") as Categories;
         if (scoreType && scoreType !== 'Top Bonus') {
-            if(game.scorecard[scoreType].selected){
+            if(game.isCategorySelected(scoreType)){
                 return;
             }
             button.classList.add('selected');

@@ -1,4 +1,4 @@
-import { Die } from '../types/Die.js';
+import { Die } from '../types/Die';
 
 export interface ScoringStrategy {
     calculateScore(dice: Die[]): number;

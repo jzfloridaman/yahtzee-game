@@ -3,8 +3,12 @@ node_modules/
 
 # Ignore compiled output
 dist/
+coverage/
 #*.js
 #*.js.map
 
 # Ignore TypeScript build info
 *.tsbuildinfo
+
+# Ignore folder fs file
+.DS_Store

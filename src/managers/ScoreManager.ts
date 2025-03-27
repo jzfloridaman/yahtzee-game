@@ -1,6 +1,6 @@
 import { IScoreManager } from '../interfaces/IScoreManager';
-import { Categories } from '../enums/Categories.js';
-import { useCalculateScore } from '../utils/CalculateScore.js';
+import { Categories } from '../enums/Categories';
+import { useCalculateScore } from '../utils/CalculateScore';
 import { Die } from '../types/Die';
 
 export class ScoreManager implements IScoreManager {

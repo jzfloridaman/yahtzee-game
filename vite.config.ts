@@ -8,4 +8,7 @@ export default defineConfig({
   server: {
     open: true, // Automatically open the browser
   },
+  css: {
+    postcss: './postcss.config.js', // Ensure PostCSS is configured
+  },
 });

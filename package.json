@@ -10,8 +10,11 @@
     "build:css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --minify",
     "watch:ts": "tsc --watch",
     "watch:css": "tailwindcss -i ./src/styles.css -o ./dist/styles.css --watch",
-    "build": "npm run build:ts && npm run build:css",
-    "dev": "npm run watch:ts & npm run watch:css"
+    "old-build": "npm run build:ts && npm run build:css",
+    "old-dev": "npm run watch:ts & npm run watch:css",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "keywords": [],
   "author": "John Zappone",
@@ -24,6 +27,7 @@
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "ts-jest": "^29.3.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vite": "^6.2.3"
   }
 }

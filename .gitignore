@@ -9,3 +9,6 @@ coverage/
 
 # Ignore TypeScript build info
 *.tsbuildinfo
+
+# Ignore folder fs file
+.DS_Store

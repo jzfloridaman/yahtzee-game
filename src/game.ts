@@ -22,7 +22,6 @@ export class YahtzeeGame {
 
     constructor() {
         this.diceManager = new DiceManager();
-        //this.scoreManager = new ScoreManager();
     }
 
     get state(): GameState {
@@ -60,7 +59,6 @@ export class YahtzeeGame {
     }
 
     initializeScorecard() {
-        //this.scoreManager = new ScoreManager();
         this.scoreManager.forEach(scoreManager => {
             scoreManager.initializeScorecard();
         });
@@ -100,7 +98,6 @@ export class YahtzeeGame {
         if (this.rollsLeft > 0 && !this.isGameOver()) {
             this.diceManager.rollDice();
             this.rollsLeft--;
-            console.log("Player " + this.currentPlayer + " rolled the dice");
         }
     }
 

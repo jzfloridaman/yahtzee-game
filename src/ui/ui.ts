@@ -105,7 +105,6 @@ function updateScoreboard(game: YahtzeeGame) {
             }
         }
     });
-    //totalScore.textContent = game.getTotalScore().toString();
     updatePlayerScore(game);
     upperScore.textContent = game.getTotalTopScore().toString();
 

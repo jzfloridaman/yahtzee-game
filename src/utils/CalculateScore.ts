@@ -1,16 +1,16 @@
-import { Die } from '../types/Die.js';
-import { ScoringStrategy } from '../interfaces/ScoringStrategy.js';
-import { UpperScoreStrategy } from '../strategies/UpperScoreStrategy.js';
-import { ThreeOfAKindStrategy } from '../strategies/ThreeOfAKindStrategy.js';
-import { FourOfAKindStrategy } from '../strategies/FourOfAKindStrategy.js';
-import { ChanceStrategy } from '../strategies/ChanceStrategy.js';
-import { ColorsStrategy } from '../strategies/ColorsStrategy.js';
-import { ColorsFullHouseStrategy } from '../strategies/ColorsFullHouseStrategy.js';    
-import { FullHouseStrategy } from '../strategies/FullHouseStrategy.js';
-import { YahtzeeStrategy } from '../strategies/YahtzeeStrategy.js';
-import { LargeStraightStrategy } from '../strategies/LargeStraightStrategy.js';
-import { SmallStraightStrategy } from '../strategies/SmallStraightStrategy.js';
-import { Categories } from '../enums/Categories.js';
+import { Die } from '../types/Die';
+import { ScoringStrategy } from '../interfaces/ScoringStrategy';
+import { UpperScoreStrategy } from '../strategies/UpperScoreStrategy';
+import { ThreeOfAKindStrategy } from '../strategies/ThreeOfAKindStrategy';
+import { FourOfAKindStrategy } from '../strategies/FourOfAKindStrategy';
+import { ChanceStrategy } from '../strategies/ChanceStrategy';
+import { ColorsStrategy } from '../strategies/ColorsStrategy';
+import { ColorsFullHouseStrategy } from '../strategies/ColorsFullHouseStrategy';    
+import { FullHouseStrategy } from '../strategies/FullHouseStrategy';
+import { YahtzeeStrategy } from '../strategies/YahtzeeStrategy';
+import { LargeStraightStrategy } from '../strategies/LargeStraightStrategy';
+import { SmallStraightStrategy } from '../strategies/SmallStraightStrategy';
+import { Categories } from '../enums/Categories';
 
 export function useCalculateScore(category: Categories, dice: Die[]): number{
     let strategy: ScoringStrategy;

@@ -1,8 +1,8 @@
 import { Die } from '../types/Die';
 import { Categories } from '../enums/Categories';
 import { YahtzeeGame } from '../game';
-import { GameState } from '../enums/GameState.js';
-import { GameMode } from '../enums/GameMode.js';
+import { GameState } from '../enums/GameState';
+import { GameMode } from '../enums/GameMode';
 
 const gameContainer = document.getElementById("game-container") as HTMLDivElement;
 const gameModeContainer = document.getElementById("game-mode-container") as HTMLDivElement;

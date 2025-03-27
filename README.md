@@ -130,8 +130,8 @@ This project is licensed under the MIT License.
 ---
 
 ## 💡 Acknowledgments
-Inspired by the classic Yahtzee game.
-Dice icons provided by Font Awesome.
+- Inspired by the classic Yahtzee game.
+- Dice icons provided by Font Awesome.
 
 ---
 

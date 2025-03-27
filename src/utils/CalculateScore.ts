@@ -1,5 +1,5 @@
 import { Die } from '../types/Die.js';
-import { ScoringStrategy } from '../strategies/ScoringStrategy.js';
+import { ScoringStrategy } from '../interfaces/ScoringStrategy.js';
 import { UpperScoreStrategy } from '../strategies/UpperScoreStrategy.js';
 import { ThreeOfAKindStrategy } from '../strategies/ThreeOfAKindStrategy.js';
 import { FourOfAKindStrategy } from '../strategies/FourOfAKindStrategy.js';

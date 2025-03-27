@@ -6,16 +6,16 @@ body {
     @apply bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen;
 }
 
-#game-container {
+#game-container, #game-mode-container, #game-over-container {
     @apply bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col items-center;
 }
 
 #dice-container {
-    @apply flex gap-4 my-4;
+    @apply flex gap-4 my-4 justify-center mx-auto;
 }
 
 .die {
-    @apply w-20 h-20 flex items-center justify-center text-5xl rounded-lg cursor-pointer text-black font-mono;
+    @apply w-20 h-20 flex items-center justify-center text-5xl rounded-lg cursor-pointer text-black font-mono shadow-lg drop-shadow-lg;
 }
     .die.blue {
         @apply bg-blue-500;
@@ -27,6 +27,56 @@ body {
     .die.green{
         @apply bg-green-500;
     }
+
+    @keyframes roll {
+        0% { transform: rotate(0deg) scale(1); }
+        25% { transform: rotate(90deg) scale(1.2); }
+        50% { transform: rotate(180deg) scale(1); }
+        75% { transform: rotate(270deg) scale(1.2); }
+        100% { transform: rotate(360deg) scale(1); }
+    }
+    
+    @keyframes roll-b {
+        0% { transform: rotate(360deg) scale(1); }
+        20% { transform: rotate(270deg) scale(1.2); }
+        60% { transform: rotate(180deg) scale(1); }
+        80% { transform: rotate(90deg) scale(1.2); }
+        100% { transform: rotate(0deg) scale(1); }
+    }
+
+    @keyframes colorFade {
+        0% { background-color: red; }
+        33% { background-color: blue; }
+        66% { background-color: green; }
+        100% { background-color: red; }
+    }
+    @keyframes colorFade-b {
+        0% { background-color: green; }
+        33% { background-color: red; }
+        66% { background-color: blue; }
+        100% { background-color: green; }
+    }
+
+.die.roll:not(.held):nth-child(1) {
+    animation: roll-b 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+    -webkit-animation: roll-b 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+}
+.die.roll:not(.held):nth-child(2) {
+    animation: roll 0.5s ease-in-out, colorFade-b 0.5s ease-in-out;
+    -webkit-animation: roll 0.5s ease-in-out, colorFade-b 0.5s ease-in-out;
+}
+.die.roll:not(.held):nth-child(3) {
+    animation: roll 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+    -webkit-animation: roll 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+}
+.die.roll:not(.held):nth-child(4) {
+    animation: roll-b 0.5s ease-in-out, colorFade-b 0.5s ease-in-out;
+    -webkit-animation: roll-b 0.5s ease-in-out, colorFade-b 0.5s ease-in-out;
+}
+.die.roll:not(.held):nth-child(5) {
+    animation: roll 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+    -webkit-animation: roll 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+}
 
 .held {
     @apply ring-4 ring-yellow-500;
@@ -56,4 +106,16 @@ body {
 
 #scorecard {
     @apply w-full bg-gray-800 rounded-lg shadow-md;
+}
+
+.game-mode-button {
+    @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mt-4 w-full;
+}
+
+.player-data {
+    @apply gap-4 p-2 rounded-lg;
+}
+
+.player-data.active {
+    @apply bg-gray-700;
 }

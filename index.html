@@ -6,12 +6,45 @@
     <title>Yahtzee Game</title>
     <script defer type="module" src="dist/game.js"></script>
     <link href="dist/styles.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <div id="game-container">
+
+    <div id="game-mode-container">
+        <h1 class="text-3xl font-bold text-center">Yahtzee Game</h1>
         <div class="text-center">
-            <h2 class="text-xl font-bold text-center mb-1">Score</h2>
-            <span id="player-score" class="font-bold text-center">0</span>
+            <button class="game-mode-button w-full" data-mode="sp">Single Player</button>
+            <button class="game-mode-button w-full" data-mode="mp">Multi Player</button>
+        </div>
+    </div>
+
+    <div id="game-over-container">
+        <h1 class="text-3xl font-bold text-center">Game Over</h1>
+        <div class="text-center">
+            <p>You scored <span class="final-score">0</span> points!</p>
+            <button class="game-mode-button w-full" data-mode="MainMenu">Play Again</button>
+        </div>
+    </div>
+
+    <div id="game-container">
+
+        <div id="players-container" class="text-center grid grid-cols-4 gap-2">
+            <div class="player-data active">
+                <h2 class="text-xl font-bold text-center mb-1">Player 1</h2>
+                <span id="player-score" class="player-score font-bold text-center">0</span>
+            </div>
+            <div class="player-data">
+                <h2 class="text-xl font-bold text-center mb-1">Player 2</h2>
+                <span id="player-score-2" class="player-score font-bold text-center">0</span>
+            </div>
+            <div class="player-data">
+                <h2 class="text-xl font-bold text-center mb-1">Player 3</h2>
+                <span id="player-score-3" class="player-score font-bold text-center">0</span>
+            </div>
+            <div class="player-data">
+                <h2 class="text-xl font-bold text-center mb-1">Player 4</h2>
+                <span id="player-score-4" class="player-score font-bold text-center">0</span>
+            </div>
         </div>
 
         <div id="dice-container"></div>
@@ -23,29 +56,36 @@
 
                 <!-- singles -->
                 <div class="score-item" data-category="Ones">
-                    <div class="category-icon"> ⚀ </div> 
+                    <div class="category-icon"> <i class="fas fa-dice-one"></i> </div> 
                     <div class="score-cell">-</div>
                 </div> 
                 <div class="score-item" data-category="Twos">
-                    <div class="category-icon"> ⚁</div>
+                    <div class="category-icon"> <i class="fas fa-dice-two"></i> </div>
                     <div class="score-cell">-</div>
                 </div> 
                 <div class="score-item" data-category="Threes">
-                    <div class="category-icon"> ⚂ </div>
+                    <div class="category-icon"> <i class="fas fa-dice-three"></i> </div>
                     <div class="score-cell">-</div>
                 </div> 
                 <div class="score-item" data-category="Fours">
-                    <div class="category-icon"> ⚃ </div>
+                    <div class="category-icon"> <i class="fas fa-dice-four"></i> </div>
                     <div class="score-cell">-</div>
                 </div> 
                 <div class="score-item" data-category="Fives">
-                    <div class="category-icon"> ⚄ </div>
+                    <div class="category-icon"> <i class="fas fa-dice-five"></i> </div>
                     <div class="score-cell">-</div>
                 </div> 
                 <div class="score-item" data-category="Sixes">
-                    <div class="category-icon"> ⚅ </div>
+                    <div class="category-icon"> <i class="fas fa-dice-six"></i> </div>
                     <div class="score-cell">-</div>
                 </div> 
+
+                <div class="col-span-6 text-center">
+                    <span>
+                        Total Top Score: 
+                        <span id="score-upper">0</span>/63
+                    </span>
+                </div>
 
                 <!-- multiples -->
                 <div class="score-item" data-category="Three of a Kind">
@@ -57,7 +97,7 @@
                     <div class="score-cell">-</div>
                 </div> 
                 <div class="score-item" data-category="Full House">
-                    <div class="category-icon"> FH </div> 
+                    <div class="category-icon"> <i class="fas fa-home"></i> </div> 
                     <div class="score-cell">-</div>
                 </div> 
                 <div class="score-item" data-category="Small Straight">
@@ -92,7 +132,7 @@
                     <div class="score-cell">-</div>
                 </div> 
                 <div class="score-item !bg-purple-500" data-category="Color Full House">
-                    <div class="category-icon"> FH  </div>
+                    <div class="category-icon"> <i class="fas fa-home"></i>  </div>
                     <div class="score-cell">-</div>
                 </div> 
                 <div class="score-item !cursor-not-allowed disabled" data-category="Top Bonus">

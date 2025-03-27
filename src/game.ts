@@ -1,10 +1,10 @@
-import { Die } from './types/Die.js';
-import { Categories } from './enums/Categories.js';
-import { DiceManager } from './managers/DiceManager.js';
-import { ScoreManager } from './managers/ScoreManager.js';
-import { GameState } from './enums/GameState.js';
-import { GameMode } from './enums/GameMode.js';
-import { initializeUI } from './ui/ui.js';
+import { Die } from './types/Die';
+import { Categories } from './enums/Categories';
+import { DiceManager } from './managers/DiceManager';
+import { ScoreManager } from './managers/ScoreManager';
+import { GameState } from './enums/GameState';
+import { GameMode } from './enums/GameMode';
+import { initializeUI } from './ui/ui';
 
 // Game state
 export class YahtzeeGame {

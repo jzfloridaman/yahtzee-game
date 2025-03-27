@@ -3,6 +3,7 @@ node_modules/
 
 # Ignore compiled output
 dist/
+coverage/
 #*.js
 #*.js.map
 

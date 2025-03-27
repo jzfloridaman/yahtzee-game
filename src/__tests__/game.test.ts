@@ -1,3 +1,9 @@
+/**
+ * @jest-environment jsdom
+ */
+jest.mock('../ui/ui', () => ({
+    initializeUI: jest.fn(), // Mock the initializeUI function
+  }));
 import { YahtzeeGame } from '../game';
 import { Categories } from '../enums/Categories';
 import { GameState } from '../enums/GameState';

@@ -1,5 +1,5 @@
-import { ScoringStrategy } from '../interfaces/ScoringStrategy.js';
-import { Die } from '../types/Die.js';
+import { ScoringStrategy } from '../interfaces/ScoringStrategy';
+import { Die } from '../types/Die';
 
 export class SmallStraightStrategy implements ScoringStrategy {
 

@@ -29,7 +29,96 @@
     <div id="game-over-container">
         <h1 class="text-3xl font-bold text-center">Game Over</h1>
         <div class="text-center">
-            <p id="game-over-message">You scored <span class="final-score">0</span> points!</p>
+            <p id="game-over-message" class="mb-4">You scored <span class="final-score">0</span> points!</p>
+            <div id="final-scorecard" class="w-full max-w-4xl mx-auto bg-gray-800 p-4 rounded-lg mb-4">
+                <h2 class="text-2xl font-bold mb-4">Final Scorecard</h2>
+                <div class="grid grid-cols-6 gap-2">
+                    <!-- singles -->
+                    <div class="score-item" data-category="Ones">
+                        <div class="category-icon"> <i class="fas fa-dice-one"></i> </div> 
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item" data-category="Twos">
+                        <div class="category-icon"> <i class="fas fa-dice-two"></i> </div>
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item" data-category="Threes">
+                        <div class="category-icon"> <i class="fas fa-dice-three"></i> </div>
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item" data-category="Fours">
+                        <div class="category-icon"> <i class="fas fa-dice-four"></i> </div>
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item" data-category="Fives">
+                        <div class="category-icon"> <i class="fas fa-dice-five"></i> </div>
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item" data-category="Sixes">
+                        <div class="category-icon"> <i class="fas fa-dice-six"></i> </div>
+                        <div class="score-cell">-</div>
+                    </div> 
+
+                    <div class="col-span-6 text-center">
+                        <span>
+                            Total Top Score: 
+                            <span id="final-upper-score">0</span>/63
+                        </span>
+                    </div>
+
+                    <!-- multiples -->
+                    <div class="score-item" data-category="Three of a Kind">
+                        <div class="category-icon"> 3X </div>
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item" data-category="Four of a Kind">
+                        <div class="category-icon"> 4X </div>
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item" data-category="Full House">
+                        <div class="category-icon"> <i class="fas fa-home"></i> </div> 
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item" data-category="Small Straight">
+                        <div class="category-icon"> Sm </div>
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item" data-category="Large Straight">
+                        <div class="category-icon"> Lg </div>
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item" data-category="Chance">
+                        <div class="category-icon"> ? </div> 
+                        <div class="score-cell">-</div>
+                    </div> 
+                    
+                    <!-- colors -->
+                    <div class="score-item" data-category="Yahtzee">
+                        <div class="category-icon"> Y! </div> 
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item !bg-blue-500" data-category="blue">
+                        <div class="category-icon"> B </div> 
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item !bg-red-500" data-category="red">
+                        <div class="category-icon"> R </div> 
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item !bg-green-500" data-category="green">
+                        <div class="category-icon"> G </div>
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item !bg-purple-500" data-category="Color Full House">
+                        <div class="category-icon"> <i class="fas fa-home"></i>  </div>
+                        <div class="score-cell">-</div>
+                    </div> 
+                    <div class="score-item !cursor-not-allowed disabled" data-category="Top Bonus">
+                        <div class="category-icon"> B! </div> 
+                        <div class="score-cell" disabled>-</div>
+                    </div> 
+                </div>
+            </div>
             <button class="game-mode-button w-full" data-mode="MainMenu">Play Again</button>
         </div>
     </div>

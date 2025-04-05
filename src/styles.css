@@ -3,19 +3,19 @@
 @tailwind utilities;
 
 body {
-    @apply bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen;
+    @apply bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4;
 }
 
 #game-container, #game-mode-container, #game-over-container {
-    @apply bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col items-center;
+    @apply bg-gray-800 p-6 rounded-lg shadow-lg flex flex-col items-center w-full max-w-6xl mx-auto;
 }
 
 #dice-container {
-    @apply flex gap-4 my-4 justify-center mx-auto;
+    @apply flex gap-4 my-4 justify-center mx-auto flex-wrap;
 }
 
 .die {
-    @apply w-20 h-20 flex items-center justify-center text-5xl rounded-lg cursor-pointer text-black font-mono shadow-lg drop-shadow-lg;
+    @apply w-48 h-48 flex items-center justify-center text-6xl rounded-lg cursor-pointer text-black font-mono shadow-lg drop-shadow-lg;
 }
     .die.blue {
         @apply bg-blue-500;
@@ -83,17 +83,17 @@ body {
 }
 
 #roll-button {
-    @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mb-8 w-full;
+    @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded mb-8 w-full text-xl;
 }
 
 .score-item {
-    @apply text-center text-xl rounded-lg border-white/50 border-2 bg-white text-black cursor-pointer;
+    @apply text-center text-2xl rounded-lg border-white/50 border-2 bg-white text-black cursor-pointer p-2;
 }
 .score-cell{
-    margin-top: -0.5rem;
+    @apply mt-2 text-xl;
 }
 .category-icon {
-    @apply text-3xl;
+    @apply text-4xl;
     text-transform: uppercase;
 }
 
@@ -105,17 +105,61 @@ body {
 }
 
 #scorecard {
-    @apply w-full bg-gray-800 rounded-lg shadow-md;
+    @apply w-full bg-gray-800 rounded-lg shadow-md p-4;
 }
 
 .game-mode-button {
-    @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded mt-4 w-full;
+    @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded mt-4 w-full text-xl;
+}
+
+.player-count-button {
+    @apply bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded text-lg transition-colors duration-200;
+}
+
+.player-count-button:hover {
+    @apply bg-green-600;
+}
+
+#player-count-selection {
+    @apply max-w-2xl mx-auto;
+}
+
+#player-count-selection.visible {
+    @apply block;
+}
+
+#player-count-selection.hidden {
+    visibility: hidden;
 }
 
 .player-data {
-    @apply gap-4 p-2 rounded-lg;
+    @apply gap-4 p-4 rounded-lg text-xl;
 }
 
 .player-data.active {
     @apply bg-gray-700;
+}
+
+/* Responsive grid for scorecard */
+#scorecard .grid {
+    @apply grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4;
+}
+
+/* Responsive grid for players */
+#players-container {
+    @apply grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mx-auto;
+}
+
+/* Responsive text sizes */
+h1 {
+    @apply text-4xl md:text-5xl font-bold;
+}
+
+h2 {
+    @apply text-2xl md:text-3xl font-bold;
+}
+
+/* Add some spacing between sections */
+#game-container > * {
+    @apply mb-6;
 }

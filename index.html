@@ -6,7 +6,7 @@
     <title>Yahtzee Game</title>
     <script defer type="module" src="/src/game.ts"></script>
     <link href="/src/styles.css" rel="stylesheet">
-    <link href="/public/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="/node_modules/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 </head>
 <body>
 
@@ -15,6 +15,14 @@
         <div class="text-center">
             <button class="game-mode-button w-full" data-mode="sp">Single Player</button>
             <button class="game-mode-button w-full" data-mode="mp">Multi Player</button>
+            <div id="player-count-selection" class="hidden mt-4">
+                <h2 class="text-xl font-bold mb-4">Select Number of Players</h2>
+                <div class="grid grid-cols-3 gap-4">
+                    <button class="player-count-button" data-count="2">2 Players</button>
+                    <button class="player-count-button" data-count="3">3 Players</button>
+                    <button class="player-count-button" data-count="4">4 Players</button>
+                </div>
+            </div>
         </div>
     </div>
 

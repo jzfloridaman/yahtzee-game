@@ -48,6 +48,7 @@ export class YahtzeeGame {
     startNewGame(players: number = 1) {
         this.players = players;
         this.scoreManager = Array.from({length: players}, () => new ScoreManager());
+        console.log(this.scoreManager.length + " score managers");
         this.currentPlayer = 0;
         this.initializeScorecard();
         this.startNewRoll();
@@ -153,6 +154,10 @@ export class YahtzeeGame {
         this.players = num;
     }
 
+    getPlayerCount(): number {
+        return this.players;
+    }
+
     nextPlayer(){
         // maybe check to make sure its not single player.
         this.currentPlayer++;
@@ -166,6 +171,7 @@ export class YahtzeeGame {
         if(this.gameType === GameMode.SinglePlayer){
             return this.getTotalScore();
         }   
+        console.log(player);
         return this.scoreManager[player].getTotalScore();
     }
 }

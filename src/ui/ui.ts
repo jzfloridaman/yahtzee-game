@@ -3,10 +3,21 @@ import { Categories } from '../enums/Categories';
 import { YahtzeeGame } from '../game';
 import { GameState } from '../enums/GameState';
 import { GameMode } from '../enums/GameMode';
+import { library, icon } from '@fortawesome/fontawesome-svg-core';
+import { 
+    faDiceOne, 
+    faDiceTwo, 
+    faDiceThree, 
+    faDiceFour, 
+    faDiceFive, 
+    faDiceSix,
+    faHome
+} from '@fortawesome/free-solid-svg-icons';
 
 const gameContainer = document.getElementById("game-container") as HTMLDivElement;
 const gameModeContainer = document.getElementById("game-mode-container") as HTMLDivElement;
 const gameOverContainer = document.getElementById("game-over-container") as HTMLDivElement;
+const playerCountSelection = document.getElementById("player-count-selection") as HTMLDivElement;
 
 const diceContainer = document.getElementById("dice-container") as HTMLDivElement;
 const rollButton = document.getElementById("roll-button") as HTMLButtonElement;
@@ -59,31 +70,31 @@ function setDieColor(el: HTMLDivElement, color: string) {
 
 function setDieIcon(el: HTMLDivElement, value: number) {
     el.innerHTML = ""; // Clear any existing content
-    const icon = document.createElement("i");
-    icon.classList.add("fas", "text-white");
+    const iconElement = document.createElement("i");
+    iconElement.classList.add("fas", "text-white");
 
     switch(value){
         case 1:
-            icon.classList.add("fa-dice-one");
+            iconElement.classList.add("fa-dice-one");
             break;
         case 2:
-            icon.classList.add("fa-dice-two");
+            iconElement.classList.add("fa-dice-two");
             break;
         case 3:
-            icon.classList.add("fa-dice-three");
+            iconElement.classList.add("fa-dice-three");
             break;
         case 4:
-            icon.classList.add("fa-dice-four");
+            iconElement.classList.add("fa-dice-four");
             break;
         case 5:
-            icon.classList.add("fa-dice-five");
+            iconElement.classList.add("fa-dice-five");
             break;
         case 6:
-            icon.classList.add("fa-dice-six");
+            iconElement.classList.add("fa-dice-six");
             break; 
     }
 
-    el.appendChild(icon);
+    el.appendChild(iconElement);
 }
 
 function updateScoreboard(game: YahtzeeGame) {
@@ -163,9 +174,16 @@ function setupPlayersUI(game: YahtzeeGame){
         playersContainer.classList.remove('grid-cols-1');
         playersContainer.classList.add('grid-cols-4');
         const players = playersContainer.querySelectorAll('.player-data');
+        let playerCount = 0;
         players.forEach((player, index) => {
             let playerDiv = players[index] as HTMLDivElement;
-            playerDiv.style.display = "block";
+            if(playerCount >= game.getPlayerCount()){   
+                // return;
+                playerDiv.style.display = "none";
+            }else{
+                playerDiv.style.display = "block";
+            }
+            playerCount++;
         });
     }
 }
@@ -188,12 +206,17 @@ function changePlayer(game: YahtzeeGame){
 
 function updatePlayerScore(game: YahtzeeGame){
     const players = playersContainer.querySelectorAll('.player-data');
+    let playerCount = 0;
     players.forEach((el, index) => {
+        if(playerCount >= game.getPlayerCount()){
+            return;
+        }
         let playerDiv = players[index] as HTMLDivElement;
         // update points
         let playerScoreDiv = playerDiv.querySelector('span.player-score');
         if(playerScoreDiv){
             playerScoreDiv.textContent = game.getPlayerScore(index).toString();
+            playerCount++;
         }
     });
 }
@@ -218,7 +241,6 @@ function initializeEventListeners(game: YahtzeeGame) {
                 button.classList.add('selected');
                 const scoreValue = game.calculateScore(scoreType);
                 game.updateSelectedScore(scoreType, scoreValue);
-                //updatePlayerScore(game);
                 resetDiceUI(game);
                 updateDice(game);
 
@@ -234,12 +256,10 @@ function initializeEventListeners(game: YahtzeeGame) {
 
     gameActionButtons.forEach((button) => {
         button.addEventListener("click", () => {
-
             const action = button.getAttribute("data-mode");
 
             if (action === 'sp') {
                 game.setGameMode(GameMode.SinglePlayer);
-                //game.setPlayers(1);
                 game.startNewGame(1);
                 setupPlayersUI(game);
                 gameContainer.style.display = "block";
@@ -248,19 +268,25 @@ function initializeEventListeners(game: YahtzeeGame) {
             }
 
             if(action === 'mp'){
-                game.setGameMode(GameMode.MultiPlayer);
-                //game.setPlayers(4);
-                game.startNewGame(4);
-                setupPlayersUI(game);
-                updatePlayerScore(game);
-                gameContainer.style.display = "block";
-                gameModeContainer.style.display = "none";
-                renderDice(game, game.dice());
+                // Show player count selection
+                playerCountSelection.classList.remove('hidden');
+                playerCountSelection.classList.add('visible');
             }
+        });
+    });
 
-            if(action === 'MainMenu'){
-                game.state = GameState.MainMenu;
-            }
+    // Add event listeners for player count buttons
+    const playerCountButtons = document.querySelectorAll('.player-count-button');
+    playerCountButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const playerCount = parseInt(button.getAttribute('data-count') || '2');
+            game.setGameMode(GameMode.MultiPlayer);
+            game.startNewGame(playerCount);
+            setupPlayersUI(game);
+            updatePlayerScore(game);
+            gameContainer.style.display = "block";
+            gameModeContainer.style.display = "none";
+            renderDice(game, game.dice());
         });
     });
 

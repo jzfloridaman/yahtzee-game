@@ -272,6 +272,10 @@ function initializeEventListeners(game: YahtzeeGame) {
                 playerCountSelection.classList.remove('hidden');
                 playerCountSelection.classList.add('visible');
             }
+
+            if(action === 'MainMenu'){
+                game.state = GameState.MainMenu;
+            }
         });
     });
 

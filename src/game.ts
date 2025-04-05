@@ -48,7 +48,6 @@ export class YahtzeeGame {
     startNewGame(players: number = 1) {
         this.players = players;
         this.scoreManager = Array.from({length: players}, () => new ScoreManager());
-        console.log(this.scoreManager.length + " score managers");
         this.currentPlayer = 0;
         this.initializeScorecard();
         this.startNewRoll();
@@ -167,11 +166,6 @@ export class YahtzeeGame {
     }
 
     getPlayerScore(player: number): number {
-        // need to figure out why this isnt working on single player, this is a hack
-        if(this.gameType === GameMode.SinglePlayer){
-            return this.getTotalScore();
-        }   
-        console.log(player);
         return this.scoreManager[player].getTotalScore();
     }
 }

@@ -221,6 +221,21 @@ function updatePlayerScore(game: YahtzeeGame){
     });
 }
 
+function getWinningPlayer(game: YahtzeeGame): { player: number; score: number } {
+    let winningPlayer = 0;
+    let highestScore = game.getPlayerScore(0);
+
+    for (let i = 1; i < game.getPlayerCount(); i++) {
+        const playerScore = game.getPlayerScore(i);
+        if (playerScore > highestScore) {
+            highestScore = playerScore;
+            winningPlayer = i;
+        }
+    }
+
+    return { player: winningPlayer, score: highestScore };
+}
+
 /* action listeners */
 function initializeEventListeners(game: YahtzeeGame) {
     rollButton.addEventListener("click", () => {
@@ -312,7 +327,14 @@ function initializeEventListeners(game: YahtzeeGame) {
                 gameOverContainer.style.display = "block";
                 gameContainer.style.display = "none";
                 gameModeContainer.style.display = "none";
-                document.getElementsByClassName("final-score")[0].textContent = game.getTotalScore().toString();
+                
+                const gameOverMessage = document.getElementById("game-over-message") as HTMLParagraphElement;
+                if (game.gameType === GameMode.MultiPlayer) {
+                    const winner = getWinningPlayer(game);
+                    gameOverMessage.innerHTML = `Player ${winner.player + 1} wins with <span class="final-score">${winner.score}</span> points!`;
+                } else {
+                    gameOverMessage.innerHTML = `You scored <span class="final-score">${game.getTotalScore()}</span> points!`;
+                }
                 break;
         }
     });

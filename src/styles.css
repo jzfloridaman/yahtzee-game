@@ -137,7 +137,7 @@ body {
 }
 
 .player-data.active {
-    @apply bg-gray-700;
+    @apply bg-gray-500 border-2 border-white; /* border-gray-800 */
 }
 
 /* Responsive grid for scorecard */
@@ -147,7 +147,7 @@ body {
 
 /* Responsive grid for players */
 #players-container {
-    @apply gap-4 w-full  mx-auto;
+    @apply gap-4 w-full  mx-auto bg-gray-700 rounded-lg;
     /* max-w-4xl grid-cols-1 sm:grid-cols-2 md:grid-cols-4 */
 }
 

@@ -147,7 +147,8 @@ body {
 
 /* Responsive grid for players */
 #players-container {
-    @apply grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mx-auto;
+    @apply gap-4 w-full  mx-auto;
+    /* max-w-4xl grid-cols-1 sm:grid-cols-2 md:grid-cols-4 */
 }
 
 /* Responsive text sizes */

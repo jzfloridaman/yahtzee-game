@@ -3,16 +3,6 @@ import { Categories } from '../enums/Categories';
 import { YahtzeeGame } from '../game';
 import { GameState } from '../enums/GameState';
 import { GameMode } from '../enums/GameMode';
-import { library, icon } from '@fortawesome/fontawesome-svg-core';
-import { 
-    faDiceOne, 
-    faDiceTwo, 
-    faDiceThree, 
-    faDiceFour, 
-    faDiceFive, 
-    faDiceSix,
-    faHome
-} from '@fortawesome/free-solid-svg-icons';
 
 const gameContainer = document.getElementById("game-container") as HTMLDivElement;
 const gameModeContainer = document.getElementById("game-mode-container") as HTMLDivElement;
@@ -23,7 +13,6 @@ const diceContainer = document.getElementById("dice-container") as HTMLDivElemen
 const rollButton = document.getElementById("roll-button") as HTMLButtonElement;
 const scoreButtons = document.querySelectorAll(".score-item");
 const gameActionButtons = document.querySelectorAll(".game-mode-button");
-const totalScore = document.getElementById("player-score") as HTMLDivElement;
 const upperScore = document.getElementById("score-upper") as HTMLSpanElement;
 
 const playersContainer = document.getElementById("players-container") as HTMLDivElement;
@@ -153,12 +142,21 @@ function resetDiceUI(game: YahtzeeGame){
     renderDice(game, game.dice());
 }
 
+function resetPlayersGrid(game: YahtzeeGame){
+    playersContainer.classList.remove('grid-cols-1');
+    playersContainer.classList.remove('grid-cols-2');
+    playersContainer.classList.remove('grid-cols-3');
+    playersContainer.classList.remove('grid-cols-4');
+    playersContainer.classList.add('grid-cols-' + game.getPlayerCount());
+}
+
 function setupPlayersUI(game: YahtzeeGame){
     // change style to show grid for # of players
     if(game.gameType === GameMode.SinglePlayer){
         console.log("setting up single player mode");
-        playersContainer.classList.remove('grid-cols-4');
-        playersContainer.classList.add('grid-cols-1');
+        // playersContainer.classList.remove('grid-cols-4');
+        // playersContainer.classList.add('grid-cols-1');
+        resetPlayersGrid(game);
         // hide players 2-4
         const players = playersContainer.querySelectorAll('.player-data');
         players.forEach((player, index) => {
@@ -171,8 +169,7 @@ function setupPlayersUI(game: YahtzeeGame){
 
     if(game.gameType === GameMode.MultiPlayer){
         console.log("setting up multi player mode");
-        playersContainer.classList.remove('grid-cols-1');
-        playersContainer.classList.add('grid-cols-4');
+        resetPlayersGrid(game);
         const players = playersContainer.querySelectorAll('.player-data');
         let playerCount = 0;
         players.forEach((player, index) => {

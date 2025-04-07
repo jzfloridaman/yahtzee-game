@@ -15,7 +15,7 @@ body {
 }
 
 #dice-container {
-    @apply flex gap-4 my-4 justify-center mx-auto flex-wrap;
+    @apply flex gap-4 my-4 mx-auto flex-wrap justify-between;
 }
 
 .die {
@@ -97,8 +97,7 @@ body {
     @apply mt-2 text-xl;
 }
 .category-icon {
-    @apply text-4xl;
-    text-transform: uppercase;
+    @apply text-4xl uppercase;
 }
 
 .score-item:hover{
@@ -109,7 +108,8 @@ body {
 }
 
 #scorecard {
-    @apply w-full bg-gray-800 rounded-lg shadow-md p-4;
+    @apply w-full bg-gray-800 rounded-lg shadow-md pt-4;
+    margin-bottom: 0 !important;
 }
 
 .game-mode-button {

@@ -10,7 +10,7 @@ import { initializeUI } from './ui/ui';
 export class YahtzeeGame {
 
     private diceManager: DiceManager;
-    private scoreManager: ScoreManager[] = [];
+    public scoreManager: ScoreManager[] = [];
 
     rollsLeft: number = 2;
     players: number = 1;    // array of Player objects
@@ -18,7 +18,7 @@ export class YahtzeeGame {
     gameType: GameMode = GameMode.SinglePlayer;
 
     private _state: GameState = GameState.MainMenu;
-    private stateChangeCallbacks: Array<(newState: GameState) => void> = [];
+    private stateChangeCallbacks: Array<(newState: GameState, oldState: GameState) => void> = [];
 
     constructor() {
         this.diceManager = new DiceManager();
@@ -29,16 +29,17 @@ export class YahtzeeGame {
     }
 
     set state(newState: GameState) {
+        var oldState = this._state;
         this._state = newState;
-        this.notifyStateChange(newState);
+        this.notifyStateChange(newState, oldState);
     }
 
-    onStateChange(callback: (newState: GameState) => void) {
+    onStateChange(callback: (newState: GameState, oldState: GameState) => void) {
         this.stateChangeCallbacks.push(callback);
     }
 
-    private notifyStateChange(newState: GameState) {
-        this.stateChangeCallbacks.forEach(callback => callback(newState));
+    private notifyStateChange(newState: GameState, oldState: GameState) {
+        this.stateChangeCallbacks.forEach(callback => callback(newState, oldState));
     }
 
     dice(): Die[] {

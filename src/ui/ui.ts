@@ -154,8 +154,6 @@ function setupPlayersUI(game: YahtzeeGame){
     // change style to show grid for # of players
     if(game.gameType === GameMode.SinglePlayer){
         console.log("setting up single player mode");
-        // playersContainer.classList.remove('grid-cols-4');
-        // playersContainer.classList.add('grid-cols-1');
         resetPlayersGrid(game);
         // hide players 2-4
         const players = playersContainer.querySelectorAll('.player-data');
@@ -175,7 +173,6 @@ function setupPlayersUI(game: YahtzeeGame){
         players.forEach((player, index) => {
             let playerDiv = players[index] as HTMLDivElement;
             if(playerCount >= game.getPlayerCount()){   
-                // return;
                 playerDiv.style.display = "none";
             }else{
                 playerDiv.style.display = "block";
@@ -254,7 +251,51 @@ function updateFinalScorecard(game: YahtzeeGame, playerIndex: number) {
             }
         }
     });
+
+    // save the game stats to local storage
+    saveGameStats(game);
 }
+
+
+function saveGameStats(game: YahtzeeGame) {
+    const stats = {
+        gameType: game.gameType,
+        players: game.scoreManager.map((scoreManager, index) => ({
+            name: `Player ${index + 1}`,
+            score: scoreManager.getTotalScore(),
+            scoreCard: scoreManager.getScorecard()
+        })),
+        date: new Date().toISOString()
+    };
+
+    if (!localStorage.getItem('yahtzeeStats')) {
+        // If it doesn't exist, initialize it with an empty array
+        console.log("no stats found, initializing");
+        localStorage.setItem('yahtzeeStats', JSON.stringify([]));
+    }
+
+    // Get existing stats from localStorage
+    const existingStats = JSON.parse(localStorage.getItem('yahtzeeStats') || '[]');
+    existingStats.push(stats);
+
+    // Save updated stats back to localStorage
+    localStorage.setItem('yahtzeeStats', JSON.stringify(existingStats));
+    console.log("stats saved");
+}
+
+function displayGameStats() {
+    const stats = JSON.parse(localStorage.getItem('yahtzeeStats') || '[]');
+    stats.forEach((gameStat: any, index: number) => {
+        console.log(`Game ${index + 1}:`);
+        console.log(`Game Type: ${gameStat.gameType}`);
+        gameStat.players.forEach((player: any) => {
+            console.log(`${player.name}: ${player.score} points`);
+            console.log(`Score Card:`, player.scoreCard);
+        });
+        console.log(`Date: ${gameStat.date}`);
+    });
+}
+
 
 /* action listeners */
 function initializeEventListeners(game: YahtzeeGame) {
@@ -329,8 +370,11 @@ function initializeEventListeners(game: YahtzeeGame) {
         });
     });
 
-    game.onStateChange((newState) => {
-        console.log(`Game state changed to: ${newState}`);
+    game.onStateChange((newState, oldState) => {
+        console.log(`Game state changed from: ${oldState} to: ${newState}`);
+        if(oldState === newState){
+            return;
+        }
         switch(newState){
             case GameState.MainMenu:
                 gameContainer.style.display = "none";

@@ -17,7 +17,9 @@ const upperScore = document.getElementById("score-upper") as HTMLSpanElement;
 
 const playersContainer = document.getElementById("players-container") as HTMLDivElement;
 
-// Background music
+// Audio elements
+const bgmToggle = document.getElementById('bgm-toggle') as HTMLInputElement;
+const sfxToggle = document.getElementById('sfx-toggle') as HTMLInputElement;
 let backgroundMusic: HTMLAudioElement;
 const musicTracks = [
     '/music/bgsample.mp3',
@@ -26,31 +28,78 @@ const musicTracks = [
     '/music/bgsample-4.mp3',
 ];
 
+// Audio settings management
+function loadAudioSettings() {
+    const settings = JSON.parse(localStorage.getItem('audioSettings') || '{"bgm": true, "sfx": true}');
+    bgmToggle.checked = settings.bgm;
+    sfxToggle.checked = settings.sfx;
+    return settings;
+}
+
+function saveAudioSettings(settings: { bgm: boolean, sfx: boolean }) {
+    localStorage.setItem('audioSettings', JSON.stringify(settings));
+}
+
+function initializeAudioSettings() {
+    const settings = loadAudioSettings();
+    
+    bgmToggle.addEventListener('change', () => {
+        settings.bgm = bgmToggle.checked;
+        saveAudioSettings(settings);
+        if (settings.bgm) {
+            if (backgroundMusic) {
+                backgroundMusic.play().catch(console.error);
+            } else {
+                initializeBackgroundMusic();
+            }
+        } else if (backgroundMusic) {
+            backgroundMusic.pause();
+        }
+    });
+
+    sfxToggle.addEventListener('change', () => {
+        settings.sfx = sfxToggle.checked;
+        saveAudioSettings(settings);
+    });
+
+    return settings;
+}
+
 function initializeBackgroundMusic() {
+    const settings = loadAudioSettings();
+    if (!settings.bgm) return;
+
     // Randomly select one track
     const randomTrack = musicTracks[Math.floor(Math.random() * musicTracks.length)];
     backgroundMusic = new Audio(randomTrack);
     backgroundMusic.loop = true;
-    backgroundMusic.volume = 0.4; // 30% volume
+    backgroundMusic.volume = 0.4;
     
     // Start playing on user interaction (to comply with browser autoplay policies)
     document.addEventListener('click', () => {
-        if (backgroundMusic && backgroundMusic.paused) {
+        if (backgroundMusic && backgroundMusic.paused && settings.bgm) {
             backgroundMusic.play().catch(error => {
                 console.log("Error playing background music:", error);
             });
         }
-    }, { once: true }); // Remove listener after first click
+    }, { once: true });
 }
 
 function playDiceRollSound() {
+    const settings = loadAudioSettings();
+    if (!settings.sfx) return;
+
     const audio = new Audio('/sounds/dice-roll-3.mp3');
+    audio.volume = 0.7;
     audio.play().catch(error => {
         console.log("Error playing sound:", error);
     });
 }
 
 function playScoreSound() {
+    const settings = loadAudioSettings();
+    if (!settings.sfx) return;
+
     const audio = new Audio('/sounds/score.mp3');
     audio.play().catch(error => {
         console.log("Error playing sound:", error);
@@ -58,6 +107,9 @@ function playScoreSound() {
 }
 
 function playNoScoreSound() {
+    const settings = loadAudioSettings();
+    if (!settings.sfx) return;
+
     const audio = new Audio('/sounds/no-score.mp3');
     audio.play().catch(error => {
         console.log("Error playing sound:", error);
@@ -479,6 +531,7 @@ function initializeEventListeners(game: YahtzeeGame) {
 }
 
 export function initializeUI(game: YahtzeeGame) {
+    initializeAudioSettings();
     initializeBackgroundMusic();
     initializeEventListeners(game);
 }

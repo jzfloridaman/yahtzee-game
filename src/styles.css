@@ -199,3 +199,15 @@ h2 {
     color: white;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
+
+#audio-settings input[type="checkbox"] {
+    @apply accent-blue-500 cursor-pointer;
+}
+
+#audio-settings label {
+    @apply cursor-pointer hover:text-blue-300 transition-colors duration-200;
+}
+
+#audio-settings {
+    @apply border border-gray-700;
+}

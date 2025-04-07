@@ -159,7 +159,15 @@ function updateScoreboard(game: YahtzeeGame) {
         }
     });
     updatePlayerScore(game);
-    upperScore.textContent = game.getTotalTopScore().toString();
+    const topScore = game.getTotalTopScore();
+    upperScore.textContent = topScore.toString();
+    
+    // Update progress bar
+    const progressPercent = (topScore / 63) * 100;
+    const progressBar = document.querySelector('.upper-score-progress-bar') as HTMLElement;
+    if (progressBar) {
+        progressBar.style.setProperty('--progress-width', `${progressPercent}%`);
+    }
 
     if(game.isGameOver()){
         rollButton.textContent = `Game Over`;

@@ -17,6 +17,32 @@ const upperScore = document.getElementById("score-upper") as HTMLSpanElement;
 
 const playersContainer = document.getElementById("players-container") as HTMLDivElement;
 
+// Background music
+let backgroundMusic: HTMLAudioElement;
+const musicTracks = [
+    '/music/bgsample.mp3',
+    '/music/bgsample-2.mp3',
+    '/music/bgsample-3.mp3',
+    '/music/bgsample-4.mp3',
+];
+
+function initializeBackgroundMusic() {
+    // Randomly select one track
+    const randomTrack = musicTracks[Math.floor(Math.random() * musicTracks.length)];
+    backgroundMusic = new Audio(randomTrack);
+    backgroundMusic.loop = true;
+    backgroundMusic.volume = 0.4; // 30% volume
+    
+    // Start playing on user interaction (to comply with browser autoplay policies)
+    document.addEventListener('click', () => {
+        if (backgroundMusic && backgroundMusic.paused) {
+            backgroundMusic.play().catch(error => {
+                console.log("Error playing background music:", error);
+            });
+        }
+    }, { once: true }); // Remove listener after first click
+}
+
 function playDiceRollSound() {
     const audio = new Audio('/sounds/dice-roll-3.mp3');
     audio.play().catch(error => {
@@ -445,5 +471,6 @@ function initializeEventListeners(game: YahtzeeGame) {
 }
 
 export function initializeUI(game: YahtzeeGame) {
+    initializeBackgroundMusic();
     initializeEventListeners(game);
 }

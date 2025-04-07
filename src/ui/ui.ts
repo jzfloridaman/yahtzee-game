@@ -17,6 +17,27 @@ const upperScore = document.getElementById("score-upper") as HTMLSpanElement;
 
 const playersContainer = document.getElementById("players-container") as HTMLDivElement;
 
+function playDiceRollSound() {
+    const audio = new Audio('/sounds/dice-roll-3.mp3');
+    audio.play().catch(error => {
+        console.log("Error playing sound:", error);
+    });
+}
+
+function playScoreSound() {
+    const audio = new Audio('/sounds/score.mp3');
+    audio.play().catch(error => {
+        console.log("Error playing sound:", error);
+    });
+}
+
+function playNoScoreSound() {
+    const audio = new Audio('/sounds/no-score.mp3');
+    audio.play().catch(error => {
+        console.log("Error playing sound:", error);
+    });
+}
+
 function run() {
     gameContainer.style.display = "none"; 
     gameOverContainer.style.display = "none"; 
@@ -96,8 +117,14 @@ function updateScoreboard(game: YahtzeeGame) {
             const selected = game.isCategorySelected(category);
             if(selected){
                 cell.classList.add('disabled');
+                if(score !== null && score > 0){
+                    cell.classList.remove('no-score');
+                }else{
+                    cell.classList.add('no-score');
+                }
             }else{
                 cell.classList.remove('disabled');
+                cell.classList.remove('no-score');
             }
 
             if(cellScore){
@@ -130,6 +157,7 @@ function updateDice(game: YahtzeeGame) {
 function setupUI(game: YahtzeeGame){
     scoreButtons.forEach((button) => {
         button.classList.remove('selected');
+        button.classList.remove('no-score');
     });
     rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
     rollButton.disabled = false;
@@ -303,6 +331,7 @@ function initializeEventListeners(game: YahtzeeGame) {
         if(game.rollsLeft === 0){
             return;
         }
+        playDiceRollSound();
         game.rollDice();
         updateDice(game);
     });
@@ -316,6 +345,12 @@ function initializeEventListeners(game: YahtzeeGame) {
                 }
                 button.classList.add('selected');
                 const scoreValue = game.calculateScore(scoreType);
+                if(scoreValue > 0){
+                    playScoreSound();
+                }else{
+                    playNoScoreSound();
+                    button.classList.add('no-score');
+                }
                 game.updateSelectedScore(scoreType, scoreValue);
                 resetDiceUI(game);
                 updateDice(game);

@@ -7,15 +7,114 @@ import { GameMode } from '../enums/GameMode';
 const gameContainer = document.getElementById("game-container") as HTMLDivElement;
 const gameModeContainer = document.getElementById("game-mode-container") as HTMLDivElement;
 const gameOverContainer = document.getElementById("game-over-container") as HTMLDivElement;
+const playerCountSelection = document.getElementById("player-count-selection") as HTMLDivElement;
 
 const diceContainer = document.getElementById("dice-container") as HTMLDivElement;
 const rollButton = document.getElementById("roll-button") as HTMLButtonElement;
 const scoreButtons = document.querySelectorAll(".score-item");
 const gameActionButtons = document.querySelectorAll(".game-mode-button");
-const totalScore = document.getElementById("player-score") as HTMLDivElement;
 const upperScore = document.getElementById("score-upper") as HTMLSpanElement;
 
 const playersContainer = document.getElementById("players-container") as HTMLDivElement;
+
+// Audio elements
+const bgmToggle = document.getElementById('bgm-toggle') as HTMLInputElement;
+const sfxToggle = document.getElementById('sfx-toggle') as HTMLInputElement;
+let backgroundMusic: HTMLAudioElement;
+const musicTracks = [
+    '/music/bgsample.mp3',
+    '/music/bgsample-2.mp3',
+    '/music/bgsample-3.mp3',
+    '/music/bgsample-4.mp3',
+];
+
+// Audio settings management
+function loadAudioSettings() {
+    const settings = JSON.parse(localStorage.getItem('audioSettings') || '{"bgm": true, "sfx": true}');
+    bgmToggle.checked = settings.bgm;
+    sfxToggle.checked = settings.sfx;
+    return settings;
+}
+
+function saveAudioSettings(settings: { bgm: boolean, sfx: boolean }) {
+    localStorage.setItem('audioSettings', JSON.stringify(settings));
+}
+
+function initializeAudioSettings() {
+    const settings = loadAudioSettings();
+    
+    bgmToggle.addEventListener('change', () => {
+        settings.bgm = bgmToggle.checked;
+        saveAudioSettings(settings);
+        if (settings.bgm) {
+            if (backgroundMusic) {
+                backgroundMusic.play().catch(console.error);
+            } else {
+                initializeBackgroundMusic();
+            }
+        } else if (backgroundMusic) {
+            backgroundMusic.pause();
+        }
+    });
+
+    sfxToggle.addEventListener('change', () => {
+        settings.sfx = sfxToggle.checked;
+        saveAudioSettings(settings);
+    });
+
+    return settings;
+}
+
+function initializeBackgroundMusic() {
+    const settings = loadAudioSettings();
+    if (!settings.bgm) return;
+
+    // Randomly select one track
+    const randomTrack = musicTracks[Math.floor(Math.random() * musicTracks.length)];
+    backgroundMusic = new Audio(randomTrack);
+    backgroundMusic.loop = true;
+    backgroundMusic.volume = 0.4;
+    
+    // Start playing on user interaction (to comply with browser autoplay policies)
+    document.addEventListener('click', () => {
+        if (backgroundMusic && backgroundMusic.paused && settings.bgm) {
+            backgroundMusic.play().catch(error => {
+                console.log("Error playing background music:", error);
+            });
+        }
+    }, { once: true });
+}
+
+function playDiceRollSound() {
+    const settings = loadAudioSettings();
+    if (!settings.sfx) return;
+
+    const audio = new Audio('/sounds/dice-roll-3.mp3');
+    audio.volume = 0.7;
+    audio.play().catch(error => {
+        console.log("Error playing sound:", error);
+    });
+}
+
+function playScoreSound() {
+    const settings = loadAudioSettings();
+    if (!settings.sfx) return;
+
+    const audio = new Audio('/sounds/score.mp3');
+    audio.play().catch(error => {
+        console.log("Error playing sound:", error);
+    });
+}
+
+function playNoScoreSound() {
+    const settings = loadAudioSettings();
+    if (!settings.sfx) return;
+
+    const audio = new Audio('/sounds/no-score.mp3');
+    audio.play().catch(error => {
+        console.log("Error playing sound:", error);
+    });
+}
 
 function run() {
     gameContainer.style.display = "none"; 
@@ -59,31 +158,31 @@ function setDieColor(el: HTMLDivElement, color: string) {
 
 function setDieIcon(el: HTMLDivElement, value: number) {
     el.innerHTML = ""; // Clear any existing content
-    const icon = document.createElement("i");
-    icon.classList.add("fas", "text-white");
+    const iconElement = document.createElement("i");
+    iconElement.classList.add("fas", "text-white");
 
     switch(value){
         case 1:
-            icon.classList.add("fa-dice-one");
+            iconElement.classList.add("fa-dice-one");
             break;
         case 2:
-            icon.classList.add("fa-dice-two");
+            iconElement.classList.add("fa-dice-two");
             break;
         case 3:
-            icon.classList.add("fa-dice-three");
+            iconElement.classList.add("fa-dice-three");
             break;
         case 4:
-            icon.classList.add("fa-dice-four");
+            iconElement.classList.add("fa-dice-four");
             break;
         case 5:
-            icon.classList.add("fa-dice-five");
+            iconElement.classList.add("fa-dice-five");
             break;
         case 6:
-            icon.classList.add("fa-dice-six");
+            iconElement.classList.add("fa-dice-six");
             break; 
     }
 
-    el.appendChild(icon);
+    el.appendChild(iconElement);
 }
 
 function updateScoreboard(game: YahtzeeGame) {
@@ -96,8 +195,14 @@ function updateScoreboard(game: YahtzeeGame) {
             const selected = game.isCategorySelected(category);
             if(selected){
                 cell.classList.add('disabled');
+                if(score !== null && score > 0){
+                    cell.classList.remove('no-score');
+                }else{
+                    cell.classList.add('no-score');
+                }
             }else{
                 cell.classList.remove('disabled');
+                cell.classList.remove('no-score');
             }
 
             if(cellScore){
@@ -106,7 +211,15 @@ function updateScoreboard(game: YahtzeeGame) {
         }
     });
     updatePlayerScore(game);
-    upperScore.textContent = game.getTotalTopScore().toString();
+    const topScore = game.getTotalTopScore();
+    upperScore.textContent = topScore.toString();
+    
+    // Update progress bar
+    const progressPercent = (topScore / 63) * 100;
+    const progressBar = document.querySelector('.upper-score-progress-bar') as HTMLElement;
+    if (progressBar) {
+        progressBar.style.setProperty('--progress-width', `${progressPercent}%`);
+    }
 
     if(game.isGameOver()){
         rollButton.textContent = `Game Over`;
@@ -130,6 +243,7 @@ function updateDice(game: YahtzeeGame) {
 function setupUI(game: YahtzeeGame){
     scoreButtons.forEach((button) => {
         button.classList.remove('selected');
+        button.classList.remove('no-score');
     });
     rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
     rollButton.disabled = false;
@@ -142,12 +256,19 @@ function resetDiceUI(game: YahtzeeGame){
     renderDice(game, game.dice());
 }
 
+function resetPlayersGrid(game: YahtzeeGame){
+    playersContainer.classList.remove('grid-cols-1');
+    playersContainer.classList.remove('grid-cols-2');
+    playersContainer.classList.remove('grid-cols-3');
+    playersContainer.classList.remove('grid-cols-4');
+    playersContainer.classList.add('grid-cols-' + game.getPlayerCount());
+}
+
 function setupPlayersUI(game: YahtzeeGame){
     // change style to show grid for # of players
     if(game.gameType === GameMode.SinglePlayer){
         console.log("setting up single player mode");
-        playersContainer.classList.remove('grid-cols-4');
-        playersContainer.classList.add('grid-cols-1');
+        resetPlayersGrid(game);
         // hide players 2-4
         const players = playersContainer.querySelectorAll('.player-data');
         players.forEach((player, index) => {
@@ -160,12 +281,17 @@ function setupPlayersUI(game: YahtzeeGame){
 
     if(game.gameType === GameMode.MultiPlayer){
         console.log("setting up multi player mode");
-        playersContainer.classList.remove('grid-cols-1');
-        playersContainer.classList.add('grid-cols-4');
+        resetPlayersGrid(game);
         const players = playersContainer.querySelectorAll('.player-data');
+        let playerCount = 0;
         players.forEach((player, index) => {
             let playerDiv = players[index] as HTMLDivElement;
-            playerDiv.style.display = "block";
+            if(playerCount >= game.getPlayerCount()){   
+                playerDiv.style.display = "none";
+            }else{
+                playerDiv.style.display = "block";
+            }
+            playerCount++;
         });
     }
 }
@@ -188,15 +314,102 @@ function changePlayer(game: YahtzeeGame){
 
 function updatePlayerScore(game: YahtzeeGame){
     const players = playersContainer.querySelectorAll('.player-data');
+    let playerCount = 0;
     players.forEach((el, index) => {
+        if(playerCount >= game.getPlayerCount()){
+            return;
+        }
         let playerDiv = players[index] as HTMLDivElement;
         // update points
         let playerScoreDiv = playerDiv.querySelector('span.player-score');
         if(playerScoreDiv){
             playerScoreDiv.textContent = game.getPlayerScore(index).toString();
+            playerCount++;
         }
     });
 }
+
+function getWinningPlayer(game: YahtzeeGame): { player: number; score: number } {
+    let winningPlayer = 0;
+    let highestScore = game.getPlayerScore(0);
+
+    for (let i = 1; i < game.getPlayerCount(); i++) {
+        const playerScore = game.getPlayerScore(i);
+        if (playerScore > highestScore) {
+            highestScore = playerScore;
+            winningPlayer = i;
+        }
+    }
+
+    return { player: winningPlayer, score: highestScore };
+}
+
+function updateFinalScorecard(game: YahtzeeGame, playerIndex: number) {
+    const finalScorecard = document.getElementById("final-scorecard");
+    if (!finalScorecard) return;
+
+    // Update upper score
+    const finalUpperScore = document.getElementById("final-upper-score");
+    if (finalUpperScore) {
+        finalUpperScore.textContent = game.getTotalTopScore().toString();
+    }
+
+    // Update all score cells
+    document.querySelectorAll('#final-scorecard .score-item').forEach(cell => {
+        const category = cell.getAttribute('data-category') as Categories;
+        if (category != null) {
+            const score = game.getScoreByCategory(category);
+            const cellScore = cell.querySelector('.score-cell');
+            if (cellScore) {
+                cellScore.textContent = score !== null ? score.toString() : '-';
+            }
+        }
+    });
+
+    // save the game stats to local storage
+    saveGameStats(game);
+}
+
+
+function saveGameStats(game: YahtzeeGame) {
+    const stats = {
+        gameType: game.gameType,
+        players: game.scoreManager.map((scoreManager, index) => ({
+            name: `Player ${index + 1}`,
+            score: scoreManager.getTotalScore(),
+            scoreCard: scoreManager.getScorecard()
+        })),
+        date: new Date().toISOString()
+    };
+
+    if (!localStorage.getItem('yahtzeeStats')) {
+        // If it doesn't exist, initialize it with an empty array
+        console.log("no stats found, initializing");
+        localStorage.setItem('yahtzeeStats', JSON.stringify([]));
+    }
+
+    // Get existing stats from localStorage
+    const existingStats = JSON.parse(localStorage.getItem('yahtzeeStats') || '[]');
+    existingStats.push(stats);
+
+    // Save updated stats back to localStorage
+    localStorage.setItem('yahtzeeStats', JSON.stringify(existingStats));
+    console.log("stats saved");
+}
+
+function displayGameStats() {
+    const stats = JSON.parse(localStorage.getItem('yahtzeeStats') || '[]');
+    stats.forEach((gameStat: any, index: number) => {
+        console.log(`Game ${index + 1}:`);
+        console.log(`Game Type: ${gameStat.gameType}`);
+        gameStat.players.forEach((player: any) => {
+            console.log(`${player.name}: ${player.score} points`);
+            console.log(`Score Card:`, player.scoreCard);
+        });
+        console.log(`Date: ${gameStat.date}`);
+    });
+}
+
 
 /* action listeners */
 function initializeEventListeners(game: YahtzeeGame) {
@@ -204,6 +417,7 @@ function initializeEventListeners(game: YahtzeeGame) {
         if(game.rollsLeft === 0){
             return;
         }
+        playDiceRollSound();
         game.rollDice();
         updateDice(game);
     });
@@ -217,8 +431,13 @@ function initializeEventListeners(game: YahtzeeGame) {
                 }
                 button.classList.add('selected');
                 const scoreValue = game.calculateScore(scoreType);
+                if(scoreValue > 0){
+                    playScoreSound();
+                }else{
+                    playNoScoreSound();
+                    button.classList.add('no-score');
+                }
                 game.updateSelectedScore(scoreType, scoreValue);
-                //updatePlayerScore(game);
                 resetDiceUI(game);
                 updateDice(game);
 
@@ -234,12 +453,10 @@ function initializeEventListeners(game: YahtzeeGame) {
 
     gameActionButtons.forEach((button) => {
         button.addEventListener("click", () => {
-
             const action = button.getAttribute("data-mode");
 
             if (action === 'sp') {
                 game.setGameMode(GameMode.SinglePlayer);
-                //game.setPlayers(1);
                 game.startNewGame(1);
                 setupPlayersUI(game);
                 gameContainer.style.display = "block";
@@ -248,14 +465,9 @@ function initializeEventListeners(game: YahtzeeGame) {
             }
 
             if(action === 'mp'){
-                game.setGameMode(GameMode.MultiPlayer);
-                //game.setPlayers(4);
-                game.startNewGame(4);
-                setupPlayersUI(game);
-                updatePlayerScore(game);
-                gameContainer.style.display = "block";
-                gameModeContainer.style.display = "none";
-                renderDice(game, game.dice());
+                // Show player count selection
+                playerCountSelection.classList.remove('hidden');
+                playerCountSelection.classList.add('visible');
             }
 
             if(action === 'MainMenu'){
@@ -264,8 +476,26 @@ function initializeEventListeners(game: YahtzeeGame) {
         });
     });
 
-    game.onStateChange((newState) => {
-        console.log(`Game state changed to: ${newState}`);
+    // Add event listeners for player count buttons
+    const playerCountButtons = document.querySelectorAll('.player-count-button');
+    playerCountButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const playerCount = parseInt(button.getAttribute('data-count') || '2');
+            game.setGameMode(GameMode.MultiPlayer);
+            game.startNewGame(playerCount);
+            setupPlayersUI(game);
+            updatePlayerScore(game);
+            gameContainer.style.display = "block";
+            gameModeContainer.style.display = "none";
+            renderDice(game, game.dice());
+        });
+    });
+
+    game.onStateChange((newState, oldState) => {
+        console.log(`Game state changed from: ${oldState} to: ${newState}`);
+        if(oldState === newState){
+            return;
+        }
         switch(newState){
             case GameState.MainMenu:
                 gameContainer.style.display = "none";
@@ -282,7 +512,16 @@ function initializeEventListeners(game: YahtzeeGame) {
                 gameOverContainer.style.display = "block";
                 gameContainer.style.display = "none";
                 gameModeContainer.style.display = "none";
-                document.getElementsByClassName("final-score")[0].textContent = game.getTotalScore().toString();
+                
+                const gameOverMessage = document.getElementById("game-over-message") as HTMLParagraphElement;
+                if (game.gameType === GameMode.MultiPlayer) {
+                    const winner = getWinningPlayer(game);
+                    gameOverMessage.innerHTML = `Player ${winner.player + 1} wins with <span class="final-score">${winner.score}</span> points!`;
+                    updateFinalScorecard(game, winner.player);
+                } else {
+                    gameOverMessage.innerHTML = `You scored <span class="final-score">${game.getTotalScore()}</span> points!`;
+                    updateFinalScorecard(game, 0);
+                }
                 break;
         }
     });
@@ -292,5 +531,7 @@ function initializeEventListeners(game: YahtzeeGame) {
 }
 
 export function initializeUI(game: YahtzeeGame) {
+    initializeAudioSettings();
+    initializeBackgroundMusic();
     initializeEventListeners(game);
 }

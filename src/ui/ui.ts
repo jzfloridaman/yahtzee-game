@@ -22,6 +22,9 @@ const bgmToggle = document.getElementById('bgm-toggle') as HTMLInputElement;
 const sfxToggle = document.getElementById('sfx-toggle') as HTMLInputElement;
 const audioSettingsToggle = document.getElementById('audio-settings-toggle') as HTMLButtonElement;
 const audioSettings = document.getElementById('audio-settings') as HTMLDivElement;
+const gameHistoryToggle = document.getElementById('game-history-toggle') as HTMLButtonElement;
+const gameHistory = document.getElementById('game-history') as HTMLDivElement;
+const gameHistoryList = document.getElementById('game-history-list') as HTMLDivElement;
 let backgroundMusic: HTMLAudioElement;
 const musicTracks = [
     '/music/bgsample.mp3',
@@ -417,6 +420,34 @@ function displayGameStats() {
     });
 }
 
+function displayGameHistory() {
+    const stats = JSON.parse(localStorage.getItem('yahtzeeStats') || '[]');
+    gameHistoryList.innerHTML = '';
+    
+    // Get the last 5 games, most recent first
+    const recentGames = stats.slice(-5).reverse();
+    
+    recentGames.forEach((gameStat: any, index: number) => {
+        const gameElement = document.createElement('div');
+        gameElement.className = 'bg-gray-700 p-3 rounded-lg';
+        
+        const date = new Date(gameStat.date).toLocaleDateString();
+        const gameType = gameStat.gameType === GameMode.SinglePlayer ? 'Single Player' : 'Multi Player';
+        
+        let playersHtml = '';
+        gameStat.players.forEach((player: any) => {
+            playersHtml += `<div class="text-sm">${player.name}: ${player.score} points</div>`;
+        });
+        
+        gameElement.innerHTML = `
+            <div class="text-sm text-gray-400">${date}</div>
+            <div class="font-bold">${gameType}</div>
+            ${playersHtml}
+        `;
+        
+        gameHistoryList.appendChild(gameElement);
+    });
+}
 
 /* action listeners */
 function initializeEventListeners(game: YahtzeeGame) {
@@ -530,6 +561,43 @@ function initializeEventListeners(game: YahtzeeGame) {
                     updateFinalScorecard(game, 0);
                 }
                 break;
+        }
+    });
+
+    // Game history toggle
+    gameHistoryToggle.addEventListener('click', () => {
+        gameHistory.classList.toggle('hidden');
+        if (!gameHistory.classList.contains('hidden')) {
+            displayGameHistory();
+        }
+    });
+    
+    // Audio settings toggle
+    audioSettingsToggle.addEventListener('click', () => {
+
+        const audioSettingsElement = document.getElementById('audio-settings');
+        if (!audioSettingsElement) {
+            console.error('Audio settings element not found');
+            return;
+        }
+        if (audioSettingsElement.style.display === 'none') {
+            audioSettingsElement.style.display = 'block';
+        } else {
+            audioSettingsElement.style.display = 'none';
+        }
+        
+    });
+    
+    // Close modals when clicking outside
+    document.addEventListener('click', (event) => {
+        if (!gameHistory.contains(event.target as Node) && 
+            !gameHistoryToggle.contains(event.target as Node)) {
+            gameHistory.classList.add('hidden');
+        }
+        
+        if (!audioSettings.contains(event.target as Node) && 
+            !audioSettingsToggle.contains(event.target as Node)) {
+            audioSettings.classList.add('hidden');
         }
     });
 

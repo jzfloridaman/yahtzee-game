@@ -217,7 +217,7 @@ h2 {
 
 #audio-settings.hidden {
     /* @apply hidden; */
-    visibility: hidden;
+    /* visibility: hidden; */
 }
 
 #audio-settings:not(.hidden) {

@@ -14,7 +14,8 @@
     "old-dev": "npm run watch:ts & npm run watch:css",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "android": "npm run build && npx cap sync && npx cap open android"
   },
   "keywords": [],
   "author": "John Zappone",
@@ -31,6 +32,9 @@
     "vite": "^6.2.3"
   },
   "dependencies": {
+    "@capacitor/android": "^7.2.0",
+    "@capacitor/cli": "^7.2.0",
+    "@capacitor/core": "^7.2.0",
     "@fortawesome/fontawesome-free": "^6.7.2",
     "@fortawesome/fontawesome-svg-core": "^6.7.2",
     "@fortawesome/free-solid-svg-icons": "^6.7.2",

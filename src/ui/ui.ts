@@ -20,6 +20,8 @@ const playersContainer = document.getElementById("players-container") as HTMLDiv
 // Audio elements
 const bgmToggle = document.getElementById('bgm-toggle') as HTMLInputElement;
 const sfxToggle = document.getElementById('sfx-toggle') as HTMLInputElement;
+const audioSettingsToggle = document.getElementById('audio-settings-toggle') as HTMLButtonElement;
+const audioSettings = document.getElementById('audio-settings') as HTMLDivElement;
 let backgroundMusic: HTMLAudioElement;
 const musicTracks = [
     '/music/bgsample.mp3',
@@ -42,6 +44,11 @@ function saveAudioSettings(settings: { bgm: boolean, sfx: boolean }) {
 
 function initializeAudioSettings() {
     const settings = loadAudioSettings();
+    
+    // Toggle audio settings panel
+    audioSettingsToggle.addEventListener('click', () => {
+        audioSettings.classList.toggle('hidden');
+    });
     
     bgmToggle.addEventListener('change', () => {
         settings.bgm = bgmToggle.checked;

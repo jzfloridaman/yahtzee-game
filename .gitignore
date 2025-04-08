@@ -12,3 +12,4 @@ coverage/
 
 # Ignore folder fs file
 .DS_Store
+resources/android/**/*

@@ -12,6 +12,7 @@ export class YahtzeeGame {
     private diceManager: DiceManager;
     public scoreManager: ScoreManager[] = [];
 
+    newRoll: boolean = true;
     rollsLeft: number = 2;
     players: number = 1;    // array of Player objects
     currentPlayer: number = 0;  // reference to current player in players array
@@ -43,6 +44,9 @@ export class YahtzeeGame {
     }
 
     dice(): Die[] {
+        if(this.newRoll){
+            return this.diceManager.resetDice();
+        }
         return this.diceManager.getDice();
     }
 
@@ -50,8 +54,9 @@ export class YahtzeeGame {
         this.players = players;
         this.scoreManager = Array.from({length: players}, () => new ScoreManager());
         this.currentPlayer = 0;
+        this.newRoll = true;
         this.initializeScorecard();
-        this.startNewRoll();
+        //this.startNewRoll();
         this.state = GameState.Playing;
     }
 
@@ -91,7 +96,9 @@ export class YahtzeeGame {
         if(!this.isGameOver()){
             // if multiplayer, switch to next player, load/save data
             this.rollsLeft = 2;
-            this.initializeDice();
+            this.diceManager.resetDice();
+            //this.initializeDice();
+            //this.newRoll = false;
         }
     }
 
@@ -126,7 +133,8 @@ export class YahtzeeGame {
         this.scoreManager[this.currentPlayer].updateScorecard(category, score, true);
         if(roll){
             this.nextPlayer();  // might need to just prevent this if in single player.
-            this.startNewRoll();
+            this.newRoll = true;
+            //this.startNewRoll();
         }
     }
 

@@ -32,6 +32,10 @@ body {
         @apply bg-green-500;
     }
 
+    .die.blank{
+        @apply bg-gray-500;
+    }
+
     @keyframes roll {
         0% { transform: rotate(0deg) scale(1); }
         25% { transform: rotate(90deg) scale(1.2); }

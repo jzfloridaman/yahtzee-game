@@ -275,32 +275,41 @@ function updateDice(game: YahtzeeGame) {
             renderDice(game, game.dice());
             updateScoreboard(game);
             //rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
-            rollButton.innerHTML = generateRollButtonText(game.rollsLeft);
+            rollButton.innerHTML = generateRollButtonText(game.rollsLeft, game.newRoll);
         }, 500); // Match the duration of the CSS animation
     }else{
         rollButton.textContent = `Game Over`;
     }
 }
 
-function generateRollButtonText(rollsLeft: number){
-    let text = `<div class="grid grid-cols-4 gap-2"><div>ROLL</div>`;
-    if(rollsLeft === 0){
-        text += `<div class="rounded border-2 border-slate-500  bg-slate-500 text-slate-600"><span class="fa fa-1"></span></div>`;
-        text += `<div class="rounded border-2 border-slate-500  bg-slate-500 text-slate-600"><span class="fa fa-2"></span></div>`;
-        text += `<div class="rounded border-2 border-slate-500  bg-slate-500 text-slate-600"><span class="fa fa-3"></span></div>`;
+function generateRollButtonText(rollsLeft: number, newRoll: boolean = false){
+    console.log("newRoll: " + newRoll);
+    let text = `<div class="flex gap-2"><div class="flex-1">ROLL</div>`;
+    if(newRoll){
+        console.log("new roll, waiting main roll.");
+        text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+    }else{
+        console.log(rollsLeft + ' rolls left');
+        if(rollsLeft === 0){
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        }
+        if(rollsLeft === 1){
+            text += `<div class="w-12 rounded text-blue-300"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        }
+        if(rollsLeft === 2){
+            text += `<div class="w-12 rounded text-blue-300"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-blue-300"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        } 
     }
-    if(rollsLeft === 1){
-        text += `<div class="rounded border-2 border-white bg-blue-300"><span class="fa fa-1"></span></div>`;
-        text += `<div class="rounded border-2 border-slate-500  bg-slate-500 text-slate-600"><span class="fa fa-2"></span></div>`;
-        text += `<div class="rounded border-2 border-slate-500 bg-slate-500 text-slate-600"><span class="fa fa-3"></span></div>`;
-    }
-    if(rollsLeft === 2){
-        text += `<div class="rounded border-2 border-white bg-blue-300"><span class="fa fa-1"></span></div>`;
-        text += `<div class="rounded border-2 border-white bg-blue-300"><span class="fa fa-2"></span></div>`;
-        text += `<div class="rounded border-2 border-slate-500  bg-slate-500 text-slate-600"><span class="fa fa-3"></span></div>`;
-    } 
+
     return text + `</div>`;
-    //return `Roll Dice (${rollsLeft})`;
 }
 
 function setupUI(game: YahtzeeGame){
@@ -308,8 +317,7 @@ function setupUI(game: YahtzeeGame){
         button.classList.remove('selected');
         button.classList.remove('no-score');
     });
-    // rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
-    rollButton.innerHTML = generateRollButtonText(game.rollsLeft);
+    rollButton.innerHTML = generateRollButtonText(game.rollsLeft, game.newRoll);
     rollButton.disabled = false;
 }
 
@@ -317,6 +325,7 @@ function resetDiceUI(game: YahtzeeGame){
     game.dice().forEach(die => {
         die.held = false;
     });
+    game.newRoll = true;
     renderDice(game, game.dice());
 }
 
@@ -505,16 +514,33 @@ function displayGameHistory() {
 /* action listeners */
 function initializeEventListeners(game: YahtzeeGame) {
     rollButton.addEventListener("click", () => {
-        if(game.rollsLeft === 0){
+        if(game.rollsLeft === 0 && !game.newRoll){
             return;
         }
-        playDiceRollSound();
-        game.rollDice();
-        updateDice(game);
+        
+        if(game.newRoll){   
+            console.log("acknowledge new roll.");
+            rollButton.innerHTML = generateRollButtonText(game.rollsLeft, game.newRoll);
+            game.newRoll = false;
+            game.startNewRoll();
+            playDiceRollSound();
+            game.rollDice();
+            game.rollsLeft = 2;
+            updateDice(game);
+        }else{
+            playDiceRollSound();
+            game.rollDice();
+            updateDice(game);
+        }
+
+        
     });
 
     scoreButtons.forEach((button) => {
         button.addEventListener("click", () => {
+            if(game.newRoll){
+                return;
+            }
             const scoreType = button.getAttribute("data-category") as Categories;
             if (scoreType && scoreType !== 'Top Bonus') {
                 if(game.isCategorySelected(scoreType)){

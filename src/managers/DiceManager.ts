@@ -5,7 +5,7 @@ export class DiceManager implements IDiceManager {
     private dice: Die[] = [];
 
     constructor(length: number = 5) {
-        this.dice = Array.from({ length: length }, () => this.rollNewDie());
+        this.dice = Array.from({ length: length }, () => this.setupDice());
     }
 
     rollDice() {
@@ -18,6 +18,19 @@ export class DiceManager implements IDiceManager {
 
     getDice(): Die[] {
         return this.dice;
+    }
+
+    resetDice(): Die[] {
+        this.dice = Array.from({ length: this.dice.length }, () => this.setupDice());
+        return this.dice;
+    }
+
+    setupDice(): Die{
+        return {
+            value: 0,
+            color: 'blank',
+            held: false,
+        };
     }
 
     rollNewDie(): Die {

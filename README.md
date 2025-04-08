@@ -58,6 +58,7 @@ Make sure you have the following installed on your system:
 
 - [Node.js](https://nodejs.org/) (v16 or higher)
 - [npm](https://www.npmjs.com/) (comes with Node.js)
+- [capacitor.js](https://capacitorjs.com/) (Android / IOS)
 
 ### Installation
 
@@ -83,6 +84,7 @@ Make sure you have the following installed on your system:
    npm run dev
    npm run build
    npm run preview
+   npm run android
     ```
 
 ---

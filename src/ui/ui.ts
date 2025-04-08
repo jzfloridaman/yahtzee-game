@@ -283,15 +283,12 @@ function updateDice(game: YahtzeeGame) {
 }
 
 function generateRollButtonText(rollsLeft: number, newRoll: boolean = false){
-    console.log("newRoll: " + newRoll);
     let text = `<div class="flex gap-2"><div class="flex-1">ROLL</div>`;
     if(newRoll){
-        console.log("new roll, waiting main roll.");
         text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
         text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
         text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
     }else{
-        console.log(rollsLeft + ' rolls left');
         if(rollsLeft === 0){
             text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
             text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
@@ -511,6 +508,22 @@ function displayGameHistory() {
     });
 }
 
+function showScoreAnimation(score: number) {
+    const container = document.getElementById('score-animation-container');
+    if (!container) return;
+
+    const animationElement = document.createElement('div');
+    animationElement.className = 'score-animation';
+    animationElement.textContent = `+${score}`;
+    
+    container.appendChild(animationElement);
+    
+    // Remove the element after animation completes
+    animationElement.addEventListener('animationend', () => {
+        container.removeChild(animationElement);
+    });
+}
+
 /* action listeners */
 function initializeEventListeners(game: YahtzeeGame) {
     rollButton.addEventListener("click", () => {
@@ -519,7 +532,6 @@ function initializeEventListeners(game: YahtzeeGame) {
         }
         
         if(game.newRoll){   
-            console.log("acknowledge new roll.");
             rollButton.innerHTML = generateRollButtonText(game.rollsLeft, game.newRoll);
             game.newRoll = false;
             game.startNewRoll();
@@ -550,6 +562,7 @@ function initializeEventListeners(game: YahtzeeGame) {
                 const scoreValue = game.calculateScore(scoreType);
                 if(scoreValue > 0){
                     playScoreSound();
+                    showScoreAnimation(scoreValue);
                 }else{
                     playNoScoreSound();
                     button.classList.add('no-score');

@@ -7,8 +7,37 @@
     <script defer type="module" src="/src/game.ts"></script>
     <link href="/src/styles.css" rel="stylesheet">
     <link href="/node_modules/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes scoreAnimation {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0;
+            }
+        }
+        .score-animation {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            font-weight: bold;
+            color: #3b82f6;
+            pointer-events: none;
+            z-index: 100;
+            animation: scoreAnimation 1s ease-out forwards;
+        }
+    </style>
 </head>
 <body>
+    <div id="score-animation-container"></div>
     <!-- Audio Settings Menu -->
     <div id="audio-settings-container" class="fixed top-4 right-4 z-50 flex gap-2">
         <div class="relative">

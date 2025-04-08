@@ -431,8 +431,15 @@ function saveGameStats(game: YahtzeeGame) {
 
     // Get existing stats from localStorage
     const existingStats = JSON.parse(localStorage.getItem('yahtzeeStats') || '[]');
+    
+    // Add new game stats
     existingStats.push(stats);
-
+    
+    // If we have more than 10 games, remove the oldest one
+    if (existingStats.length > 10) {
+        existingStats.shift(); // Remove the first (oldest) game
+    }
+    
     // Save updated stats back to localStorage
     localStorage.setItem('yahtzeeStats', JSON.stringify(existingStats));
     console.log("stats saved");

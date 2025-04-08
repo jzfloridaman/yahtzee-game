@@ -274,11 +274,33 @@ function updateDice(game: YahtzeeGame) {
         setTimeout(() => {
             renderDice(game, game.dice());
             updateScoreboard(game);
-            rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+            //rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+            rollButton.innerHTML = generateRollButtonText(game.rollsLeft);
         }, 500); // Match the duration of the CSS animation
     }else{
         rollButton.textContent = `Game Over`;
     }
+}
+
+function generateRollButtonText(rollsLeft: number){
+    let text = `<div class="grid grid-cols-4 gap-2"><div>ROLL</div>`;
+    if(rollsLeft === 0){
+        text += `<div class="rounded border-2 border-slate-500  bg-slate-500 text-slate-600"><span class="fa fa-1"></span></div>`;
+        text += `<div class="rounded border-2 border-slate-500  bg-slate-500 text-slate-600"><span class="fa fa-2"></span></div>`;
+        text += `<div class="rounded border-2 border-slate-500  bg-slate-500 text-slate-600"><span class="fa fa-3"></span></div>`;
+    }
+    if(rollsLeft === 1){
+        text += `<div class="rounded border-2 border-white bg-blue-300"><span class="fa fa-1"></span></div>`;
+        text += `<div class="rounded border-2 border-slate-500  bg-slate-500 text-slate-600"><span class="fa fa-2"></span></div>`;
+        text += `<div class="rounded border-2 border-slate-500 bg-slate-500 text-slate-600"><span class="fa fa-3"></span></div>`;
+    }
+    if(rollsLeft === 2){
+        text += `<div class="rounded border-2 border-white bg-blue-300"><span class="fa fa-1"></span></div>`;
+        text += `<div class="rounded border-2 border-white bg-blue-300"><span class="fa fa-2"></span></div>`;
+        text += `<div class="rounded border-2 border-slate-500  bg-slate-500 text-slate-600"><span class="fa fa-3"></span></div>`;
+    } 
+    return text + `</div>`;
+    //return `Roll Dice (${rollsLeft})`;
 }
 
 function setupUI(game: YahtzeeGame){
@@ -286,7 +308,8 @@ function setupUI(game: YahtzeeGame){
         button.classList.remove('selected');
         button.classList.remove('no-score');
     });
-    rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+    // rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+    rollButton.innerHTML = generateRollButtonText(game.rollsLeft);
     rollButton.disabled = false;
 }
 

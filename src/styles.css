@@ -192,6 +192,18 @@ h2 {
     background-color: #22c55e;
     transition: width 0.3s ease;
     width: var(--progress-width, 0%);
+    z-index:1;
+}
+.upper-score-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background-color: #0c4621;
+    transition: width 0.3s ease;
+    width: 100%;
+    z-index:0;
 }
 
 .upper-score-progress-bar span {
@@ -215,10 +227,6 @@ h2 {
     transform-origin: top right;
 }
 
-#audio-settings.hidden {
-    /* @apply hidden; */
-    /* visibility: hidden; */
-}
 
 #audio-settings:not(.hidden) {
     animation: slideIn 0.3s ease forwards;

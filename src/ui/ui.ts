@@ -557,17 +557,20 @@ function initializeEventListeners(game: YahtzeeGame) {
                 gameContainer.style.display = "none";
                 gameOverContainer.style.display = "none";
                 gameModeContainer.style.display = "block";
+                gameOptionsToggle.style.display = "none";
                 break;
             case GameState.Playing:
                 gameContainer.style.display = "block";
                 gameModeContainer.style.display = "none";
                 gameOverContainer.style.display = "none";
+                gameOptionsToggle.style.display = "block";
                 setupUI(game);
                 break;
             case GameState.GameOver:  
                 gameOverContainer.style.display = "block";
                 gameContainer.style.display = "none";
                 gameModeContainer.style.display = "none";
+                gameOptionsToggle.style.display = "block";
                 
                 const gameOverMessage = document.getElementById("game-over-message") as HTMLParagraphElement;
                 if (game.gameType === GameMode.MultiPlayer) {

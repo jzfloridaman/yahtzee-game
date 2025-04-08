@@ -332,6 +332,11 @@ function setupPlayersUI(game: YahtzeeGame){
             }else{
                 playerDiv.style.display = "block";
             }
+            if(playerCount > 0){
+                playerDiv.classList.remove('active');
+            }else{
+                playerDiv.classList.add('active');
+            }
             playerCount++;
         });
     }

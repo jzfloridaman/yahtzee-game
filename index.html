@@ -11,12 +11,9 @@
 <body>
     <!-- Audio Settings Menu -->
     <div id="audio-settings-container" class="fixed top-4 right-4 z-50 flex gap-2">
-        <button id="game-history-toggle" class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
-            <i class="fas fa-history text-white text-xl"></i>
-        </button>
         <div class="relative">
             <button id="audio-settings-toggle" class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
-                <i class="fas fa-bars text-white text-xl"></i>
+                <i class="fas fa-volume-up text-white text-xl"></i>
             </button>
             <div id="audio-settings" class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-64 hidden" style="display: none;">
                 <h3 class="text-lg font-bold mb-2">Audio Settings</h3>
@@ -32,10 +29,31 @@
                 </div>
             </div>
         </div>
+
+        <button id="game-history-toggle" class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
+            <i class="fas fa-history text-white text-xl"></i>
+        </button>
         <div id="game-history" class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 hidden absolute right-0 top-12 w-96">
             <h3 class="text-lg font-bold mb-2">Recent Games</h3>
             <div id="game-history-list" class="flex flex-col gap-2 overflow-y-auto">
                 <!-- Game history items will be inserted here -->
+            </div>
+        </div>
+
+        <div class="relative">
+            <button id="game-options-toggle" class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
+                <i class="fas fa-bars text-white text-xl"></i>
+            </button>
+            <div id="game-options" class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-64 hidden" style="display: none;">
+                <h3 class="text-lg font-bold mb-2">Game Options</h3>
+                <div class="flex flex-col gap-2">
+                    <button id="restart-game" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                        Restart Game
+                    </button>
+                    <button id="new-game" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                        New Game
+                    </button>
+                </div>
             </div>
         </div>
     </div>

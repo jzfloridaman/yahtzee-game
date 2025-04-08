@@ -22,9 +22,13 @@ const bgmToggle = document.getElementById('bgm-toggle') as HTMLInputElement;
 const sfxToggle = document.getElementById('sfx-toggle') as HTMLInputElement;
 const audioSettingsToggle = document.getElementById('audio-settings-toggle') as HTMLButtonElement;
 const audioSettings = document.getElementById('audio-settings') as HTMLDivElement;
+const gameOptionsToggle = document.getElementById('game-options-toggle') as HTMLButtonElement;
+const gameOptions = document.getElementById('game-options') as HTMLDivElement;
 const gameHistoryToggle = document.getElementById('game-history-toggle') as HTMLButtonElement;
 const gameHistory = document.getElementById('game-history') as HTMLDivElement;
 const gameHistoryList = document.getElementById('game-history-list') as HTMLDivElement;
+const restartGameButton = document.getElementById('restart-game') as HTMLButtonElement;
+const newGameButton = document.getElementById('new-game') as HTMLButtonElement;
 let backgroundMusic: HTMLAudioElement;
 const musicTracks = [
     '/music/bgsample.mp3',
@@ -50,7 +54,34 @@ function initializeAudioSettings() {
     
     // Toggle audio settings panel
     audioSettingsToggle.addEventListener('click', () => {
-        audioSettings.classList.toggle('hidden');
+        const audioSettingsElement = document.getElementById('audio-settings');
+        if (!audioSettingsElement) {
+            console.error('Audio settings element not found');
+            return;
+        }
+        
+        if (audioSettingsElement.style.display === 'none') {
+            audioSettingsElement.style.display = 'block';
+            gameOptions.style.display = 'none';
+        } else {
+            audioSettingsElement.style.display = 'none';
+        }
+    });
+    
+    // Game options toggle
+    gameOptionsToggle.addEventListener('click', () => {
+        const gameOptionsElement = document.getElementById('game-options');
+        if (!gameOptionsElement) {
+            console.error('Game options element not found');
+            return;
+        }
+        
+        if (gameOptionsElement.style.display === 'none') {
+            gameOptionsElement.style.display = 'block';
+            audioSettings.style.display = 'none';
+        } else {
+            gameOptionsElement.style.display = 'none';
+        }
     });
     
     bgmToggle.addEventListener('change', () => {
@@ -407,19 +438,6 @@ function saveGameStats(game: YahtzeeGame) {
     console.log("stats saved");
 }
 
-function displayGameStats() {
-    const stats = JSON.parse(localStorage.getItem('yahtzeeStats') || '[]');
-    stats.forEach((gameStat: any, index: number) => {
-        console.log(`Game ${index + 1}:`);
-        console.log(`Game Type: ${gameStat.gameType}`);
-        gameStat.players.forEach((player: any) => {
-            console.log(`${player.name}: ${player.score} points`);
-            console.log(`Score Card:`, player.scoreCard);
-        });
-        console.log(`Date: ${gameStat.date}`);
-    });
-}
-
 function displayGameHistory() {
     const stats = JSON.parse(localStorage.getItem('yahtzeeStats') || '[]');
     gameHistoryList.innerHTML = '';
@@ -572,33 +590,46 @@ function initializeEventListeners(game: YahtzeeGame) {
         }
     });
     
-    // Audio settings toggle
-    audioSettingsToggle.addEventListener('click', () => {
-
-        const audioSettingsElement = document.getElementById('audio-settings');
-        if (!audioSettingsElement) {
-            console.error('Audio settings element not found');
-            return;
-        }
-        if (audioSettingsElement.style.display === 'none') {
-            audioSettingsElement.style.display = 'block';
-        } else {
-            audioSettingsElement.style.display = 'none';
-        }
-        
-    });
-    
     // Close modals when clicking outside
     document.addEventListener('click', (event) => {
+        // Check if click is outside game history
         if (!gameHistory.contains(event.target as Node) && 
             !gameHistoryToggle.contains(event.target as Node)) {
             gameHistory.classList.add('hidden');
         }
         
+        // Check if click is outside audio settings
         if (!audioSettings.contains(event.target as Node) && 
             !audioSettingsToggle.contains(event.target as Node)) {
-            audioSettings.classList.add('hidden');
+            audioSettings.style.display = 'none';
         }
+        
+        // Check if click is outside game options
+        if (!gameOptions.contains(event.target as Node) && 
+            !gameOptionsToggle.contains(event.target as Node)) {
+            gameOptions.style.display = 'none';
+        }
+    });
+
+    // Restart game button
+    restartGameButton.addEventListener('click', () => {
+        const currentGameType = game.gameType;
+        const currentPlayerCount = game.getPlayerCount();
+        game.startNewGame(currentPlayerCount);
+        game.setGameMode(currentGameType);
+        setupPlayersUI(game);
+        setupUI(game);
+        renderDice(game, game.dice());
+        gameOptions.style.display = 'none';
+    });
+    
+    // New game button
+    newGameButton.addEventListener('click', () => {
+        game.state = GameState.MainMenu;
+        gameContainer.style.display = "none";
+        gameOverContainer.style.display = "none";
+        gameModeContainer.style.display = "block";
+        gameOptions.style.display = 'none';
     });
 
     // Initial render

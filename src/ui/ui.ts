@@ -168,6 +168,71 @@ function playNoScoreSound() {
     });
 }
 
+function playYahtzeeSound() {
+    const settings = loadAudioSettings();
+    if (!settings.sfx) return;
+
+    const audio = new Audio('/sounds/yahtzee-3.mp3');
+    audio.volume = 0.7;
+    audio.play().catch(error => {
+        console.log("Error playing sound:", error);
+    });
+}
+
+function showYahtzeeAnimation() {
+    const container = document.getElementById('score-animation-container');
+    if (!container) return;
+
+    // Create confetti container
+    const confettiContainer = document.createElement('div');
+    confettiContainer.className = 'yahtzee-container';
+    
+    // Create confetti pieces
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        
+        // Random starting position around the center
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 200 + 100; // Random distance between 100 and 300 pixels
+        
+        // Calculate end position based on angle and distance
+        const endX = Math.cos(angle) * distance;
+        const endY = Math.sin(angle) * distance;
+        
+        // Set initial position
+        confetti.style.left = `${centerX}px`;
+        confetti.style.top = `${centerY}px`;
+        
+        // Set custom properties for animation
+        confetti.style.setProperty('--tx', `${endX}px`);
+        confetti.style.setProperty('--ty', `${endY}px`);
+        
+        // Random rotation and delay
+        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+        
+        confettiContainer.appendChild(confetti);
+    }
+
+    // Create Yahtzee text
+    const animationElement = document.createElement('div');
+    animationElement.className = 'score-animation yahtzee-animation';
+    animationElement.textContent = 'YAHTZEE!';
+    
+    // Add elements to container
+    container.appendChild(confettiContainer);
+    container.appendChild(animationElement);
+    
+    // Remove elements after animation completes
+    animationElement.addEventListener('animationend', () => {
+        container.removeChild(confettiContainer);
+        container.removeChild(animationElement);
+    });
+}
+
 function run() {
     gameContainer.style.display = "none"; 
     gameOverContainer.style.display = "none"; 
@@ -577,24 +642,30 @@ function initializeEventListeners(game: YahtzeeGame) {
                 }
                 button.classList.add('selected');
                 const scoreValue = game.calculateScore(scoreType);
-
+                
                 // Check for additional Yahtzee
                 if(game.isCategorySelected(Categories.Yahtzee) && scoreType !== Categories.Yahtzee){
-
                     if (game.dice().every(die => die.value === game.dice()[0].value) && 
-                        game.dice()[0].value !== 0) {  // 
+                        game.dice()[0].value !== 0) {  
                         // Check if all dice are the same and not blank
                         let currentYahtzeeScore = game.getScoreByCategory(Categories.Yahtzee);
                         if(currentYahtzeeScore > 0){
                             let updateYahtzeeScore = currentYahtzeeScore + 100;
                             game.updateSelectedScore(Categories.Yahtzee, updateYahtzeeScore);
+                            playYahtzeeSound();
+                            showYahtzeeAnimation();
                         }
                     }
                 }
 
                 if(scoreValue > 0){
-                    playScoreSound();
-                    showScoreAnimation(scoreValue);
+                    if(scoreType === Categories.Yahtzee){
+                        playYahtzeeSound();
+                        showYahtzeeAnimation();
+                    }else{
+                        playScoreSound();
+                        showScoreAnimation(scoreValue);
+                    }
                 }else{
                     playNoScoreSound();
                     button.classList.add('no-score');

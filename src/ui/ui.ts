@@ -20,12 +20,21 @@ const playersContainer = document.getElementById("players-container") as HTMLDiv
 // Audio elements
 const bgmToggle = document.getElementById('bgm-toggle') as HTMLInputElement;
 const sfxToggle = document.getElementById('sfx-toggle') as HTMLInputElement;
+const audioSettingsToggle = document.getElementById('audio-settings-toggle') as HTMLButtonElement;
+const audioSettings = document.getElementById('audio-settings') as HTMLDivElement;
+const gameOptionsToggle = document.getElementById('game-options-toggle') as HTMLButtonElement;
+const gameOptions = document.getElementById('game-options') as HTMLDivElement;
+const gameHistoryToggle = document.getElementById('game-history-toggle') as HTMLButtonElement;
+const gameHistory = document.getElementById('game-history') as HTMLDivElement;
+const gameHistoryList = document.getElementById('game-history-list') as HTMLDivElement;
+const restartGameButton = document.getElementById('restart-game') as HTMLButtonElement;
+const newGameButton = document.getElementById('new-game') as HTMLButtonElement;
 let backgroundMusic: HTMLAudioElement;
 const musicTracks = [
     '/music/bgsample.mp3',
     '/music/bgsample-2.mp3',
     '/music/bgsample-3.mp3',
-    '/music/bgsample-4.mp3',
+    //'/music/bgsample-4.mp3',
 ];
 
 // Audio settings management
@@ -42,6 +51,38 @@ function saveAudioSettings(settings: { bgm: boolean, sfx: boolean }) {
 
 function initializeAudioSettings() {
     const settings = loadAudioSettings();
+    
+    // Toggle audio settings panel
+    audioSettingsToggle.addEventListener('click', () => {
+        const audioSettingsElement = document.getElementById('audio-settings');
+        if (!audioSettingsElement) {
+            console.error('Audio settings element not found');
+            return;
+        }
+        
+        if (audioSettingsElement.style.display === 'none') {
+            audioSettingsElement.style.display = 'block';
+            gameOptions.style.display = 'none';
+        } else {
+            audioSettingsElement.style.display = 'none';
+        }
+    });
+    
+    // Game options toggle
+    gameOptionsToggle.addEventListener('click', () => {
+        const gameOptionsElement = document.getElementById('game-options');
+        if (!gameOptionsElement) {
+            console.error('Game options element not found');
+            return;
+        }
+        
+        if (gameOptionsElement.style.display === 'none') {
+            gameOptionsElement.style.display = 'block';
+            audioSettings.style.display = 'none';
+        } else {
+            gameOptionsElement.style.display = 'none';
+        }
+    });
     
     bgmToggle.addEventListener('change', () => {
         settings.bgm = bgmToggle.checked;
@@ -90,6 +131,17 @@ function playDiceRollSound() {
     if (!settings.sfx) return;
 
     const audio = new Audio('/sounds/dice-roll-3.mp3');
+    audio.volume = 0.3;
+    audio.play().catch(error => {
+        console.log("Error playing sound:", error);
+    });
+}
+
+function playHoldDiceSound() {
+    const settings = loadAudioSettings();
+    if (!settings.sfx) return;
+
+    const audio = new Audio('/sounds/hold-dice.mp3');
     audio.volume = 0.7;
     audio.play().catch(error => {
         console.log("Error playing sound:", error);
@@ -116,6 +168,71 @@ function playNoScoreSound() {
     });
 }
 
+function playYahtzeeSound() {
+    const settings = loadAudioSettings();
+    if (!settings.sfx) return;
+
+    const audio = new Audio('/sounds/yahtzee-3.mp3');
+    audio.volume = 0.7;
+    audio.play().catch(error => {
+        console.log("Error playing sound:", error);
+    });
+}
+
+function showYahtzeeAnimation() {
+    const container = document.getElementById('score-animation-container');
+    if (!container) return;
+
+    // Create confetti container
+    const confettiContainer = document.createElement('div');
+    confettiContainer.className = 'yahtzee-container';
+    
+    // Create confetti pieces
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        
+        // Random starting position around the center
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 200 + 100; // Random distance between 100 and 300 pixels
+        
+        // Calculate end position based on angle and distance
+        const endX = Math.cos(angle) * distance;
+        const endY = Math.sin(angle) * distance;
+        
+        // Set initial position
+        confetti.style.left = `${centerX}px`;
+        confetti.style.top = `${centerY}px`;
+        
+        // Set custom properties for animation
+        confetti.style.setProperty('--tx', `${endX}px`);
+        confetti.style.setProperty('--ty', `${endY}px`);
+        
+        // Random rotation and delay
+        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+        
+        confettiContainer.appendChild(confetti);
+    }
+
+    // Create Yahtzee text
+    const animationElement = document.createElement('div');
+    animationElement.className = 'score-animation yahtzee-animation';
+    animationElement.textContent = 'YAHTZEE!';
+    
+    // Add elements to container
+    container.appendChild(confettiContainer);
+    container.appendChild(animationElement);
+    
+    // Remove elements after animation completes
+    animationElement.addEventListener('animationend', () => {
+        container.removeChild(confettiContainer);
+        container.removeChild(animationElement);
+    });
+}
+
 function run() {
     gameContainer.style.display = "none"; 
     gameOverContainer.style.display = "none"; 
@@ -132,6 +249,9 @@ function renderDice(game: YahtzeeGame, dice: Die[]) {
 
         dieElement.addEventListener("click", () => {
             game.toggleHold(index);
+            if (game.dice()[index].held) {
+                playHoldDiceSound();
+            }
             renderDice(game, game.dice());
         });
 
@@ -180,6 +300,9 @@ function setDieIcon(el: HTMLDivElement, value: number) {
         case 6:
             iconElement.classList.add("fa-dice-six");
             break; 
+        case 0:
+            iconElement.classList.add("fa-dice");
+            break;
     }
 
     el.appendChild(iconElement);
@@ -233,11 +356,39 @@ function updateDice(game: YahtzeeGame) {
         setTimeout(() => {
             renderDice(game, game.dice());
             updateScoreboard(game);
-            rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+            //rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+            rollButton.innerHTML = generateRollButtonText(game.rollsLeft, game.newRoll);
         }, 500); // Match the duration of the CSS animation
     }else{
         rollButton.textContent = `Game Over`;
     }
+}
+
+function generateRollButtonText(rollsLeft: number, newRoll: boolean = false){
+    let text = `<div class="flex gap-2"><div class="flex-1">ROLL</div>`;
+    if(newRoll){
+        text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+    }else{
+        if(rollsLeft === 0){
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        }
+        if(rollsLeft === 1){
+            text += `<div class="w-12 rounded text-blue-300"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        }
+        if(rollsLeft === 2){
+            text += `<div class="w-12 rounded text-blue-300"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-blue-300"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        } 
+    }
+
+    return text + `</div>`;
 }
 
 function setupUI(game: YahtzeeGame){
@@ -245,7 +396,7 @@ function setupUI(game: YahtzeeGame){
         button.classList.remove('selected');
         button.classList.remove('no-score');
     });
-    rollButton.textContent = `Roll Dice (${game.rollsLeft})`;
+    rollButton.innerHTML = generateRollButtonText(game.rollsLeft, game.newRoll);
     rollButton.disabled = false;
 }
 
@@ -253,6 +404,7 @@ function resetDiceUI(game: YahtzeeGame){
     game.dice().forEach(die => {
         die.held = false;
     });
+    game.newRoll = true;
     renderDice(game, game.dice());
 }
 
@@ -290,6 +442,11 @@ function setupPlayersUI(game: YahtzeeGame){
                 playerDiv.style.display = "none";
             }else{
                 playerDiv.style.display = "block";
+            }
+            if(playerCount > 0){
+                playerDiv.classList.remove('active');
+            }else{
+                playerDiv.classList.add('active');
             }
             playerCount++;
         });
@@ -390,40 +547,94 @@ function saveGameStats(game: YahtzeeGame) {
 
     // Get existing stats from localStorage
     const existingStats = JSON.parse(localStorage.getItem('yahtzeeStats') || '[]');
+    
+    // Add new game stats
     existingStats.push(stats);
-
+    
+    // If we have more than 10 games, remove the oldest one
+    if (existingStats.length > 10) {
+        existingStats.shift(); // Remove the first (oldest) game
+    }
+    
     // Save updated stats back to localStorage
     localStorage.setItem('yahtzeeStats', JSON.stringify(existingStats));
     console.log("stats saved");
 }
 
-function displayGameStats() {
+function displayGameHistory() {
     const stats = JSON.parse(localStorage.getItem('yahtzeeStats') || '[]');
-    stats.forEach((gameStat: any, index: number) => {
-        console.log(`Game ${index + 1}:`);
-        console.log(`Game Type: ${gameStat.gameType}`);
+    gameHistoryList.innerHTML = '';
+    
+    // Get the last 5 games, most recent first
+    const recentGames = stats.slice(-5).reverse();
+    
+    recentGames.forEach((gameStat: any, index: number) => {
+        const gameElement = document.createElement('div');
+        gameElement.className = 'bg-gray-700 p-3 rounded-lg';
+        
+        const date = new Date(gameStat.date).toLocaleDateString();
+        const gameType = gameStat.gameType === GameMode.SinglePlayer ? 'Single Player' : 'Multi Player';
+        
+        let playersHtml = '';
         gameStat.players.forEach((player: any) => {
-            console.log(`${player.name}: ${player.score} points`);
-            console.log(`Score Card:`, player.scoreCard);
+            playersHtml += `<div class="text-sm">${player.name}: ${player.score} points</div>`;
         });
-        console.log(`Date: ${gameStat.date}`);
+        
+        gameElement.innerHTML = `
+            <div class="text-sm text-gray-400">${date}</div>
+            <div class="font-bold">${gameType}</div>
+            ${playersHtml}
+        `;
+        
+        gameHistoryList.appendChild(gameElement);
     });
 }
 
+function showScoreAnimation(score: number) {
+    const container = document.getElementById('score-animation-container');
+    if (!container) return;
+
+    const animationElement = document.createElement('div');
+    animationElement.className = 'score-animation';
+    animationElement.textContent = `+${score}`;
+    
+    container.appendChild(animationElement);
+    
+    // Remove the element after animation completes
+    animationElement.addEventListener('animationend', () => {
+        container.removeChild(animationElement);
+    });
+}
 
 /* action listeners */
 function initializeEventListeners(game: YahtzeeGame) {
     rollButton.addEventListener("click", () => {
-        if(game.rollsLeft === 0){
+        if(game.rollsLeft === 0 && !game.newRoll){
             return;
         }
-        playDiceRollSound();
-        game.rollDice();
-        updateDice(game);
+        
+        if(game.newRoll){   
+            rollButton.innerHTML = generateRollButtonText(game.rollsLeft, game.newRoll);
+            game.newRoll = false;
+            game.startNewRoll();
+            playDiceRollSound();
+            game.rollDice();
+            game.rollsLeft = 2;
+            updateDice(game);
+        }else{
+            playDiceRollSound();
+            game.rollDice();
+            updateDice(game);
+        }
+
+        
     });
 
     scoreButtons.forEach((button) => {
         button.addEventListener("click", () => {
+            if(game.newRoll){
+                return;
+            }
             const scoreType = button.getAttribute("data-category") as Categories;
             if (scoreType && scoreType !== 'Top Bonus') {
                 if(game.isCategorySelected(scoreType)){
@@ -431,8 +642,30 @@ function initializeEventListeners(game: YahtzeeGame) {
                 }
                 button.classList.add('selected');
                 const scoreValue = game.calculateScore(scoreType);
+                
+                // Check for additional Yahtzee
+                if(game.isCategorySelected(Categories.Yahtzee) && scoreType !== Categories.Yahtzee){
+                    if (game.dice().every(die => die.value === game.dice()[0].value) && 
+                        game.dice()[0].value !== 0) {  
+                        // Check if all dice are the same and not blank
+                        let currentYahtzeeScore = game.getScoreByCategory(Categories.Yahtzee);
+                        if(currentYahtzeeScore > 0){
+                            let updateYahtzeeScore = currentYahtzeeScore + 100;
+                            game.updateSelectedScore(Categories.Yahtzee, updateYahtzeeScore);
+                            playYahtzeeSound();
+                            showYahtzeeAnimation();
+                        }
+                    }
+                }
+
                 if(scoreValue > 0){
-                    playScoreSound();
+                    if(scoreType === Categories.Yahtzee){
+                        playYahtzeeSound();
+                        showYahtzeeAnimation();
+                    }else{
+                        playScoreSound();
+                        showScoreAnimation(scoreValue);
+                    }
                 }else{
                     playNoScoreSound();
                     button.classList.add('no-score');
@@ -496,22 +729,33 @@ function initializeEventListeners(game: YahtzeeGame) {
         if(oldState === newState){
             return;
         }
+        
+        // Toggle game-active class on body
+        if (newState === GameState.MainMenu) {
+            document.body.classList.remove('game-active');
+        } else {
+            document.body.classList.add('game-active');
+        }
+
         switch(newState){
             case GameState.MainMenu:
                 gameContainer.style.display = "none";
                 gameOverContainer.style.display = "none";
                 gameModeContainer.style.display = "block";
+                gameOptionsToggle.style.display = "none";
                 break;
             case GameState.Playing:
                 gameContainer.style.display = "block";
                 gameModeContainer.style.display = "none";
                 gameOverContainer.style.display = "none";
+                gameOptionsToggle.style.display = "block";
                 setupUI(game);
                 break;
             case GameState.GameOver:  
                 gameOverContainer.style.display = "block";
                 gameContainer.style.display = "none";
                 gameModeContainer.style.display = "none";
+                gameOptionsToggle.style.display = "block";
                 
                 const gameOverMessage = document.getElementById("game-over-message") as HTMLParagraphElement;
                 if (game.gameType === GameMode.MultiPlayer) {
@@ -524,6 +768,56 @@ function initializeEventListeners(game: YahtzeeGame) {
                 }
                 break;
         }
+    });
+
+    // Game history toggle
+    gameHistoryToggle.addEventListener('click', () => {
+        gameHistory.classList.toggle('hidden');
+        if (!gameHistory.classList.contains('hidden')) {
+            displayGameHistory();
+        }
+    });
+    
+    // Close modals when clicking outside
+    document.addEventListener('click', (event) => {
+        // Check if click is outside game history
+        if (!gameHistory.contains(event.target as Node) && 
+            !gameHistoryToggle.contains(event.target as Node)) {
+            gameHistory.classList.add('hidden');
+        }
+        
+        // Check if click is outside audio settings
+        if (!audioSettings.contains(event.target as Node) && 
+            !audioSettingsToggle.contains(event.target as Node)) {
+            audioSettings.style.display = 'none';
+        }
+        
+        // Check if click is outside game options
+        if (!gameOptions.contains(event.target as Node) && 
+            !gameOptionsToggle.contains(event.target as Node)) {
+            gameOptions.style.display = 'none';
+        }
+    });
+
+    // Restart game button
+    restartGameButton.addEventListener('click', () => {
+        const currentGameType = game.gameType;
+        const currentPlayerCount = game.getPlayerCount();
+        game.startNewGame(currentPlayerCount);
+        game.setGameMode(currentGameType);
+        setupPlayersUI(game);
+        setupUI(game);
+        renderDice(game, game.dice());
+        gameOptions.style.display = 'none';
+    });
+    
+    // New game button
+    newGameButton.addEventListener('click', () => {
+        game.state = GameState.MainMenu;
+        gameContainer.style.display = "none";
+        gameOverContainer.style.display = "none";
+        gameModeContainer.style.display = "block";
+        gameOptions.style.display = 'none';
     });
 
     // Initial render

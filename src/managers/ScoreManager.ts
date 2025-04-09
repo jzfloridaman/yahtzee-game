@@ -49,6 +49,9 @@ export class ScoreManager implements IScoreManager {
             if(category !== Categories.TopBonus){
                 this.isUpperScoreBonusApplicable();
             }
+            if(category === Categories.Yahtzee){
+                this.scorecard[Categories.Yahtzee].value = score;
+            }
         }   
     }
 

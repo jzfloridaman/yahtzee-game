@@ -9,25 +9,59 @@
     <link href="/node_modules/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
 </head>
 <body>
+    <div id="score-animation-container"></div>
     <!-- Audio Settings Menu -->
-    <div id="audio-settings" class="fixed top-4 right-4 bg-gray-800 p-4 rounded-lg shadow-lg z-50">
-        <h3 class="text-lg font-bold mb-2">Audio Settings</h3>
-        <div class="flex flex-col gap-2">
-            <label class="flex items-center gap-2">
-                <input type="checkbox" id="bgm-toggle" class="w-4 h-4">
-                <span>Background Music</span>
-            </label>
-            <label class="flex items-center gap-2">
-                <input type="checkbox" id="sfx-toggle" class="w-4 h-4">
-                <span>Sound Effects</span>
-            </label>
+    <div id="audio-settings-container" class="fixed top-4 right-4 z-50 flex gap-2">
+        <div class="relative">
+            <button id="audio-settings-toggle" class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
+                <i class="fas fa-volume-up text-white text-xl"></i>
+            </button>
+            <div id="audio-settings" class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-64 hidden" style="display: none;">
+                <h3 class="text-lg font-bold mb-2">Audio Settings</h3>
+                <div class="flex flex-col gap-2">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="bgm-toggle" class="w-4 h-4">
+                        <span>Background Music</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="sfx-toggle" class="w-4 h-4">
+                        <span>Sound Effects</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button id="game-history-toggle" class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
+            <i class="fas fa-history text-white text-xl"></i>
+        </button>
+        <div id="game-history" class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 hidden absolute right-0 top-12 w-96">
+            <h3 class="text-lg font-bold mb-2">Recent Games</h3>
+            <div id="game-history-list" class="flex flex-col gap-2 overflow-y-auto">
+                <!-- Game history items will be inserted here -->
+            </div>
+        </div>
+
+        <div class="relative">
+            <button id="game-options-toggle" class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200" style="display: none;">
+                <i class="fas fa-bars text-white text-xl"></i>
+            </button>
+            <div id="game-options" class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-64 hidden" style="display: none;">
+                <h3 class="text-lg font-bold mb-2">Game Options</h3>
+                <div class="flex flex-col gap-2">
+                    <button id="restart-game" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                        Restart Game
+                    </button>
+                    <button id="new-game" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+                        New Game
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
     <div id="game-mode-container">
-        <h1 class="text-3xl font-bold text-center">Yahtzee Game</h1>
         <div class="text-center">
-            <button class="game-mode-button w-full" data-mode="sp">Single Player</button>
+            <button class="game-mode-button w-full !mt-2" data-mode="sp">Single Player</button>
             <button class="game-mode-button w-full" data-mode="mp">Multi Player</button>
             <div id="player-count-selection" class="hidden mt-4">
                 <h2 class="text-xl font-bold mb-4">Select Number of Players</h2>
@@ -37,6 +71,7 @@
                     <button class="player-count-button" data-count="4">4 Players</button>
                 </div>
             </div>
+            <p class="text-sm text-gray-500 mt-4">Programmed by John Zappone</p>
         </div>
     </div>
 
@@ -141,19 +176,19 @@
 
         <div id="players-container" class="text-center grid grid-cols-4 gap-2">
             <div class="player-data active">
-                <h2 class="text-xl font-bold text-center mb-1">Player 1</h2>
+                <h2 class="text-sm md:text-xl font-bold text-center mb-1">Player 1</h2>
                 <span id="player-score" class="player-score font-bold text-center">0</span>
             </div>
             <div class="player-data">
-                <h2 class="text-xl font-bold text-center mb-1">Player 2</h2>
+                <h2 class="text-sm md:text-xl font-bold text-center mb-1">Player 2</h2>
                 <span id="player-score-2" class="player-score font-bold text-center">0</span>
             </div>
             <div class="player-data">
-                <h2 class="text-xl font-bold text-center mb-1">Player 3</h2>
+                <h2 class="text-sm md:text-xl font-bold text-center mb-1">Player 3</h2>
                 <span id="player-score-3" class="player-score font-bold text-center">0</span>
             </div>
             <div class="player-data">
-                <h2 class="text-xl font-bold text-center mb-1">Player 4</h2>
+                <h2 class="text-sm md:text-xl font-bold text-center mb-1">Player 4</h2>
                 <span id="player-score-4" class="player-score font-bold text-center">0</span>
             </div>
         </div>

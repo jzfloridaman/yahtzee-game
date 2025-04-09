@@ -4,6 +4,7 @@ node_modules/
 # Ignore compiled output
 dist/
 coverage/
+random/
 #*.js
 #*.js.map
 
@@ -12,3 +13,4 @@ coverage/
 
 # Ignore folder fs file
 .DS_Store
+resources/android/**/*

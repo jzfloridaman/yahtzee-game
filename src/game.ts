@@ -127,6 +127,11 @@ export class YahtzeeGame {
     }
     // update the actual player score based on the selected category
     updateSelectedScore(category: Categories, score: number, roll: boolean = true){ 
+        console.log("updating selected score", category, score);
+        // exception for yahtzee
+        if(category === Categories.Yahtzee){
+            this.scoreManager[this.currentPlayer].updateScorecard(category, score, true);
+        }
         if(this.scoreManager[this.currentPlayer].isCategorySelected(category)){
             return;
         }
@@ -142,8 +147,8 @@ export class YahtzeeGame {
         return this.scoreManager[this.currentPlayer].isCategorySelected(category);
     }
 
-    getScoreByCategory(category: Categories): number | null {
-        return this.scoreManager[this.currentPlayer].getScoreByCategory(category);
+    getScoreByCategory(category: Categories): number {
+        return this.scoreManager[this.currentPlayer].getScoreByCategory(category) || 0;
     }
 
     getTotalTopScore(): number {

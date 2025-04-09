@@ -4,6 +4,36 @@
 
 body {
     @apply bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4;
+    background-image: url('/app-splash.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+    width: 100vw;
+}
+
+body.game-active {
+    background-image: linear-gradient(135deg, 
+        #4a00e0,  /* Deep Purple */
+        #8e2de2,  /* Purple */
+        #ff6b6b,  /* Coral */
+        #ff8e53   /* Orange */
+    );
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 #game-container, #game-mode-container, #game-over-container {
@@ -204,7 +234,7 @@ h2 {
     top: 0;
     left: 0;
     height: 100%;
-    background-color: #0c4621;
+    background-color: #0a3a62;
     transition: width 0.3s ease;
     width: 100%;
     z-index:0;
@@ -265,11 +295,11 @@ h2 {
         opacity: 0;
     }
     50% {
-        transform: scale(1.2);
+        transform: scale(1.5);
         opacity: 1;
     }
     100% {
-        transform: scale(1);
+        transform: scale(3);
         opacity: 0;
     }
 }

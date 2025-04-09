@@ -34,7 +34,7 @@ const musicTracks = [
     '/music/bgsample.mp3',
     '/music/bgsample-2.mp3',
     '/music/bgsample-3.mp3',
-    '/music/bgsample-4.mp3',
+    //'/music/bgsample-4.mp3',
 ];
 
 // Audio settings management
@@ -131,6 +131,17 @@ function playDiceRollSound() {
     if (!settings.sfx) return;
 
     const audio = new Audio('/sounds/dice-roll-3.mp3');
+    audio.volume = 0.3;
+    audio.play().catch(error => {
+        console.log("Error playing sound:", error);
+    });
+}
+
+function playHoldDiceSound() {
+    const settings = loadAudioSettings();
+    if (!settings.sfx) return;
+
+    const audio = new Audio('/sounds/hold-dice.mp3');
     audio.volume = 0.7;
     audio.play().catch(error => {
         console.log("Error playing sound:", error);
@@ -173,6 +184,9 @@ function renderDice(game: YahtzeeGame, dice: Die[]) {
 
         dieElement.addEventListener("click", () => {
             game.toggleHold(index);
+            if (game.dice()[index].held) {
+                playHoldDiceSound();
+            }
             renderDice(game, game.dice());
         });
 
@@ -626,6 +640,14 @@ function initializeEventListeners(game: YahtzeeGame) {
         if(oldState === newState){
             return;
         }
+        
+        // Toggle game-active class on body
+        if (newState === GameState.MainMenu) {
+            document.body.classList.remove('game-active');
+        } else {
+            document.body.classList.add('game-active');
+        }
+
         switch(newState){
             case GameState.MainMenu:
                 gameContainer.style.display = "none";

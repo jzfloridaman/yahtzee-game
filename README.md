@@ -74,7 +74,11 @@ Make sure you have the following installed on your system:
 2. Install dependencies and run the game:
 
    ```bash
+   npm i @capacitor/android @capacitor/ios
+   brew install cocoapods
    npm install
+   npx cap add android
+   npx cap add ios
    ```
 
 ### Run the game

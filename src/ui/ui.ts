@@ -719,6 +719,7 @@ function initializeEventListeners(game: YahtzeeGame) {
                 }
                 game.updateSelectedScore(scoreType, scoreValue);
                 resetDiceUI(game);
+                animateDice();
                 updateDice(game);
 
                 if(game.gameType === GameMode.MultiPlayer){

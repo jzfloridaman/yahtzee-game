@@ -35,7 +35,7 @@ export class DiceManager implements IDiceManager {
 
     rollNewDie(): Die {
         return {
-            value: Math.floor(Math.random() * 1) + 1,
+            value: Math.floor(Math.random() * 6) + 1,
             color: ['red', 'green', 'blue'][Math.floor(Math.random() * 3)] as 'red' | 'green' | 'blue',
             held: false,
         };

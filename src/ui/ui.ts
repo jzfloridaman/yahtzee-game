@@ -577,15 +577,18 @@ function initializeEventListeners(game: YahtzeeGame) {
                 }
                 button.classList.add('selected');
                 const scoreValue = game.calculateScore(scoreType);
-                
+
                 // Check for additional Yahtzee
-                if(game.isCategorySelected(Categories.Yahtzee)){
-                    console.log("checking for additional yahtzee");
+                if(game.isCategorySelected(Categories.Yahtzee) && scoreType !== Categories.Yahtzee){
+
                     if (game.dice().every(die => die.value === game.dice()[0].value) && 
                         game.dice()[0].value !== 0) {  // 
                         // Check if all dice are the same and not blank
-                        let updateYahtzeeScore = game.getScoreByCategory(Categories.Yahtzee) + 100;
-                        game.updateSelectedScore(Categories.Yahtzee, updateYahtzeeScore);
+                        let currentYahtzeeScore = game.getScoreByCategory(Categories.Yahtzee);
+                        if(currentYahtzeeScore > 0){
+                            let updateYahtzeeScore = currentYahtzeeScore + 100;
+                            game.updateSelectedScore(Categories.Yahtzee, updateYahtzeeScore);
+                        }
                     }
                 }
 

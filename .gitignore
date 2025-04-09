@@ -4,6 +4,7 @@ node_modules/
 # Ignore compiled output
 dist/
 coverage/
+random/
 #*.js
 #*.js.map
 

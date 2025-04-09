@@ -127,9 +127,9 @@ export class YahtzeeGame {
     }
     // update the actual player score based on the selected category
     updateSelectedScore(category: Categories, score: number, roll: boolean = true){ 
-        console.log("updating selected score", category, score);
+        //console.log("updating selected score", category, score);
         // exception for yahtzee
-        if(category === Categories.Yahtzee){
+        if(category === Categories.Yahtzee && score > 50){
             this.scoreManager[this.currentPlayer].updateScorecard(category, score, true);
         }
         if(this.scoreManager[this.currentPlayer].isCategorySelected(category)){

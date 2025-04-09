@@ -4,73 +4,65 @@ import { useCalculateScore } from '../utils/CalculateScore';
 import { Die } from '../types/Die';
 
 export class ScoreManager implements IScoreManager {
-    private scorecard: { [key in Categories]: { value: number | null, selected: boolean } } = {} as any;
+    private scorecard: { [key in Categories]: { value: number | null; selected: boolean } } = {} as any;
+    private upperScore: number = 0;
+    private lowerScore: number = 0;
+    private totalScore: number = 0;
 
     constructor() {
         this.initializeScorecard();
     }
 
     initializeScorecard() {
-        this.scorecard = {
-            [Categories.Ones]: { value: null, selected: false },
-            [Categories.Twos]: { value: null, selected: false },
-            [Categories.Threes]: { value: null, selected: false },
-            [Categories.Fours]: { value: null, selected: false },
-            [Categories.Fives]: { value: null, selected: false },
-            [Categories.Sixes]: { value: null, selected: false },
-
-            [Categories.ThreeOfAKind]: { value: null, selected: false },
-            [Categories.FourOfAKind]: { value: null, selected: false },
-            [Categories.FullHouse]: { value: null, selected: false },
-            [Categories.SmallStraight]: { value: null, selected: false },
-            [Categories.LargeStraight]: { value: null, selected: false },
-
-            [Categories.Yahtzee]: { value: null, selected: false },
-            [Categories.Chance]: { value: null, selected: false },
-
-            [Categories.Blues]: { value: null, selected: false },
-            [Categories.Reds]: { value: null, selected: false },
-            [Categories.Greens]: { value: null, selected: false },
-            [Categories.ColorFullHouse]: { value: null, selected: false },
-            [Categories.TopBonus]: { value: null, selected: false },
-        };
+        console.log('Initializing scorecard...');
+        // Initialize all categories with null scores and unselected state
+        for (const category in Categories) {
+            if (isNaN(Number(category))) { // Ensure it's a string key, not a numeric index
+                const categoryEnum = Categories[category as keyof typeof Categories];
+                this.scorecard[categoryEnum] = { value: null, selected: false };
+                console.log(`Initialized category ${category}:`, this.scorecard[categoryEnum]);
+            }
+        }
+        console.log('Total categories initialized:', Object.keys(this.scorecard).length);
     }
 
     calculateScore(category: Categories, dice: Die[]): number {
         return useCalculateScore(category, dice);
     }
 
-    updateScorecard(category: Categories, score: number, selected: boolean = false) {
-        if (!this.scorecard[category].selected) {
-            this.scorecard[category].value = score;
+    updateScorecard(category: Categories, score: number | null, selected: boolean = false) {
+        if (!this.scorecard[category]) {
+            this.scorecard[category] = { value: null, selected: false };
         }
-        if(selected){
-            this.scorecard[category].selected = selected;
-            if(category !== Categories.TopBonus){
-                this.isUpperScoreBonusApplicable();
-            }
-            if(category === Categories.Yahtzee){
-                this.scorecard[Categories.Yahtzee].value = score;
-            }
-        }   
+        this.scorecard[category].value = score;
+        this.scorecard[category].selected = selected;
+        this.calculateScores();
     }
 
     isCategorySelected(category: Categories): boolean {
-        return this.scorecard[category].selected;
+        return this.scorecard[category]?.selected || false;
     }
 
-    getScorecard(): { [key in Categories]: { value: number | null, selected: boolean } } {
-        return this.scorecard;
+    getScorecard(): { [key: string]: { value: number | null; selected: boolean } } {
+        const result: { [key: string]: { value: number | null; selected: boolean } } = {};
+        for (const category in Categories) {
+            if (isNaN(Number(category))) { // Ensure it's a string key, not a numeric index
+                const categoryEnum = Categories[category as keyof typeof Categories];
+                result[category] = {
+                    value: this.scorecard[categoryEnum]?.value ?? null,
+                    selected: this.scorecard[categoryEnum]?.selected ?? false
+                };
+            }
+        }
+        return result;
     }
 
     getScoreByCategory(category: Categories): number | null {
-        return this.scorecard[category].value;
+        return this.scorecard[category]?.value ?? null;
     }
 
     getTotalScore(): number {
-        return Object.values(this.scorecard)
-            .filter(item => item.selected)
-            .reduce((total, item) => total + (item.value || 0), 0);
+        return this.totalScore;
     }
 
     getCompletedCategories(): number {
@@ -78,15 +70,21 @@ export class ScoreManager implements IScoreManager {
     }
 
     getRemainingCategories(): number {
-        return this.getTotalCategories() - this.getCompletedCategories();
+        const remaining = Object.values(this.scorecard).filter(entry => !entry.selected).length;
+        console.log('Remaining categories:', remaining);
+        return remaining;
     }
 
     getTotalCategories(): number {
         return Object.keys(this.scorecard).length;
     }
 
-    isUpperScoreBonusApplicable(): number {
-        const upperSectionCategories = [
+    calculateScores() {
+        this.upperScore = 0;
+        this.lowerScore = 0;
+        
+        // Calculate upper score (1-6)
+        const upperCategories = [
             Categories.Ones,
             Categories.Twos,
             Categories.Threes,
@@ -95,18 +93,40 @@ export class ScoreManager implements IScoreManager {
             Categories.Sixes
         ];
         
-        const totalScore = upperSectionCategories.reduce((sum, category) => {
-            if(this.scorecard[category].selected){
-                return sum + (this.scorecard[category].value || 0);
+        upperCategories.forEach(category => {
+            const score = this.getScoreByCategory(category);
+            if (score !== null) {
+                this.upperScore += score;
             }
-            return sum;
-        }, 0);
+        });
 
-        if(totalScore >= 63){
-            this.updateScorecard(Categories.TopBonus, 35, true);
+        // Calculate lower score (other categories)
+        const lowerCategories = [
+            Categories.ThreeOfAKind,
+            Categories.FourOfAKind,
+            Categories.FullHouse,
+            Categories.SmallStraight,
+            Categories.LargeStraight,
+            Categories.Yahtzee,
+            Categories.Chance
+        ];
+
+        lowerCategories.forEach(category => {
+            const score = this.getScoreByCategory(category);
+            if (score !== null) {
+                this.lowerScore += score;
+            }
+        });
+
+        // Add upper bonus if applicable
+        if (this.upperScore >= 63) {
+            this.upperScore += 35;
         }
 
-        return totalScore;
+        this.totalScore = this.upperScore + this.lowerScore;
     }
 
+    isUpperScoreBonusApplicable(): number {
+        return this.upperScore;
+    }
 }

@@ -4,6 +4,7 @@ import { DiceManager } from './managers/DiceManager';
 import { ScoreManager } from './managers/ScoreManager';
 import { GameState } from './enums/GameState';
 import { GameMode } from './enums/GameMode';
+import { ComputerPlayer } from './ai/ComputerPlayer';
 import { initializeUI } from './ui/ui';
 
 // Game state
@@ -11,6 +12,7 @@ export class YahtzeeGame {
 
     private diceManager: DiceManager;
     public scoreManager: ScoreManager[] = [];
+    private computerPlayers: ComputerPlayer[] = [];
 
     newRoll: boolean = true;
     rollsLeft: number = 2;
@@ -45,19 +47,43 @@ export class YahtzeeGame {
 
     dice(): Die[] {
         if(this.newRoll){
-            return this.diceManager.resetDice();
+            this.diceManager.resetDice();
+            this.diceManager.rollDice();
+            this.newRoll = false;
         }
         return this.diceManager.getDice();
     }
 
-    startNewGame(players: number = 1) {
+    startNewGame(players: number = 1, computerOpponents: number = 0) {
+        console.log(`Starting new game with ${players} human players and ${computerOpponents} computer players`);
         this.players = players;
-        this.scoreManager = Array.from({length: players}, () => new ScoreManager());
+        this.scoreManager = Array.from({length: this.players + computerOpponents}, () => new ScoreManager());
+        this.computerPlayers = Array.from({length: computerOpponents}, (_, i) => 
+            new ComputerPlayer(this.scoreManager[players + i])
+        );
+        console.log(`Total players: ${this.players + computerOpponents}, Computer players: ${this.computerPlayers.length}`);
         this.currentPlayer = 0;
         this.newRoll = true;
+        this.rollsLeft = 2;
+        this.diceManager.resetDice();
         this.initializeScorecard();
-        //this.startNewRoll();
         this.state = GameState.Playing;
+        
+        // Log initial state
+        this.logPlayerStates();
+    }
+
+    logPlayerStates() {
+        console.log('Current Game State:');
+        console.log(`Current Player: ${this.currentPlayer}`);
+        console.log(`Is Computer Player: ${this.isComputerPlayer()}`);
+        console.log('Player Scorecards:');
+        this.scoreManager.forEach((manager, index) => {
+            console.log(`Player ${index + 1} (${index >= this.players ? 'Computer' : 'Human'}):`);
+            console.log('- Total Score:', manager.getTotalScore());
+            console.log('- Upper Score:', manager.isUpperScoreBonusApplicable());
+            console.log('- Scorecard:', manager.getScorecard());
+        });
     }
 
     initializeDice() {
@@ -75,30 +101,35 @@ export class YahtzeeGame {
     }
 
     isGameOver(): Boolean {
-        const currentScoreManager = this.scoreManager[this.currentPlayer];
-        if(currentScoreManager.getRemainingCategories() === 0){
-            this.setGameOver();
-            return true;
+        console.log('Checking if game is over...');
+        // Check if all players have completed their scorecards
+        for (let i = 0; i < this.scoreManager.length; i++) {
+            const playerScoreManager = this.scoreManager[i];
+            const remaining = playerScoreManager.getRemainingCategories();
+            console.log(`Player ${i + 1} remaining categories:`, remaining);
+            
+            if (remaining > 1) {
+                console.log('Game not over: Player', i + 1, 'has more than 1 category remaining');
+                return false;
+            }
+            
+            // If a player has only one category left, check if it's the top bonus
+            if (remaining === 1 && !playerScoreManager.isCategorySelected(Categories.TopBonus)) {
+                console.log('Game not over: Player', i + 1, 'has 1 non-bonus category remaining');
+                return false;
+            }
         }
-
-        // check to see if the last category is just the top bonus
-        // this needs a better implementation.
-        if(currentScoreManager.getRemainingCategories() === 1 && !currentScoreManager.isCategorySelected(Categories.TopBonus)){
-            this.calculateAllScores();
-            this.setGameOver();
-            return true;
-        }
-
-        return false;
+        
+        console.log('Game is over: All players have completed their scorecards');
+        this.setGameOver();
+        return true;
     }
 
     startNewRoll(){
-        if(!this.isGameOver()){
+        if(!this.newRoll && !this.isGameOver()){
             // if multiplayer, switch to next player, load/save data
             this.rollsLeft = 2;
             this.diceManager.resetDice();
-            //this.initializeDice();
-            //this.newRoll = false;
         }
     }
 
@@ -126,9 +157,11 @@ export class YahtzeeGame {
         }
     }
     // update the actual player score based on the selected category
-    updateSelectedScore(category: Categories, score: number, roll: boolean = true){ 
-        //console.log("updating selected score", category, score);
-        // exception for yahtzee
+    updateSelectedScore(category: Categories, score: number, roll: boolean = true) {
+        console.log(`Updating score for player ${this.currentPlayer + 1}:`);
+        console.log('- Category:', Categories[category]);
+        console.log('- Score:', score);
+        
         if(category === Categories.Yahtzee && score > 50){
             this.scoreManager[this.currentPlayer].updateScorecard(category, score, true);
         }
@@ -136,10 +169,13 @@ export class YahtzeeGame {
             return;
         }
         this.scoreManager[this.currentPlayer].updateScorecard(category, score, true);
+        
+        // Log state after update
+        this.logPlayerStates();
+        
         if(roll){
-            this.nextPlayer();  // might need to just prevent this if in single player.
+            this.nextPlayer();
             this.newRoll = true;
-            //this.startNewRoll();
         }
     }
 
@@ -168,19 +204,93 @@ export class YahtzeeGame {
     }
 
     getPlayerCount(): number {
-        return this.players;
+        return this.players + this.computerPlayers.length;
     }
 
-    nextPlayer(){
-        // maybe check to make sure its not single player.
-        this.currentPlayer++;
-        if(this.currentPlayer >= this.players){
-            this.currentPlayer = 0;
-        }
+    getComputerPlayerCount(): number {
+        return this.computerPlayers.length;
     }
 
     getPlayerScore(player: number): number {
-        return this.scoreManager[player].getTotalScore();
+        if (player >= 0 && player < this.scoreManager.length) {
+            return this.scoreManager[player].getTotalScore();
+        }
+        return 0;
+    }
+
+    nextPlayer() {
+        console.log(`Moving from player ${this.currentPlayer} to next player`);
+        this.currentPlayer++;
+        if(this.currentPlayer >= this.players + this.computerPlayers.length){
+            this.currentPlayer = 0;
+        }
+        console.log(`Now it's player ${this.currentPlayer}'s turn`);
+        this.rollsLeft = 2;
+        this.newRoll = true;
+        this.diceManager.resetDice();
+        this.logPlayerStates();
+    }
+
+    isComputerPlayer(): boolean {
+        const isComputer = this.computerPlayers.length > 0 && this.currentPlayer >= this.players;
+        console.log(`Checking if computer player: currentPlayer=${this.currentPlayer}, totalPlayers=${this.players}, isComputer=${isComputer}`);
+        return isComputer;
+    }
+
+    async playComputerTurn() {
+        if (!this.isComputerPlayer()) {
+            console.log('Not a computer player turn');
+            return;
+        }
+
+        console.log('Starting computer player turn...');
+        const computerIndex = this.currentPlayer - this.players;
+        const computer = this.computerPlayers[computerIndex];
+        console.log(`Computer player ${computerIndex + 1} taking turn (index ${computerIndex})`);
+
+        // Initialize dice for computer's turn
+        this.newRoll = true;
+        this.rollsLeft = 2;
+        this.diceManager.resetDice();
+        this.diceManager.rollDice(); // First roll
+        console.log('Initial dice roll:', this.diceManager.getDice().map(d => d.value));
+
+        // Computer's turn logic
+        while (this.rollsLeft > 0) {
+            console.log(`Computer roll ${3 - this.rollsLeft} of 3`);
+            const currentDice = this.diceManager.getDice();
+            console.log('Current dice:', currentDice.map(d => d.value));
+            
+            // Decide which dice to hold
+            const holds = computer.shouldHoldDice(currentDice, this.rollsLeft);
+            holds.forEach((shouldHold, index) => {
+                if (shouldHold) {
+                    this.toggleHold(index);
+                }
+            });
+            console.log('Held dice:', currentDice.filter(d => d.held).map(d => d.value));
+            
+            // Roll unheld dice
+            this.diceManager.rollDice();
+            console.log('After roll:', this.diceManager.getDice().map(d => d.value));
+            this.rollsLeft--;
+            
+            // Wait a bit between rolls for visual effect
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        // Choose and score category
+        const finalDice = this.diceManager.getDice();
+        const category = computer.chooseCategory(finalDice);
+        const score = this.calculateScore(category);
+        console.log(`Computer scoring ${score} points in ${Categories[category]}`);
+        
+        // Update only the computer's scorecard
+        this.scoreManager[this.currentPlayer].updateScorecard(category, score, true);
+        
+        // Move to next player
+        this.nextPlayer();
+        console.log('Computer turn complete');
     }
 }
 

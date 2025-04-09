@@ -309,27 +309,32 @@ function setDieIcon(el: HTMLDivElement, value: number) {
 }
 
 function updateScoreboard(game: YahtzeeGame) {
-    game.calculateAllScores();
+    // Only calculate potential scores for unselected categories
     document.querySelectorAll('.score-item').forEach(cell => {
         const category = cell.getAttribute('data-category') as Categories;
         if (category != null) {
-            const score = game.getScoreByCategory(category);
-            const cellScore = cell.querySelector('.score-cell');
             const selected = game.isCategorySelected(category);
+            const cellScore = cell.querySelector('.score-cell');
+            
             if(selected){
                 cell.classList.add('disabled');
+                const score = game.getScoreByCategory(category);
                 if(score !== null && score > 0){
                     cell.classList.remove('no-score');
                 }else{
                     cell.classList.add('no-score');
                 }
+                if(cellScore){
+                    cellScore.textContent = score !== null ? score.toString() : '-';
+                }
             }else{
                 cell.classList.remove('disabled');
                 cell.classList.remove('no-score');
-            }
-
-            if(cellScore){
-                cellScore.textContent = score !== null ? score.toString() : '-';
+                // Show potential score for current player's turn
+                const potentialScore = game.calculateScore(category);
+                if(cellScore){
+                    cellScore.textContent = potentialScore.toString();
+                }
             }
         }
     });
@@ -398,6 +403,30 @@ function setupUI(game: YahtzeeGame){
     });
     rollButton.innerHTML = generateRollButtonText(game.rollsLeft, game.newRoll);
     rollButton.disabled = false;
+    
+    // Reset dice display without calculating scores
+    const dice = game.dice();
+    diceContainer.innerHTML = "";
+    dice.forEach((die, index) => {
+        const dieElement = document.createElement("div");
+        setDieIcon(dieElement, die.value);
+        dieElement.classList.add("die");
+        setDieColor(dieElement, die.color);
+        if (die.held) dieElement.classList.add("held");
+
+        dieElement.addEventListener("click", () => {
+            game.toggleHold(index);
+            if (game.dice()[index].held) {
+                playHoldDiceSound();
+            }
+            renderDice(game, game.dice());
+        });
+
+        diceContainer.appendChild(dieElement);
+    });
+
+    // Always update scoreboard to show initial scores
+    updateScoreboard(game);
 }
 
 function resetDiceUI(game: YahtzeeGame){
@@ -413,7 +442,12 @@ function resetPlayersGrid(game: YahtzeeGame){
     playersContainer.classList.remove('grid-cols-2');
     playersContainer.classList.remove('grid-cols-3');
     playersContainer.classList.remove('grid-cols-4');
-    playersContainer.classList.add('grid-cols-' + game.getPlayerCount());
+    
+    const totalPlayers = game.gameType === GameMode.MultiPlayer ? 
+        game.getPlayerCount() + 1 : // Add 1 for computer player
+        game.getPlayerCount();
+    
+    playersContainer.classList.add('grid-cols-' + totalPlayers);
 }
 
 function setupPlayersUI(game: YahtzeeGame){
@@ -433,22 +467,37 @@ function setupPlayersUI(game: YahtzeeGame){
 
     if(game.gameType === GameMode.MultiPlayer){
         console.log("setting up multi player mode");
+        const humanPlayers = game.getPlayerCount() - game.getComputerPlayerCount();
+        const totalPlayers = game.getPlayerCount();
+        console.log(`Setting up UI for ${humanPlayers} human players and ${game.getComputerPlayerCount()} computer players`);
+        
         resetPlayersGrid(game);
         const players = playersContainer.querySelectorAll('.player-data');
-        let playerCount = 0;
+        
         players.forEach((player, index) => {
             let playerDiv = players[index] as HTMLDivElement;
-            if(playerCount >= game.getPlayerCount()){   
+            if(index >= totalPlayers){   
                 playerDiv.style.display = "none";
-            }else{
+            } else {
                 playerDiv.style.display = "block";
+                // Update player name for computer player
+                if (index >= humanPlayers) {
+                    const playerName = playerDiv.querySelector('h2');
+                    if (playerName) {
+                        playerName.textContent = `Computer ${index - humanPlayers + 1}`;
+                    }
+                } else {
+                    const playerName = playerDiv.querySelector('h2');
+                    if (playerName) {
+                        playerName.textContent = `Player ${index + 1}`;
+                    }
+                }
             }
-            if(playerCount > 0){
+            if(index > 0){
                 playerDiv.classList.remove('active');
             }else{
                 playerDiv.classList.add('active');
             }
-            playerCount++;
         });
     }
 }
@@ -473,13 +522,10 @@ function updatePlayerScore(game: YahtzeeGame){
     const players = playersContainer.querySelectorAll('.player-data');
     let playerCount = 0;
     players.forEach((el, index) => {
-        if(playerCount >= game.getPlayerCount()){
-            return;
-        }
         let playerDiv = players[index] as HTMLDivElement;
         // update points
         let playerScoreDiv = playerDiv.querySelector('span.player-score');
-        if(playerScoreDiv){
+        if(playerScoreDiv && playerDiv.style.display !== "none"){
             playerScoreDiv.textContent = game.getPlayerScore(index).toString();
             playerCount++;
         }
@@ -677,6 +723,15 @@ function initializeEventListeners(game: YahtzeeGame) {
                 if(game.gameType === GameMode.MultiPlayer){
                     updatePlayerScore(game);
                     changePlayer(game);
+                    
+                    // Check if next player is computer and trigger their turn
+                    if (game.isComputerPlayer()) {
+                        console.log('Next player is computer, starting computer turn');
+                        game.playComputerTurn().then(() => {
+                            updateDice(game);
+                            updateScoreboard(game);
+                        });
+                    }
                 }
             } else {
                 console.error('Score type not found on button.');
@@ -690,20 +745,19 @@ function initializeEventListeners(game: YahtzeeGame) {
 
             if (action === 'sp') {
                 game.setGameMode(GameMode.SinglePlayer);
-                game.startNewGame(1);
+                game.startNewGame(1, 1); // Add one computer opponent
                 setupPlayersUI(game);
                 gameContainer.style.display = "block";
                 gameModeContainer.style.display = "none";
                 renderDice(game, game.dice());
             }
 
-            if(action === 'mp'){
-                // Show player count selection
+            if (action === 'mp') {
                 playerCountSelection.classList.remove('hidden');
                 playerCountSelection.classList.add('visible');
             }
 
-            if(action === 'MainMenu'){
+            if (action === 'MainMenu') {
                 game.state = GameState.MainMenu;
             }
         });
@@ -714,8 +768,9 @@ function initializeEventListeners(game: YahtzeeGame) {
     playerCountButtons.forEach(button => {
         button.addEventListener('click', () => {
             const playerCount = parseInt(button.getAttribute('data-count') || '2');
+            console.log(`Starting multiplayer game with ${playerCount} players`);
             game.setGameMode(GameMode.MultiPlayer);
-            game.startNewGame(playerCount);
+            game.startNewGame(playerCount, 1); // Add one computer opponent
             setupPlayersUI(game);
             updatePlayerScore(game);
             gameContainer.style.display = "block";
@@ -725,48 +780,42 @@ function initializeEventListeners(game: YahtzeeGame) {
     });
 
     game.onStateChange((newState, oldState) => {
-        console.log(`Game state changed from: ${oldState} to: ${newState}`);
-        if(oldState === newState){
-            return;
-        }
+        console.log(`Game state changed from ${oldState} to ${newState}`);
         
-        // Toggle game-active class on body
-        if (newState === GameState.MainMenu) {
-            document.body.classList.remove('game-active');
-        } else {
-            document.body.classList.add('game-active');
-        }
-
-        switch(newState){
-            case GameState.MainMenu:
-                gameContainer.style.display = "none";
-                gameOverContainer.style.display = "none";
-                gameModeContainer.style.display = "block";
-                gameOptionsToggle.style.display = "none";
-                break;
-            case GameState.Playing:
-                gameContainer.style.display = "block";
-                gameModeContainer.style.display = "none";
-                gameOverContainer.style.display = "none";
-                gameOptionsToggle.style.display = "block";
-                setupUI(game);
-                break;
-            case GameState.GameOver:  
-                gameOverContainer.style.display = "block";
-                gameContainer.style.display = "none";
-                gameModeContainer.style.display = "none";
-                gameOptionsToggle.style.display = "block";
-                
-                const gameOverMessage = document.getElementById("game-over-message") as HTMLParagraphElement;
-                if (game.gameType === GameMode.MultiPlayer) {
-                    const winner = getWinningPlayer(game);
-                    gameOverMessage.innerHTML = `Player ${winner.player + 1} wins with <span class="final-score">${winner.score}</span> points!`;
-                    updateFinalScorecard(game, winner.player);
-                } else {
-                    gameOverMessage.innerHTML = `You scored <span class="final-score">${game.getTotalScore()}</span> points!`;
-                    updateFinalScorecard(game, 0);
-                }
-                break;
+        if (newState === GameState.Playing) {
+            console.log('Checking if computer turn...');
+            if (game.isComputerPlayer()) {
+                console.log('Starting computer turn from UI');
+                game.playComputerTurn().then(() => {
+                    console.log('Computer turn completed, updating UI');
+                    updateDice(game);
+                    updateScoreboard(game);
+                    updatePlayerScore(game);
+                    changePlayer(game);
+                    // Check if it's still a computer player's turn
+                    if (game.isComputerPlayer()) {
+                        console.log('Next player is also computer, continuing turn');
+                        game.playComputerTurn().then(() => {
+                            updateDice(game);
+                            updateScoreboard(game);
+                            updatePlayerScore(game);
+                            changePlayer(game);
+                        });
+                    }
+                });
+            } else {
+                console.log('Human player turn');
+            }
+        } else if (newState === GameState.GameOver) {
+            console.log('Game over state detected');
+            gameOverContainer.style.display = "block";
+            gameContainer.style.display = "none";
+            const finalScore = game.getPlayerScore(game.currentPlayer);
+            const gameOverMessage = document.getElementById("game-over-message");
+            if (gameOverMessage) {
+                gameOverMessage.textContent = `You scored ${finalScore} points!`;
+            }
+            updateFinalScorecard(game, game.currentPlayer);
         }
     });
 

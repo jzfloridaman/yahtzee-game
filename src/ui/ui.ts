@@ -443,10 +443,11 @@ function resetPlayersGrid(game: YahtzeeGame){
     playersContainer.classList.remove('grid-cols-3');
     playersContainer.classList.remove('grid-cols-4');
     
-    const totalPlayers = game.gameType === GameMode.MultiPlayer ? 
-        game.getPlayerCount() + 1 : // Add 1 for computer player
-        game.getPlayerCount();
-    
+    // const totalPlayers = game.gameType === GameMode.MultiPlayer ? 
+    //     game.getPlayerCount() + 1 : // Add 1 for computer player
+    //     game.getPlayerCount();
+    const totalPlayers = game.getPlayerCount();
+
     playersContainer.classList.add('grid-cols-' + totalPlayers);
 }
 
@@ -511,11 +512,11 @@ function changePlayer(game: YahtzeeGame){
         }else{
             playerDiv.classList.remove('active');
         }
-
-        // reload the scorecard.
-        setupUI(game);
-
     });
+
+    // Update the scoreboard for the new active player
+    setupUI(game);
+    updateScoreboard(game);
 }
 
 function updatePlayerScore(game: YahtzeeGame){
@@ -730,6 +731,8 @@ function initializeEventListeners(game: YahtzeeGame) {
                         game.playComputerTurn().then(() => {
                             updateDice(game);
                             updateScoreboard(game);
+                            updatePlayerScore(game);
+                            changePlayer(game);
                         });
                     }
                 }

@@ -12,11 +12,11 @@ export class YahtzeeGame {
     private diceManager: DiceManager;
     public scoreManager: ScoreManager[] = [];
 
-    newRoll: boolean = true;
-    rollsLeft: number = 2;
-    players: number = 1;    // array of Player objects
-    currentPlayer: number = 0;  // reference to current player in players array
-    gameType: GameMode = GameMode.SinglePlayer;
+    public newRoll: boolean = true;
+    public rollsLeft: number = 2;
+    public players: number = 1;    // array of Player objects
+    public currentPlayer: number = 0;  // reference to current player in players array
+    public gameType: GameMode = GameMode.SinglePlayer;
 
     private _state: GameState = GameState.MainMenu;
     private stateChangeCallbacks: Array<(newState: GameState, oldState: GameState) => void> = [];
@@ -82,7 +82,7 @@ export class YahtzeeGame {
         }
 
         // check to see if the last category is just the top bonus
-        // this needs a better implementation.
+        // this needs a better implementation. once topbonus is removed, this can be removed.
         if(currentScoreManager.getRemainingCategories() === 1 && !currentScoreManager.isCategorySelected(Categories.TopBonus)){
             this.calculateAllScores();
             this.setGameOver();
@@ -172,7 +172,6 @@ export class YahtzeeGame {
     }
 
     nextPlayer(){
-        // maybe check to make sure its not single player.
         this.currentPlayer++;
         if(this.currentPlayer >= this.players){
             this.currentPlayer = 0;
@@ -186,14 +185,3 @@ export class YahtzeeGame {
 
 const game = new YahtzeeGame();
 initializeUI(game);
-
-/* 
-    TODO: 
-    - Add computer player
-    - Add animations
-    - Add sounds
-    - abstract player specific logic to allow for multiplayer
-
-    IDEAS:
-        - ADD a rule class that allows you to select rolls, categories, and scoring strategies
-*/

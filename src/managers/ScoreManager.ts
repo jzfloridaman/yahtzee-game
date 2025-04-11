@@ -2,37 +2,46 @@ import { IScoreManager } from '../interfaces/IScoreManager';
 import { Categories } from '../enums/Categories';
 import { useCalculateScore } from '../utils/CalculateScore';
 import { Die } from '../types/Die';
+import { CategoryGroup } from '../enums/CategoryGroup';
 
 export class ScoreManager implements IScoreManager {
-    private scorecard: { [key in Categories]: { value: number | null, selected: boolean } } = {} as any;
+    private scorecard: { [key in Categories]: { value: number | null, selected: boolean, group: CategoryGroup } } = {} as any;
+    public score: number;
+    public lowerSectionScore: number;
+    public upperSectionScore: number;
+    public bonusScore: number;
 
-    constructor() {
+    constructor(score: number = 0) {
         this.initializeScorecard();
+        this.score = score;
+        this.lowerSectionScore = 0;
+        this.upperSectionScore = 0;
+        this.bonusScore = 0;
     }
 
     initializeScorecard() {
         this.scorecard = {
-            [Categories.Ones]: { value: null, selected: false },
-            [Categories.Twos]: { value: null, selected: false },
-            [Categories.Threes]: { value: null, selected: false },
-            [Categories.Fours]: { value: null, selected: false },
-            [Categories.Fives]: { value: null, selected: false },
-            [Categories.Sixes]: { value: null, selected: false },
+            [Categories.Ones]: { value: null, selected: false, group: CategoryGroup.UpperSection },
+            [Categories.Twos]: { value: null, selected: false, group: CategoryGroup.UpperSection },
+            [Categories.Threes]: { value: null, selected: false, group: CategoryGroup.UpperSection },
+            [Categories.Fours]: { value: null, selected: false, group: CategoryGroup.UpperSection },
+            [Categories.Fives]: { value: null, selected: false, group: CategoryGroup.UpperSection },
+            [Categories.Sixes]: { value: null, selected: false, group: CategoryGroup.UpperSection },
 
-            [Categories.ThreeOfAKind]: { value: null, selected: false },
-            [Categories.FourOfAKind]: { value: null, selected: false },
-            [Categories.FullHouse]: { value: null, selected: false },
-            [Categories.SmallStraight]: { value: null, selected: false },
-            [Categories.LargeStraight]: { value: null, selected: false },
+            [Categories.ThreeOfAKind]: { value: null, selected: false, group: CategoryGroup.LowerSection },
+            [Categories.FourOfAKind]: { value: null, selected: false, group: CategoryGroup.LowerSection },
+            [Categories.FullHouse]: { value: null, selected: false, group: CategoryGroup.LowerSection },
+            [Categories.SmallStraight]: { value: null, selected: false, group: CategoryGroup.LowerSection },
+            [Categories.LargeStraight]: { value: null, selected: false, group: CategoryGroup.LowerSection },
+            [Categories.Chance]: { value: null, selected: false, group: CategoryGroup.LowerSection },
 
-            [Categories.Yahtzee]: { value: null, selected: false },
-            [Categories.Chance]: { value: null, selected: false },
+            [Categories.Yahtzee]: { value: null, selected: false, group: CategoryGroup.LowerSection },
+            [Categories.Blues]: { value: null, selected: false, group: CategoryGroup.LowerSection },
+            [Categories.Reds]: { value: null, selected: false, group: CategoryGroup.LowerSection },
+            [Categories.Greens]: { value: null, selected: false, group: CategoryGroup.LowerSection },
+            [Categories.ColorFullHouse]: { value: null, selected: false, group: CategoryGroup.LowerSection },
 
-            [Categories.Blues]: { value: null, selected: false },
-            [Categories.Reds]: { value: null, selected: false },
-            [Categories.Greens]: { value: null, selected: false },
-            [Categories.ColorFullHouse]: { value: null, selected: false },
-            [Categories.TopBonus]: { value: null, selected: false },
+            [Categories.TopBonus]: { value: null, selected: false, group: CategoryGroup.Bonus },    // this needs to be removed
         };
     }
 

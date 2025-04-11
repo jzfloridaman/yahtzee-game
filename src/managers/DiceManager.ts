@@ -2,7 +2,9 @@ import { IDiceManager } from '../interfaces/IDiceManager';
 import { Die } from '../types/Die';
 
 export class DiceManager implements IDiceManager {
+    
     private dice: Die[] = [];
+    private dieSides: number = 6;
 
     constructor(length: number = 5) {
         this.dice = Array.from({ length: length }, () => this.setupDice());
@@ -35,7 +37,7 @@ export class DiceManager implements IDiceManager {
 
     rollNewDie(): Die {
         return {
-            value: Math.floor(Math.random() * 6) + 1,
+            value: Math.floor(Math.random() * this.dieSides) + 1,
             color: ['red', 'green', 'blue'][Math.floor(Math.random() * 3)] as 'red' | 'green' | 'blue',
             held: false,
         };

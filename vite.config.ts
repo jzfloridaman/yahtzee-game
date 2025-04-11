@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  base: '/yahtzee/', // Set the base URL for deployment
   root: '.', // Set the root directory
   build: {
     outDir: 'dist', // Output directory for the build

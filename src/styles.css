@@ -37,7 +37,7 @@ body.game-active {
 }
 
 #game-container, #game-mode-container, #game-over-container {
-    @apply bg-gray-800 p-4 md:p-6 rounded-lg shadow-lg flex flex-col items-center w-full max-w-6xl mx-auto;
+    @apply bg-gray-800/85 p-4 md:p-6 rounded-lg shadow-lg flex flex-col items-center w-full max-w-6xl mx-auto;
 }
 
 #game-mode-container, #game-over-container {

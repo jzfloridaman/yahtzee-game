@@ -31,10 +31,10 @@ const restartGameButton = document.getElementById('restart-game') as HTMLButtonE
 const newGameButton = document.getElementById('new-game') as HTMLButtonElement;
 let backgroundMusic: HTMLAudioElement;
 const musicTracks = [
-    '/music/bgsample.mp3',
-    '/music/bgsample-2.mp3',
-    '/music/bgsample-3.mp3',
-    //'/music/bgsample-4.mp3',
+    '/yahtzee/music/bgsample.mp3',
+    '/yahtzee/music/bgsample-2.mp3',
+    '/yahtzee/music/bgsample-3.mp3',
+    //'/yahtzee/music/bgsample-4.mp3',
 ];
 
 // Audio settings management
@@ -130,7 +130,7 @@ function playDiceRollSound() {
     const settings = loadAudioSettings();
     if (!settings.sfx) return;
 
-    const audio = new Audio('/sounds/dice-roll-3.mp3');
+    const audio = new Audio('/yahtzee/sounds/dice-roll-3.mp3');
     audio.volume = 0.3;
     audio.play().catch(error => {
         console.log("Error playing sound:", error);
@@ -141,7 +141,7 @@ function playHoldDiceSound() {
     const settings = loadAudioSettings();
     if (!settings.sfx) return;
 
-    const audio = new Audio('/sounds/hold-dice.mp3');
+    const audio = new Audio('/yahtzee/sounds/hold-dice.mp3');
     audio.volume = 0.7;
     audio.play().catch(error => {
         console.log("Error playing sound:", error);
@@ -152,7 +152,7 @@ function playScoreSound() {
     const settings = loadAudioSettings();
     if (!settings.sfx) return;
 
-    const audio = new Audio('/sounds/score.mp3');
+    const audio = new Audio('/yahtzee/sounds/score.mp3');
     audio.play().catch(error => {
         console.log("Error playing sound:", error);
     });
@@ -162,7 +162,7 @@ function playNoScoreSound() {
     const settings = loadAudioSettings();
     if (!settings.sfx) return;
 
-    const audio = new Audio('/sounds/no-score.mp3');
+    const audio = new Audio('/yahtzee/sounds/no-score.mp3');
     audio.play().catch(error => {
         console.log("Error playing sound:", error);
     });
@@ -172,7 +172,7 @@ function playYahtzeeSound() {
     const settings = loadAudioSettings();
     if (!settings.sfx) return;
 
-    const audio = new Audio('/sounds/yahtzee-3.mp3');
+    const audio = new Audio('/yahtzee/sounds/yahtzee-3.mp3');
     audio.volume = 0.7;
     audio.play().catch(error => {
         console.log("Error playing sound:", error);

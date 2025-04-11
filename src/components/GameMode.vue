@@ -1,36 +1,29 @@
 <template>
-  <div id="game-mode-container">
-    <div class="text-center">
-      <button @click="startSinglePlayer" class="game-mode-button w-full !mt-2">Single Player</button>
-      <button @click="showMultiplayerOptions" class="game-mode-button w-full">Multi Player</button>
-      <div v-if="showPlayerCount" id="player-count-selection" class="mt-4">
-        <h2 class="text-xl font-bold mb-4">Select Number of Players</h2>
-        <div class="grid grid-cols-3 gap-4">
-          <button v-for="count in [2,3,4]" :key="count" @click="startMultiplayerGame(count)" class="player-count-button">
-            {{ count }} Players
-          </button>
-        </div>
-      </div>
-      <p class="text-sm text-gray-500 mt-4">Programmed by John Zappone</p>
+  <div id="game-mode-container" class="flex flex-col items-center justify-center gap-8">
+    <h1 class="text-4xl font-bold text-center mb-8">Yahtzee</h1>
+    
+    <div class="flex flex-col gap-4 w-full max-w-md">
+      <button @click="startGame(GameMode.SinglePlayer)" 
+              class="game-mode-button bg-blue-600 hover:bg-blue-700 text-white py-4 px-8 rounded-lg transition-colors duration-200">
+        Single Player
+      </button>
+      
+      <button @click="startGame(GameMode.MultiPlayer)" 
+              class="game-mode-button bg-green-600 hover:bg-green-700 text-white py-4 px-8 rounded-lg transition-colors duration-200">
+        Multi Player
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { GameMode } from '../enums/GameMode'
 
-const emit = defineEmits(['start-game'])
-const showPlayerCount = ref(false)
+const emit = defineEmits<{
+  (e: 'start-game', mode: GameMode): void
+}>()
 
-const startSinglePlayer = () => {
-  emit('start-game', 'sp', 1)
-}
-
-const showMultiplayerOptions = () => {
-  showPlayerCount.value = true
-}
-
-const startMultiplayerGame = (count: number) => {
-  emit('start-game', 'mp', count)
+const startGame = (mode: GameMode) => {
+  emit('start-game', mode)
 }
 </script> 

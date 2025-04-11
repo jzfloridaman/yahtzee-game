@@ -1,26 +1,26 @@
 <template>
   <div id="game-container">
     <div id="players-container" class="text-center grid grid-cols-4 gap-2">
-      <div v-for="(_, index) in game.getPlayerCount()" :key="index" 
-           :class="['player-data', { active: game.currentPlayer === index }]">
+      <div v-for="(_, index) in gameStore.currentGame?.getPlayerCount()" :key="index" 
+           :class="['player-data', { active: gameStore.currentGame?.currentPlayer === index }]">
         <h2 class="text-sm md:text-xl font-bold text-center mb-1">Player {{ index + 1 }}</h2>
-        <span class="player-score font-bold text-center">{{ game.getPlayerScore(index) }}</span>
+        <span class="player-score font-bold text-center">{{ gameStore.currentGame?.getPlayerScore(index) }}</span>
       </div>
     </div>
 
     <div id="dice-container" class="flex justify-center gap-4 my-8">
-      <div v-for="(die, index) in game.dice()" :key="index" 
+      <div v-for="(die, index) in gameStore.currentGame?.dice()" :key="index" 
            class="die w-16 h-16 bg-white rounded-lg shadow-lg flex items-center justify-center cursor-pointer"
            :class="{ 'opacity-50': die.held }"
-           @click="game.toggleHold(index)">
+           @click="gameStore.currentGame?.toggleHold(index)">
         <i :class="['fas', `fa-dice-${die.value}`, 'text-4xl']"></i>
       </div>
     </div>
 
-    <button @click="game.rollDice()" id="roll-button" 
-            :disabled="game.rollsLeft <= 0"
+    <button @click="gameStore.currentGame?.rollDice()" id="roll-button" 
+            :disabled="gameStore.currentGame?.rollsLeft <= 0"
             class="w-full max-w-md mx-auto bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-colors duration-200">
-      Roll Dice ({{ game.rollsLeft }})
+      Roll Dice ({{ gameStore.currentGame?.rollsLeft }})
     </button>
 
     <div id="scorecard" class="mt-8">
@@ -39,7 +39,7 @@
         <div class="col-span-6 text-center">
           <span>
             Upper Score: 
-            <span id="score-upper">{{ game.getTotalTopScore() }}</span>/63
+            <span id="score-upper">{{ gameStore.currentGame?.getTotalTopScore() }}</span>/63
           </span>
         </div>
 
@@ -66,12 +66,10 @@
 </template>
 
 <script setup lang="ts">
-import { YahtzeeGame } from '../game'
+import { useGameStore } from '../stores/gameStore'
 import { Categories } from '../enums/Categories'
 
-const props = defineProps<{
-  game: YahtzeeGame
-}>()
+const gameStore = useGameStore()
 
 const singleCategories = [
   { name: 'Ones', value: Categories.Ones },
@@ -101,14 +99,14 @@ const colorCategories = [
 ]
 
 const getScoreDisplay = (category: Categories): string => {
-  const score = props.game.getScoreByCategory(category)
+  const score = gameStore.currentGame?.getScoreByCategory(category)
   return score === null ? '-' : score.toString()
 }
 
 const selectCategory = (category: { value: Categories }) => {
-  if (!props.game.isCategorySelected(category.value)) {
-    const score = props.game.calculateScore(category.value)
-    props.game.updateSelectedScore(category.value, score)
+  if (gameStore.currentGame && !gameStore.currentGame.isCategorySelected(category.value)) {
+    const score = gameStore.currentGame.calculateScore(category.value)
+    gameStore.currentGame.updateSelectedScore(category.value, score)
   }
 }
 </script> 

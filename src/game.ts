@@ -4,7 +4,6 @@ import { DiceManager } from './managers/DiceManager';
 import { ScoreManager } from './managers/ScoreManager';
 import { GameState } from './enums/GameState';
 import { GameMode } from './enums/GameMode';
-import { initializeUI } from './ui/ui';
 
 // Game state
 export class YahtzeeGame {
@@ -182,6 +181,3 @@ export class YahtzeeGame {
         return this.scoreManager[player].getTotalScore();
     }
 }
-
-const game = new YahtzeeGame();
-initializeUI(game);

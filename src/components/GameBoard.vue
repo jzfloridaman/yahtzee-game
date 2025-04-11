@@ -32,7 +32,7 @@
             <i :class="['fas', `fa-dice-${index + 1}`]"></i>
           </div>
           <div class="score-cell" @click="selectCategory(category)">
-            {{ game.getScoreByCategory(category) || '-' }}
+            {{ getScoreDisplay(category.value) }}
           </div>
         </div>
 
@@ -48,7 +48,7 @@
              class="score-item" :data-category="category.name">
           <div class="category-icon">{{ category.icon }}</div>
           <div class="score-cell" @click="selectCategory(category)">
-            {{ game.getScoreByCategory(category) || '-' }}
+            {{ getScoreDisplay(category.value) }}
           </div>
         </div>
 
@@ -57,7 +57,7 @@
              class="score-item" :data-category="category.name">
           <div class="category-icon">{{ category.icon }}</div>
           <div class="score-cell" @click="selectCategory(category)">
-            {{ game.getScoreByCategory(category) || '-' }}
+            {{ getScoreDisplay(category.value) }}
           </div>
         </div>
       </div>
@@ -99,6 +99,11 @@ const colorCategories = [
   { name: 'Color Full House', value: Categories.ColorFullHouse, icon: '🏠' },
   { name: 'Top Bonus', value: Categories.TopBonus, icon: 'B!' }
 ]
+
+const getScoreDisplay = (category: Categories): string => {
+  const score = props.game.getScoreByCategory(category)
+  return score === null ? '-' : score.toString()
+}
 
 const selectCategory = (category: { value: Categories }) => {
   if (!props.game.isCategorySelected(category.value)) {

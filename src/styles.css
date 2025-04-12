@@ -13,7 +13,7 @@ body {
     width: 100vw;
 }
 
-body.game-active {
+body:has(#game-container) {
     background-image: linear-gradient(135deg, 
         #4a00e0,  /* Deep Purple */
         #8e2de2,  /* Purple */

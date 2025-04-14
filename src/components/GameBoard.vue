@@ -13,14 +13,14 @@
     <div id="dice-container" class="flex justify-center gap-4 my-8">
       <div v-for="(die, index) in dice" :key="index" 
            class="die"
-           :class="{ 'opacity-90 held': die.held, [`${die.color}`]: true }"
+           :class="{ 'opacity-90 held': die.held, [`${die.color}`]: true, 'roll': die.isRolling }"
            @click="toggleHold(index)">
         <i :class="['fas', `${getDieIcon(die.value)}`, 'text-white']"></i>
       </div>
     </div>
 
     <button @click="rollDice" id="roll-button" 
-            :disabled="!canRoll"
+            :disabled="!canRoll || isRolling"
             class="w-full max-w-md mx-auto bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-colors duration-200"
             v-html="rollDiceText">
     </button>
@@ -39,7 +39,7 @@
           </div>
         </div>
 
-        <div class="upper-score-progress-bar col-span-6 text-center flex items-center justify-center">
+        <div class="upper-score-progress-bar col-span-6 text-center flex items-center justify-center" :style="{ '--progress-width': totalTopScorePercent + '%' }">
           <span>
             Upper Score: 
             <span id="score-upper">{{ totalTopScore }}</span>/63
@@ -66,7 +66,7 @@
         <!-- colors -->
         <div v-for="(category, index) in colorCategories" :key="index" 
             class="score-item" :data-category="category.name"
-            :class="{ 'selected': isCategorySelected(category.value) }">
+            :class="{ 'selected': isCategorySelected(category.value), [`${category.color}`]: true }">
           <div class="category-icon">
               <template v-if="category.icon">
                 <i :class="['fas', `${category.icon}`]"></i>
@@ -85,11 +85,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { Categories } from '../enums/Categories'
 
 const gameStore = useGameStore()
+
+// Local reactive states
+const isRolling = ref(false);
 
 // Computed properties for game state
 const currentGame = computed(() => gameStore.currentGame);
@@ -101,21 +104,37 @@ const newRoll = computed(() => currentGame.value?.newRoll || false);
 const canRoll = computed(() => currentGame.value && currentGame.value.rollsLeft > 0);
 const totalTopScore = computed(() => currentGame.value?.getTotalTopScore() || 0);
 
+const totalTopScorePercent = computed(() => {
+  return (totalTopScore.value / 63) * 100;
+})
+
 // Game actions
 const rollDice = () => {
-  // console.log('rollDice');
-  //currentGame.value?.rollDice()
+  isRolling.value = true;
   gameStore.rollDice();
+  dice.value.forEach((die) => {
+    if (!die.held) {
+      die.isRolling = true;
+      setTimeout(() => {
+        die.isRolling = false;
+      }, 1000);
+    }
+  });
+  setTimeout(() => {
+    isRolling.value = false;
+  }, 1000);
 }
 
 const rollDiceText = computed(() => {
-  // return `Roll Dice (${rollsLeft.value})`
-  let text = `<div class="flex gap-2"><div class="flex-1">ROLL</div>`;
+
+  let text = `<div class="flex gap-2">`;
     if(newRoll.value){
-        text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
-        text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
-        text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        // text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        // text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        // text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        text += `<div class="text-center flex-1">START</div>`;
     }else{
+        text += `<div class="flex-1">ROLL</div>`
         if(rollsLeft.value === 0){
             text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
             text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
@@ -154,13 +173,13 @@ const isCategorySelected = (category: Categories): boolean => {
 }
 
 const selectCategory = (category: { value: Categories }) => {
-  if (currentGame.value && !currentGame.value.isCategorySelected(category.value)) {
+  if (currentGame.value && !currentGame.value.isCategorySelected(category.value) && !newRoll.value) {
     const score = currentGame.value.calculateScore(category.value)
     if (score !== undefined) {
       currentGame.value.updateSelectedScore(category.value, score)
       currentGame.value.newRoll = true;
       currentGame.value.rollsLeft = 2;
-      currentGame.value.nextPlayer();
+      //gameStore.nextPlayer();
     }
   }
 }
@@ -204,10 +223,10 @@ const multipleCategories = [
 
 const colorCategories = [
   { name: 'Yahtzee', value: Categories.Yahtzee, text: 'Y!' },
-  { name: 'Blue', value: Categories.Blues, text: 'B' },
-  { name: 'Red', value: Categories.Reds, text: 'R' },
-  { name: 'Green', value: Categories.Greens, text: 'G' },
-  { name: 'Color Full House', value: Categories.ColorFullHouse, icon: 'fas fa-home' },
+  { name: 'Blue', value: Categories.Blues, text: 'B', color: 'blue' },
+  { name: 'Red', value: Categories.Reds, text: 'R', color: 'red' },
+  { name: 'Green', value: Categories.Greens, text: 'G', color: 'green' },
+  { name: 'Color Full House', value: Categories.ColorFullHouse, icon: 'fas fa-home', color: 'purple' },
   { name: 'Top Bonus', value: Categories.TopBonus, text: 'B!' }
 ]
 </script> 

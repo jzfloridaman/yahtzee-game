@@ -1,9 +1,10 @@
 <template>
   <div>
+    <div v-if="isAnyMenuOpen" class="overlay" @click="closeAllMenus"></div>
     <!-- Audio Settings Menu -->
     <div class="fixed top-4 right-4 z-50 flex gap-2">
       <div class="relative">
-        <button @click="gameStore.toggleAudioSettings" 
+        <button @click="toggleAudioSettings" 
                 class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
           <i class="fas fa-volume-up text-white text-xl"></i>
         </button>
@@ -27,7 +28,7 @@
         </div>
       </div>
 
-      <button @click="gameStore.toggleGameHistory" 
+      <button @click="toggleGameHistory" 
               class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
         <i class="fas fa-history text-white text-xl"></i>
       </button>
@@ -45,8 +46,8 @@
         </div>
       </div>
 
-      <div class="relative">
-        <button @click="gameStore.toggleGameOptions" 
+      <div class="relative" v-if="gameStore.gameMode !== null">
+        <button @click="toggleGameOptions" 
                 class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
           <i class="fas fa-bars text-white text-xl"></i>
         </button>
@@ -54,11 +55,11 @@
              class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-64">
           <h3 class="text-lg font-bold mb-2">Game Options</h3>
           <div class="flex flex-col gap-2">
-            <button @click="gameStore.restartGame" 
+            <button @click="restartGame" 
                     class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
               Restart Game
             </button>
-            <button @click="gameStore.newGame" 
+            <button @click="newGame" 
                     class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
               New Game
             </button>
@@ -74,6 +75,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import GameMode from './components/GameMode.vue'
 import GameBoard from './components/GameBoard.vue'
 import GameOver from './components/GameOver.vue'
@@ -82,15 +84,64 @@ import { GameMode as GameModeEnum } from './enums/GameMode'
 
 const gameStore = useGameStore()
 
-const startGame = (mode: GameModeEnum) => {
-  gameStore.initializeGame(mode)
+const startGame = (mode: GameModeEnum, players?: number) => {
+  gameStore.initializeGame(mode, players);
 }
 
 const endGame = () => {
-  gameStore.endGame()
+  gameStore.endGame();
 }
 
 const restartGame = () => {
-  gameStore.restartGame()
+  closeAllMenus();
+  gameStore.restartGame();
 }
+
+const newGame = () => {
+  closeAllMenus();
+  gameStore.newGame();
+}
+
+const closeAllMenus = (menu?: string) => {
+  if(menu !== 'audio'){
+    gameStore.showAudioSettings = false;
+  }
+  if(menu !== 'history'){
+    gameStore.showGameHistory = false;
+  }
+  if(menu !== 'options'){
+    gameStore.showGameOptions = false;
+  }
+}
+
+const toggleAudioSettings = () => {
+  closeAllMenus('audio');
+  gameStore.showAudioSettings = !gameStore.showAudioSettings;
+}
+
+const toggleGameHistory = () => {
+  closeAllMenus('history');
+  gameStore.showGameHistory = !gameStore.showGameHistory;
+}
+
+const toggleGameOptions = () => {
+  closeAllMenus('options');
+  gameStore.showGameOptions = !gameStore.showGameOptions;
+}
+
+const isAnyMenuOpen = computed(() => {
+  return gameStore.showAudioSettings || gameStore.showGameHistory || gameStore.showGameOptions;
+});
+
 </script> 
+<style>
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+  z-index: 40; /* Ensure it's below the menu but above other content */
+}
+</style>

@@ -37,14 +37,15 @@ export const useGameStore = defineStore('game', {
   },
 
   actions: {
-    initializeGame(mode: GameMode) {
+    initializeGame(mode: GameMode, players?: number) {
       this.game = new YahtzeeGame()
       this.game.setGameMode(mode)
       this.gameMode = mode
       this.isGameActive = true
       
       // Initialize the game with default player count based on mode
-      const playerCount = mode === GameMode.SinglePlayer ? 1 : 2
+      //const playerCount = mode === GameMode.SinglePlayer ? 1 : 2
+      const playerCount = players || 1;
       this.game.setPlayers(playerCount)
       this.game.startNewGame(playerCount)
     },
@@ -64,6 +65,12 @@ export const useGameStore = defineStore('game', {
       this.game = null
       this.gameMode = null
       this.isGameActive = false
+    },
+
+    nextPlayer() {
+      if (this.game) {
+        this.game.nextPlayer()
+      }
     },
 
     // Audio settings
@@ -102,7 +109,6 @@ export const useGameStore = defineStore('game', {
     },
 
     rollDice() {
-      console.log('rollDice in store');
       if(!this.game){
         console.log('no game');
         return;
@@ -113,7 +119,6 @@ export const useGameStore = defineStore('game', {
       }
     
       if(this.game.newRoll){   
-          //rollButton.innerHTML = generateRollButtonText(game.rollsLeft, game.newRoll);
           this.game.newRoll = false;
           this.game.startNewRoll();
           //playDiceRollSound();

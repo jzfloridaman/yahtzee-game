@@ -123,6 +123,9 @@ body:has(#game-container) {
 #roll-button {
     @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded mb-8 w-full text-xl;
 }
+#roll-button:disabled {
+    @apply opacity-80 cursor-not-allowed bg-gray-500;
+}
 
 .score-item {
     @apply text-center md:text-2xl rounded-lg border-white/50 border-2 bg-white text-black cursor-pointer p-1 md:p-2;
@@ -141,7 +144,19 @@ body:has(#game-container) {
     @apply text-center text-xl rounded-lg border-black/50 border-2 !bg-gray-100/[.40] text-black !cursor-not-allowed;
 }
 .score-item.no-score{
-    @apply !bg-red-500/[.40];
+    @apply bg-red-500;
+}
+.score-item.blue{
+    @apply bg-blue-500;
+}
+.score-item.red{
+    @apply bg-red-500;
+}
+.score-item.green{
+    @apply bg-green-500;
+}
+.score-item.purple{
+    @apply bg-purple-500;
 }
 
 #scorecard {

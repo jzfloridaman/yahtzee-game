@@ -171,6 +171,7 @@ export class YahtzeeGame {
     }
 
     nextPlayer(){
+        //console.log('nextPlayer', this.currentPlayer, this.players);
         this.currentPlayer++;
         if(this.currentPlayer >= this.players){
             this.currentPlayer = 0;

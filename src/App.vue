@@ -68,13 +68,15 @@
     </div>
 
     <GameMode v-if="!gameStore.gameIsActive" @start-game="startGame" />
-    <GameBoard v-else :game="gameStore.currentGame" @end-game="endGame" />
+    <GameBoard v-else @end-game="endGame" />
+    <!-- <GameOver v-if="gameStore.gameIsOver" @restart-game="restartGame" /> -->
   </div>
 </template>
 
 <script setup lang="ts">
 import GameMode from './components/GameMode.vue'
 import GameBoard from './components/GameBoard.vue'
+import GameOver from './components/GameOver.vue'
 import { useGameStore } from './stores/gameStore'
 import { GameMode as GameModeEnum } from './enums/GameMode'
 
@@ -86,5 +88,9 @@ const startGame = (mode: GameModeEnum) => {
 
 const endGame = () => {
   gameStore.endGame()
+}
+
+const restartGame = () => {
+  gameStore.restartGame()
 }
 </script> 

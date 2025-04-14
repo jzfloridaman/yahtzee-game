@@ -145,7 +145,7 @@ body:has(#game-container) {
 }
 
 #scorecard {
-    @apply w-full bg-gray-800 rounded-lg shadow-md pt-4;
+    @apply w-full rounded-lg shadow-md;
     margin-bottom: 0 !important;
 }
 

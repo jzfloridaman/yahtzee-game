@@ -14,6 +14,7 @@ export const useGameStore = defineStore('game', {
     game: null as YahtzeeGame | null,
     gameMode: null as GameMode | null,
     isGameActive: false,
+    gameIsOver: true,
     // Audio settings
     bgmEnabled: localStorage.getItem('bgmEnabled') === 'true',
     sfxEnabled: localStorage.getItem('sfxEnabled') === 'true',

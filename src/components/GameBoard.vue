@@ -21,15 +21,16 @@
 
     <button @click="rollDice" id="roll-button" 
             :disabled="!canRoll"
-            class="w-full max-w-md mx-auto bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-colors duration-200">
-      Roll Dice ({{ rollsLeft }})
+            class="w-full max-w-md mx-auto bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-colors duration-200"
+            v-html="rollDiceText">
     </button>
 
-    <div id="scorecard" class="mt-8">
+    <div id="scorecard">
       <div class="grid grid-cols-6 gap-2">
         <!-- singles -->
         <div v-for="(category, index) in singleCategories" :key="index" 
-             class="score-item" :data-category="category.name">
+             class="score-item" :data-category="category.name"
+             :class="{ 'selected': isCategorySelected(category.value) }">
           <div class="category-icon">
             <i :class="['fas', `${getDieIcon(index + 1)}`]"></i>
           </div>
@@ -38,7 +39,7 @@
           </div>
         </div>
 
-        <div class="col-span-6 text-center">
+        <div class="upper-score-progress-bar col-span-6 text-center flex items-center justify-center">
           <span>
             Upper Score: 
             <span id="score-upper">{{ totalTopScore }}</span>/63
@@ -47,8 +48,16 @@
 
         <!-- multiples -->
         <div v-for="(category, index) in multipleCategories" :key="index" 
-             class="score-item" :data-category="category.name">
-          <div class="category-icon">{{ category.icon }}</div>
+            class="score-item" :data-category="category.name"
+            :class="{ 'selected': isCategorySelected(category.value) }">
+          <div class="category-icon">
+              <template v-if="category.icon">
+                <i :class="['fas', `${category.icon}`]"></i>
+              </template>
+              <template v-else>
+                {{ category.text }}
+              </template>
+          </div>
           <div class="score-cell" @click="selectCategory(category)">
             {{ getScoreDisplay(category.value) }}
           </div>
@@ -56,8 +65,16 @@
 
         <!-- colors -->
         <div v-for="(category, index) in colorCategories" :key="index" 
-             class="score-item" :data-category="category.name">
-          <div class="category-icon">{{ category.icon }}</div>
+            class="score-item" :data-category="category.name"
+            :class="{ 'selected': isCategorySelected(category.value) }">
+          <div class="category-icon">
+              <template v-if="category.icon">
+                <i :class="['fas', `${category.icon}`]"></i>
+              </template>
+              <template v-else>
+                {{ category.text }}
+              </template>
+          </div>
           <div class="score-cell" @click="selectCategory(category)">
             {{ getScoreDisplay(category.value) }}
           </div>
@@ -80,15 +97,44 @@ const playerCount = computed(() => currentGame.value?.getPlayerCount() || 0);
 const currentPlayer = computed(() => currentGame.value?.currentPlayer || 0);
 const dice = computed(() => currentGame.value?.dice() || []);
 const rollsLeft = computed(() => currentGame.value?.rollsLeft || 0);
+const newRoll = computed(() => currentGame.value?.newRoll || false);
 const canRoll = computed(() => currentGame.value && currentGame.value.rollsLeft > 0);
 const totalTopScore = computed(() => currentGame.value?.getTotalTopScore() || 0);
 
 // Game actions
 const rollDice = () => {
-  //console.log('rollDice');
+  // console.log('rollDice');
   //currentGame.value?.rollDice()
   gameStore.rollDice();
 }
+
+const rollDiceText = computed(() => {
+  // return `Roll Dice (${rollsLeft.value})`
+  let text = `<div class="flex gap-2"><div class="flex-1">ROLL</div>`;
+    if(newRoll.value){
+        text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
+    }else{
+        if(rollsLeft.value === 0){
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        }
+        if(rollsLeft.value === 1){
+            text += `<div class="w-12 rounded text-blue-300"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        }
+        if(rollsLeft.value === 2){
+            text += `<div class="w-12 rounded text-blue-300"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-blue-300"><span class="fa fa-solid fa-circle"></span></div>`;
+            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
+        } 
+    }
+
+    return text + `</div>`;
+})
 
 const toggleHold = (index: number) => {
   currentGame.value?.toggleHold(index)
@@ -103,11 +149,18 @@ const getScoreDisplay = (category: Categories): string => {
   return score === null || score === undefined ? '-' : score.toString()
 }
 
+const isCategorySelected = (category: Categories): boolean => {
+  return currentGame.value?.isCategorySelected(category) || false
+}
+
 const selectCategory = (category: { value: Categories }) => {
   if (currentGame.value && !currentGame.value.isCategorySelected(category.value)) {
     const score = currentGame.value.calculateScore(category.value)
     if (score !== undefined) {
       currentGame.value.updateSelectedScore(category.value, score)
+      currentGame.value.newRoll = true;
+      currentGame.value.rollsLeft = 2;
+      currentGame.value.nextPlayer();
     }
   }
 }
@@ -141,20 +194,20 @@ const singleCategories = [
 ]
 
 const multipleCategories = [
-  { name: 'Three of a Kind', value: Categories.ThreeOfAKind, icon: '3X' },
-  { name: 'Four of a Kind', value: Categories.FourOfAKind, icon: '4X' },
-  { name: 'Full House', value: Categories.FullHouse, icon: '🏠' },
-  { name: 'Small Straight', value: Categories.SmallStraight, icon: 'Sm' },
-  { name: 'Large Straight', value: Categories.LargeStraight, icon: 'Lg' },
-  { name: 'Chance', value: Categories.Chance, icon: '?' }
+  { name: 'Three of a Kind', value: Categories.ThreeOfAKind, text: '3X' },
+  { name: 'Four of a Kind', value: Categories.FourOfAKind, text: '4X' },
+  { name: 'Full House', value: Categories.FullHouse, icon: 'fas fa-home' },
+  { name: 'Small Straight', value: Categories.SmallStraight, text: 'Sm' },
+  { name: 'Large Straight', value: Categories.LargeStraight, text: 'Lg' },
+  { name: 'Chance', value: Categories.Chance, text: '?' }
 ]
 
 const colorCategories = [
-  { name: 'Yahtzee', value: Categories.Yahtzee, icon: 'Y!' },
-  { name: 'Blue', value: Categories.Blues, icon: 'B' },
-  { name: 'Red', value: Categories.Reds, icon: 'R' },
-  { name: 'Green', value: Categories.Greens, icon: 'G' },
-  { name: 'Color Full House', value: Categories.ColorFullHouse, icon: '🏠' },
-  { name: 'Top Bonus', value: Categories.TopBonus, icon: 'B!' }
+  { name: 'Yahtzee', value: Categories.Yahtzee, text: 'Y!' },
+  { name: 'Blue', value: Categories.Blues, text: 'B' },
+  { name: 'Red', value: Categories.Reds, text: 'R' },
+  { name: 'Green', value: Categories.Greens, text: 'G' },
+  { name: 'Color Full House', value: Categories.ColorFullHouse, icon: 'fas fa-home' },
+  { name: 'Top Bonus', value: Categories.TopBonus, text: 'B!' }
 ]
 </script> 

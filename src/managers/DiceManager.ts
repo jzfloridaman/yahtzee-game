@@ -32,6 +32,7 @@ export class DiceManager implements IDiceManager {
             value: 0,
             color: 'blank',
             held: false,
+            isRolling: false,
         };
     }
 
@@ -40,6 +41,7 @@ export class DiceManager implements IDiceManager {
             value: Math.floor(Math.random() * this.dieSides) + 1,
             color: ['red', 'green', 'blue'][Math.floor(Math.random() * 3)] as 'red' | 'green' | 'blue',
             held: false,
+            isRolling: false,
         };
     }
 }

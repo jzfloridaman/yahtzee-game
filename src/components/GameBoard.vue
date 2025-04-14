@@ -129,10 +129,7 @@ const rollDiceText = computed(() => {
 
   let text = `<div class="flex gap-2">`;
     if(newRoll.value){
-        // text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
-        // text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
-        // text += `<div class="w-12 rounded text-blue-600"><span class="fa fa-solid fa-circle"></span></div>`;
-        text += `<div class="text-center flex-1">START</div>`;
+        text += `<div class="text-center flex-1">START ROLL</div>`;
     }else{
         text += `<div class="flex-1">ROLL</div>`
         if(rollsLeft.value === 0){
@@ -164,8 +161,18 @@ const getPlayerScore = (index: number): number => {
 }
 
 const getScoreDisplay = (category: Categories): string => {
-  const score = currentGame.value?.getScoreByCategory(category)
-  return score === null || score === undefined ? '-' : score.toString()
+  // If category is already selected, just return the stored score
+  if(currentGame.value?.isCategorySelected(category)){
+    return currentGame.value?.getScoreByCategory(category)?.toString() || '-';
+  }
+  
+  // Only calculate score if we're not in a new roll state
+  if (newRoll.value) {
+    return '-';
+  }
+  
+  const score = currentGame.value?.calculateScore(category);
+  return score === null || score === undefined ? '-' : score.toString();
 }
 
 const isCategorySelected = (category: Categories): boolean => {
@@ -173,14 +180,21 @@ const isCategorySelected = (category: Categories): boolean => {
 }
 
 const selectCategory = (category: { value: Categories }) => {
-  if (currentGame.value && !currentGame.value.isCategorySelected(category.value) && !newRoll.value) {
-    const score = currentGame.value.calculateScore(category.value)
-    if (score !== undefined) {
-      currentGame.value.updateSelectedScore(category.value, score)
-      currentGame.value.newRoll = true;
-      currentGame.value.rollsLeft = 2;
-      //gameStore.nextPlayer();
-    }
+  if (!currentGame.value || currentGame.value.isCategorySelected(category.value) || newRoll.value) {
+    return;
+  }
+
+  const score = currentGame.value.calculateScore(category.value);
+  if (score !== undefined && category.value !== Categories.TopBonus) {
+    // First update the score
+    currentGame.value.updateSelectedScore(category.value, score, false);
+    // Then, in a separate tick, update the newRoll state
+    setTimeout(() => {
+      if (currentGame.value) {
+        currentGame.value.nextPlayer();
+        currentGame.value.newRoll = true;
+      }
+    }, 0);
   }
 }
 

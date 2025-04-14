@@ -1,7 +1,7 @@
 <template>
   <div>
-    <div v-if="isAnyMenuOpen" class="overlay" @click="closeAllMenus"></div>
-    <!-- Audio Settings Menu -->
+    <!-- Overlay & Menus-->
+    <div class="overlay" :class="{ active: isAnyMenuOpen }" @click="closeAllMenus()"></div>
     <div class="fixed top-4 right-4 z-50 flex gap-2">
       <div class="relative">
         <button @click="toggleAudioSettings" 
@@ -141,7 +141,13 @@ const isAnyMenuOpen = computed(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-  z-index: 40; /* Ensure it's below the menu but above other content */
+  background-color: rgba(0, 0, 0, 0.75); /* Semi-transparent black */
+  opacity: 0;
+  z-index: -10;
+  transition: opacity 0.75s ease;
+}
+.overlay.active {
+  opacity: 1;
+  z-index: 40;
 }
 </style>

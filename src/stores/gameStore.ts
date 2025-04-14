@@ -11,17 +11,21 @@ interface GameHistory {
 
 export const useGameStore = defineStore('game', {
   state: () => ({
+    // Game state
     game: null as YahtzeeGame | null,
     gameMode: null as GameMode | null,
     isGameActive: false,
     gameIsOver: true,
+
     // Audio settings
     bgmEnabled: localStorage.getItem('bgmEnabled') === 'true',
     sfxEnabled: localStorage.getItem('sfxEnabled') === 'true',
+
     // UI state
     showAudioSettings: false,
     showGameHistory: false,
     showGameOptions: false,
+
     // Game history
     gameHistory: [] as GameHistory[],
   }),
@@ -37,17 +41,13 @@ export const useGameStore = defineStore('game', {
   },
 
   actions: {
-    initializeGame(mode: GameMode, players?: number) {
+    initializeGame(mode: GameMode, players: number = 1) {
       this.game = new YahtzeeGame()
       this.game.setGameMode(mode)
       this.gameMode = mode
       this.isGameActive = true
-      
-      // Initialize the game with default player count based on mode
-      //const playerCount = mode === GameMode.SinglePlayer ? 1 : 2
-      const playerCount = players || 1;
-      this.game.setPlayers(playerCount)
-      this.game.startNewGame(playerCount)
+      this.game.setPlayers(players)
+      this.game.startNewGame(players)
     },
 
     endGame() {
@@ -105,7 +105,10 @@ export const useGameStore = defineStore('game', {
     },
 
     newGame() {
-      this.endGame()
+      //this.endGame()
+      this.game = null
+      this.gameMode = null
+      this.isGameActive = false
     },
 
     rollDice() {

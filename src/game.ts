@@ -15,6 +15,7 @@ export class YahtzeeGame {
     public rollsLeft: number = 2;
     public players: number = 1;    // array of Player objects
     public currentPlayer: number = 0;  // reference to current player in players array
+    public playersGamesCompleted: number = 0;
     public gameType: GameMode = GameMode.SinglePlayer;
 
     private _state: GameState = GameState.MainMenu;
@@ -53,9 +54,9 @@ export class YahtzeeGame {
         this.players = players;
         this.scoreManager = Array.from({length: players}, () => new ScoreManager());
         this.currentPlayer = 0;
+        this.playersGamesCompleted = 0;
         this.newRoll = true;
         this.initializeScorecard();
-        //this.startNewRoll();
         this.state = GameState.Playing;
     }
 
@@ -74,20 +75,29 @@ export class YahtzeeGame {
     }
 
     isGameOver(): Boolean {
-        const currentScoreManager = this.scoreManager[this.currentPlayer];
-        if(currentScoreManager.getRemainingCategories() === 0){
+
+        if(this.playersGamesCompleted >= this.players){
             this.setGameOver();
             return true;
-        }else{
-            //console.log('not game over', currentScoreManager.getRemainingCategories());
+        }
+        const currentScoreManager = this.scoreManager[this.currentPlayer];
+
+        if(currentScoreManager.isGameOver){
+            return true;
+        }
+
+        if(currentScoreManager.getRemainingCategories() === 0){
+            currentScoreManager.setGameOver(true);
+            this.playersGamesCompleted++;
+            return true;
         }
 
         // check to see if the last category is just the top bonus
         // this needs a better implementation. once topbonus is removed, this can be removed.
         if(currentScoreManager.getRemainingCategories() === 1 && !currentScoreManager.isCategorySelected(Categories.TopBonus)){
             this.calculateAllScores();
-            this.setGameOver();
-            console.log('game over with top bonus not scored.');
+            currentScoreManager.setGameOver(true);
+            this.playersGamesCompleted++;
             return true;
         }
 
@@ -96,11 +106,8 @@ export class YahtzeeGame {
 
     startNewRoll(){
         if(!this.isGameOver()){
-            // if multiplayer, switch to next player, load/save data
             this.rollsLeft = 2;
             this.diceManager.resetDice();
-            //this.initializeDice();
-            //this.newRoll = false;
         }
     }
 
@@ -139,13 +146,11 @@ export class YahtzeeGame {
         }
         this.scoreManager[this.currentPlayer].updateScorecard(category, score, true);
         
-        console.log('categories left', this.scoreManager[this.currentPlayer].getRemainingCategories());
         this.isGameOver();
-        
+
         if(roll){
-            this.nextPlayer();  // might need to just prevent this if in single player.
+            this.nextPlayer(); 
             this.newRoll = true;
-            //this.startNewRoll();
         }
     }
 
@@ -178,7 +183,6 @@ export class YahtzeeGame {
     }
 
     nextPlayer(){
-        //console.log('nextPlayer', this.currentPlayer, this.players);
         this.currentPlayer++;
         if(this.currentPlayer >= this.players){
             this.currentPlayer = 0;

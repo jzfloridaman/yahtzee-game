@@ -57,9 +57,6 @@ import { useGameStore } from '../stores/gameStore'
 
 const gameStore = useGameStore()
 const game = computed(() => gameStore.currentGame)
-// const props = defineProps<{
-//   game: YahtzeeGame
-// }>()
 
 const emit = defineEmits<{
   (e: 'restart-game'): void

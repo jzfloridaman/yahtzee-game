@@ -10,6 +10,7 @@ export class ScoreManager implements IScoreManager {
     public lowerSectionScore: number;
     public upperSectionScore: number;
     public bonusScore: number;
+    public isGameOver: boolean; // flag if the game is over for this player
 
     constructor(score: number = 0) {
         this.initializeScorecard();
@@ -17,6 +18,7 @@ export class ScoreManager implements IScoreManager {
         this.lowerSectionScore = 0;
         this.upperSectionScore = 0;
         this.bonusScore = 0;
+        this.isGameOver = false;
     }
 
     initializeScorecard() {
@@ -118,4 +120,7 @@ export class ScoreManager implements IScoreManager {
         return totalScore;
     }
 
+    setGameOver(isGameOver: boolean){
+        this.isGameOver = isGameOver;
+    }
 }

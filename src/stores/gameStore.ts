@@ -64,7 +64,6 @@ export const useGameStore = defineStore('game', {
       }
 
       // enable the game over screen
-      console.log('endGame from gameStore');
       this.gameIsOver = true;
       // this.game = null
       // this.gameMode = null

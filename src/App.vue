@@ -89,7 +89,6 @@ const startGame = (mode: GameModeEnum, players?: number) => {
 }
 
 const endGame = () => {
-  console.log('endGame from app.vue after emit');
   gameStore.endGame();
 }
 

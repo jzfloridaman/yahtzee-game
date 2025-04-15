@@ -191,6 +191,21 @@ const selectCategory = (category: { value: Categories }) => {
   const score = currentGame.value.calculateScore(category.value);
   if (score !== undefined && category.value !== Categories.TopBonus) {
 
+    // Check for additional Yahtzee
+    if(currentGame.value.isCategorySelected(Categories.Yahtzee) && category.value !== Categories.Yahtzee){
+        if (currentGame.value.dice().every(die => die.value === currentGame.value?.dice()[0].value) && 
+            currentGame.value.dice()[0].value !== 0) {  
+            // Check if all dice are the same and not blank
+            let currentYahtzeeScore = currentGame.value.getScoreByCategory(Categories.Yahtzee);
+            if(currentYahtzeeScore > 0 && score > 0){
+                let updateYahtzeeScore = currentYahtzeeScore + 100;
+                currentGame.value.updateSelectedScore(Categories.Yahtzee, updateYahtzeeScore);
+                // playYahtzeeSound();
+                // showYahtzeeAnimation();
+            }
+        }
+    }
+
     currentGame.value.updateSelectedScore(category.value, score, false);
 
     setTimeout(() => {

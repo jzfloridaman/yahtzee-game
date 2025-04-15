@@ -367,23 +367,49 @@ h2 {
 /* Confetti Animation */
 @keyframes confettiAnimation {
   0% {
-    transform: translate(0, 0) rotate(0deg);
+    transform: translate(0, 0) rotate(0deg) scale(0);
+    opacity: 1;
+  }
+  15% {
+    transform: translate(calc(var(--tx) * 0.3), calc(var(--ty) * 0.3)) 
+               rotate(calc(var(--rotation) * 0.3)) 
+               scale(1.2);
+    opacity: 1;
+  }
+  50% {
     opacity: 1;
   }
   100% {
-    transform: translate(var(--tx), var(--ty)) rotate(360deg);
+    transform: translate(var(--tx), var(--ty)) 
+               rotate(var(--rotation)) 
+               scale(0.2);
     opacity: 0;
   }
 }
 
 .confetti {
-  position: absolute;
+  position: fixed;
   width: 10px;
   height: 10px;
-  animation: confettiAnimation 3s ease-out forwards;
+  animation: confettiAnimation 1.5s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
   z-index: 999;
   pointer-events: none;
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  transform-origin: center;
+  border-radius: 2px;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Add a subtle trail effect */
+.confetti::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: inherit;
+  filter: blur(2px);
+  opacity: 0.6;
 }
 
 .yahtzee-container {

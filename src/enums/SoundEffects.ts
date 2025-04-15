@@ -11,5 +11,5 @@ export const SoundVolumes: { [key in SoundEffects]: number } = {
   [SoundEffects.DiceHold]: 0.7,
   [SoundEffects.Score]: 1.0,
   [SoundEffects.NoScore]: 1.0,
-  [SoundEffects.Yahtzee]: 0.7
+  [SoundEffects.Yahtzee]: 0.4
 } 

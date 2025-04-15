@@ -83,7 +83,7 @@ export const showYahtzeeAnimation = () => {
   setTimeout(() => {
     document.body.removeChild(yahtzeeText);
     document.querySelector('.overlay')?.classList.remove('active');
-  }, 4000);
+  }, 2000);
 }
 
 export const showScoreAnimation = (score: number) => {

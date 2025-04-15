@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
-  base: '/yahtzee/', // Set the base URL for deployment
+  base: './', // Changed from '/yahtzee/' to './' for Capacitor
   root: '.', // Set the root directory
   plugins: [vue()],
   build: {

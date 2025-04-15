@@ -2,11 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Yahtzee Game</title>
-    <script defer type="module" src="/src/main.ts"></script>
-    <link href="/src/styles.css" rel="stylesheet">
-    <link href="/node_modules/@fortawesome/fontawesome-free/css/all.min.css" rel="stylesheet">
+    <script type="module" src="/src/main.ts"></script>
+    <link rel="stylesheet" href="/src/styles.css">
+    <link rel="stylesheet" href="/node_modules/@fortawesome/fontawesome-free/css/all.min.css">
+    <script type="module" src="/@vite/client"></script>
+    <script type="module">
+        import { Capacitor } from '@capacitor/core';
+        if (Capacitor.isNativePlatform()) {
+            document.documentElement.classList.add('native-platform');
+        }
+    </script>
 </head>
 <body>
     <div id="app"></div>

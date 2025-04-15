@@ -92,9 +92,9 @@ const gameStore = useGameStore()
 
 // Audio setup
 const musicTracks = [
-  '/yahtzee/music/bgsample.mp3',
-  '/yahtzee/music/bgsample-2.mp3',
-  '/yahtzee/music/bgsample-3.mp3'
+  '/music/bgsample.mp3',
+  '/music/bgsample-2.mp3',
+  '/music/bgsample-3.mp3'
 ]
 let backgroundMusic: HTMLAudioElement | null = null
 

@@ -123,4 +123,8 @@ export class ScoreManager implements IScoreManager {
     setGameOver(isGameOver: boolean){
         this.isGameOver = isGameOver;
     }
+
+    setTotalScore(totalScore: number) {
+        this.score = totalScore;
+    }
 }

@@ -22,6 +22,10 @@ export class DiceManager implements IDiceManager {
         return this.dice;
     }
 
+    setDice(dice: Die[]) {
+        this.dice = dice;
+    }
+
     resetDice(): Die[] {
         this.dice = Array.from({ length: this.dice.length }, () => this.setupDice());
         return this.dice;

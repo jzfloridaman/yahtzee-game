@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { YahtzeeGame } from '../game'
 import { GameMode } from '../enums/GameMode'
 import { SoundEffects } from '../enums/SoundEffects'
+import { usePeerStore } from './peerStore'
 
 interface PlayerScore {
   playerNumber: number;
@@ -57,6 +58,61 @@ export const useGameStore = defineStore('game', {
       this.isGameActive = true
       this.game.setPlayers(players)
       this.game.startNewGame(players)
+
+      // If this is an online game, set up the peer connection
+      if (mode === GameMode.OnlineMultiPlayer) {
+        const peerStore = usePeerStore()
+        if (peerStore.isHost) {
+          // Host sends initial game state
+          this.sendGameState()
+        }
+      }
+    },
+
+    sendGameState() {
+      const peerStore = usePeerStore()
+      if (this.game && peerStore.isConnected) {
+        const gameState = {
+          type: 'gameState',
+          data: {
+            currentPlayer: this.game.currentPlayer,
+            dice: this.game.dice,
+            rollsLeft: this.game.rollsLeft,
+            scores: this.game.scores,
+            categories: this.game.categories
+          }
+        }
+        peerStore.sendData(gameState)
+      }
+    },
+
+    handleIncomingData(data: any) {
+      if (!this.game || this.gameMode !== GameMode.OnlineMultiPlayer) return
+
+      switch (data.type) {
+        case 'gameState':
+          // Update game state from host
+          if (!usePeerStore().isHost) {
+            this.game.updateFromState(data.data)
+          }
+          break
+        case 'rollDice':
+          if (usePeerStore().isHost) {
+            this.rollDice()
+          }
+          break
+        case 'holdDice':
+          if (usePeerStore().isHost) {
+            this.game?.toggleHold(data.index)
+          }
+          break
+        case 'selectCategory':
+          if (usePeerStore().isHost) {
+            this.game?.selectCategory(data.category)
+            this.sendGameState()
+          }
+          break
+      }
     },
 
     saveGameHistory() {
@@ -87,6 +143,11 @@ export const useGameStore = defineStore('game', {
         
         // Save to localStorage
         this.saveGameHistory()
+
+        // Disconnect from peer if in online mode
+        if (this.gameMode === GameMode.OnlineMultiPlayer) {
+          usePeerStore().disconnect()
+        }
       }
 
       // enable the game over screen
@@ -96,6 +157,9 @@ export const useGameStore = defineStore('game', {
     nextPlayer() {
       if (this.game) {
         this.game.nextPlayer()
+        if (this.gameMode === GameMode.OnlineMultiPlayer) {
+          this.sendGameState()
+        }
       }
     },
 
@@ -127,11 +191,16 @@ export const useGameStore = defineStore('game', {
       if (this.game) {
         const playerCount = this.game.getPlayerCount()
         this.game.startNewGame(playerCount)
+        if (this.gameMode === GameMode.OnlineMultiPlayer) {
+          this.sendGameState()
+        }
       }
     },
 
     newGame() {
-      //this.endGame()
+      if (this.gameMode === GameMode.OnlineMultiPlayer) {
+        usePeerStore().disconnect()
+      }
       this.game = null
       this.gameMode = null
       this.isGameActive = false
@@ -159,14 +228,46 @@ export const useGameStore = defineStore('game', {
           this.game.rollDice();
       }
 
-
-
+      if (this.gameMode === GameMode.OnlineMultiPlayer) {
+        const peerStore = usePeerStore()
+        if (peerStore.isHost) {
+          this.sendGameState()
+        } else {
+          peerStore.sendData({ type: 'rollDice' })
+        }
+      }
     },
-    // You can add more actions here as needed
-    // For example:
-    // - rollDice()
-    // - toggleHold(index)
-    // - selectCategory(category)
-    // etc.
+
+    toggleHold(index: number) {
+      if (this.game) {
+        if (this.gameMode === GameMode.OnlineMultiPlayer) {
+          const peerStore = usePeerStore()
+          if (peerStore.isHost) {
+            this.game.toggleHold(index)
+            this.sendGameState()
+          } else {
+            peerStore.sendData({ type: 'holdDice', index })
+          }
+        } else {
+          this.game.toggleHold(index)
+        }
+      }
+    },
+
+    selectCategory(category: string) {
+      if (this.game) {
+        if (this.gameMode === GameMode.OnlineMultiPlayer) {
+          const peerStore = usePeerStore()
+          if (peerStore.isHost) {
+            this.game.selectCategory(category)
+            this.sendGameState()
+          } else {
+            peerStore.sendData({ type: 'selectCategory', category })
+          }
+        } else {
+          this.game.selectCategory(category)
+        }
+      }
+    }
   },
 }) 

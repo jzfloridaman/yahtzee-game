@@ -5,6 +5,14 @@ import { ScoreManager } from './managers/ScoreManager';
 import { GameState } from './enums/GameState';
 import { GameMode } from './enums/GameMode';
 
+interface GameStateData {
+  currentPlayer: number;
+  dice: Die[];
+  rollsLeft: number;
+  scores: number[];
+  categories: { [key: string]: boolean };
+}
+
 // Game state
 export class YahtzeeGame {
 
@@ -191,5 +199,50 @@ export class YahtzeeGame {
 
     getPlayerScore(player: number): number {
         return this.scoreManager[player].getTotalScore();
+    }
+
+    selectCategory(category: Categories) {
+        const score = this.calculateScore(category);
+        this.updateSelectedScore(category, score);
+    }
+
+    updateFromState(stateData: GameStateData) {
+        this.currentPlayer = stateData.currentPlayer;
+        this.rollsLeft = stateData.rollsLeft;
+        
+        // Update dice
+        this.diceManager.setDice(stateData.dice);
+        
+        // Update scores
+        stateData.scores.forEach((score, index) => {
+            if (this.scoreManager[index]) {
+                this.scoreManager[index].setTotalScore(score);
+            }
+        });
+        
+        // Update categories
+        Object.entries(stateData.categories).forEach(([category, isSelected]) => {
+            if (isSelected) {
+                const categoryEnum = Categories[category as keyof typeof Categories];
+                if (categoryEnum !== undefined) {
+                    this.scoreManager[this.currentPlayer].updateScorecard(categoryEnum, 0, true);
+                }
+            }
+        });
+    }
+
+    getGameState(): GameStateData {
+        return {
+            currentPlayer: this.currentPlayer,
+            dice: this.diceManager.getDice(),
+            rollsLeft: this.rollsLeft,
+            scores: this.scoreManager.map(manager => manager.getTotalScore()),
+            categories: Object.entries(Categories)
+                .filter(([key]) => isNaN(Number(key)))
+                .reduce((acc, [key]) => {
+                    acc[key] = this.scoreManager[this.currentPlayer].isCategorySelected(Categories[key as keyof typeof Categories]);
+                    return acc;
+                }, {} as { [key: string]: boolean })
+        };
     }
 }

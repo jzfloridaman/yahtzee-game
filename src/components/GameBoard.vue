@@ -1,7 +1,7 @@
 <template>
   <div id="game-container">
     <div v-if="isOnlineGame && !isHostTurn" class="waiting-message">
-      <div class="bg-purple-600 text-white p-4 rounded-lg shadow-lg text-center">
+      <div class="bg-gray-800 text-white p-4 shadow-lg text-center waiting-message-content">
         <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
         <p class="text-lg font-bold">
           <template v-if="peerStore.isHost">
@@ -401,12 +401,32 @@ const startGame = () => {
 <style scoped>
 .waiting-message {
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top:0;
+  left:0;
+  z-index: 100;
+  height: 100vh;
+  width: 100vw;
+  background-color: rgba(0, 0, 0, 0.1);
+  /* bottom:0; 
   z-index: 100;
   width: 100%;
-  max-width: 400px;
+  max-width: 400px; /*
+  /* top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.75; */
+}
+
+.waiting-message .waiting-message-content{
+position:fixed;
+  /* top: 50%;
+   */
+   bottom:0;
+  /* left: 50%;
+  transform: translate(-50%, -50%); */
+  opacity: 0.98;
+  width:100%;
+
 }
 
 /* ... rest of the styles ... */

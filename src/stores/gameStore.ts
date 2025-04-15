@@ -15,7 +15,7 @@ export const useGameStore = defineStore('game', {
     game: null as YahtzeeGame | null,
     gameMode: null as GameMode | null,
     isGameActive: false,
-    gameIsOver: true,
+    gameIsOver: false,
 
     // Audio settings
     bgmEnabled: localStorage.getItem('bgmEnabled') === 'true',
@@ -62,9 +62,13 @@ export const useGameStore = defineStore('game', {
           )
         })
       }
-      this.game = null
-      this.gameMode = null
-      this.isGameActive = false
+
+      // enable the game over screen
+      console.log('endGame from gameStore');
+      this.gameIsOver = true;
+      // this.game = null
+      // this.gameMode = null
+      // this.isGameActive = false
     },
 
     nextPlayer() {
@@ -109,6 +113,7 @@ export const useGameStore = defineStore('game', {
       this.game = null
       this.gameMode = null
       this.isGameActive = false
+      this.gameIsOver = false
     },
 
     rollDice() {

@@ -89,6 +89,10 @@ import { computed, ref } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { Categories } from '../enums/Categories'
 
+const emit = defineEmits<{
+  (e: 'end-game'): void
+}>()
+
 const gameStore = useGameStore()
 
 // Local reactive states
@@ -191,8 +195,14 @@ const selectCategory = (category: { value: Categories }) => {
     // Then, in a separate tick, update the newRoll state
     setTimeout(() => {
       if (currentGame.value) {
-        currentGame.value.nextPlayer();
-        currentGame.value.newRoll = true;
+        if (currentGame.value.isGameOver()){
+          // TODO: show game over screen
+          endGame();
+        }else{
+          currentGame.value.nextPlayer();
+          currentGame.value.newRoll = true;
+          currentGame.value.rollsLeft = 2;
+        }
       }
     }, 0);
   }
@@ -243,4 +253,10 @@ const colorCategories = [
   { name: 'Color Full House', value: Categories.ColorFullHouse, icon: 'fas fa-home', color: 'purple' },
   { name: 'Top Bonus', value: Categories.TopBonus, text: 'B!' }
 ]
+
+
+const endGame = () => {
+  console.log('endGame from gameBoard');
+  emit('end-game');
+}
 </script> 

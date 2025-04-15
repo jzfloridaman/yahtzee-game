@@ -69,8 +69,8 @@
     </div>
 
     <GameMode v-if="!gameStore.gameIsActive" @start-game="startGame" />
-    <GameBoard v-else @end-game="endGame" />
-    <!-- <GameOver v-if="gameStore.gameIsOver" @restart-game="restartGame" /> -->
+    <GameBoard v-else-if="!gameStore.gameIsOver" @end-game="endGame" />
+    <GameOver v-if="gameStore.gameIsOver" @restart-game="newGame" />
   </div>
 </template>
 
@@ -89,6 +89,7 @@ const startGame = (mode: GameModeEnum, players?: number) => {
 }
 
 const endGame = () => {
+  console.log('endGame from app.vue after emit');
   gameStore.endGame();
 }
 

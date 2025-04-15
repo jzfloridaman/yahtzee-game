@@ -79,14 +79,15 @@ export class YahtzeeGame {
             this.setGameOver();
             return true;
         }else{
-            console.log('not game over', currentScoreManager.getRemainingCategories());
+            //console.log('not game over', currentScoreManager.getRemainingCategories());
         }
 
         // check to see if the last category is just the top bonus
         // this needs a better implementation. once topbonus is removed, this can be removed.
         if(currentScoreManager.getRemainingCategories() === 1 && !currentScoreManager.isCategorySelected(Categories.TopBonus)){
-            //this.calculateAllScores();
+            this.calculateAllScores();
             this.setGameOver();
+            console.log('game over with top bonus not scored.');
             return true;
         }
 
@@ -137,6 +138,9 @@ export class YahtzeeGame {
             return;
         }
         this.scoreManager[this.currentPlayer].updateScorecard(category, score, true);
+        
+        console.log('categories left', this.scoreManager[this.currentPlayer].getRemainingCategories());
+        this.isGameOver();
         
         if(roll){
             this.nextPlayer();  // might need to just prevent this if in single player.

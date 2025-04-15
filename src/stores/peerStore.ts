@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import Peer from 'peerjs'
+import { useGameStore } from './gameStore'
+import { GameMode } from '../enums/GameMode'
 
 interface PeerState {
   peer: Peer | null
@@ -45,6 +47,9 @@ export const usePeerStore = defineStore('peer', {
       }
       this.isHost = true
       this.roomCode = this.peer?.id || null
+      // Set game mode for host
+      const gameStore = useGameStore()
+      gameStore.gameMode = GameMode.OnlineMultiPlayer
     },
 
     joinRoom(roomCode: string) {
@@ -53,6 +58,10 @@ export const usePeerStore = defineStore('peer', {
       }
       this.roomCode = roomCode
       this.isHost = false
+      
+      // Set game mode for client
+      const gameStore = useGameStore()
+      gameStore.gameMode = GameMode.OnlineMultiPlayer
       
       if (this.peer) {
         const conn = this.peer.connect(roomCode)
@@ -71,7 +80,9 @@ export const usePeerStore = defineStore('peer', {
 
       this.connection.on('data', (data) => {
         console.log('Received data:', data)
-        // Handle incoming game data here
+        // Forward data to game store
+        const gameStore = useGameStore()
+        gameStore.handleIncomingData(data)
       })
 
       this.connection.on('close', () => {
@@ -86,7 +97,13 @@ export const usePeerStore = defineStore('peer', {
 
     sendData(data: any) {
       if (this.connection && this.isConnected) {
+        console.log('Sending data:', data);
         this.connection.send(data)
+      } else {
+        console.log('Cannot send data:', {
+          hasConnection: !!this.connection,
+          isConnected: this.isConnected
+        });
       }
     },
 

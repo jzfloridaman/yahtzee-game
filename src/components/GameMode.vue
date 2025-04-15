@@ -97,7 +97,14 @@ const joinRoom = () => {
 }
 
 const startOnlineGame = () => {
-  emit('start-game', GameMode.OnlineMultiPlayer, 2)
+  if (peerStore.isHost) {
+    // Host starts the game
+    gameStore.startOnlineGame();
+    emit('start-game', GameMode.OnlineMultiPlayer, 2);
+  } else {
+    // Client waits for host to start
+    emit('start-game', GameMode.OnlineMultiPlayer, 2);
+  }
 }
 
 const startGame = (mode: GameMode, players?: number) => {

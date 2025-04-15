@@ -1,5 +1,24 @@
 <template>
   <div id="game-container">
+    <div v-if="isOnlineGame && !isHostTurn" class="waiting-message">
+      <div class="bg-purple-600 text-white p-4 rounded-lg shadow-lg text-center">
+        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+        <p class="text-lg font-bold">Waiting for host to make their move...</p>
+      </div>
+    </div>
+    <div v-else-if="isOnlineGame && !gameStore.isGameActive" class="waiting-message">
+      <div class="bg-purple-600 text-white p-4 rounded-lg shadow-lg text-center">
+        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+        <p v-if="peerStore.isHost" class="text-lg font-bold">Click the Start Game button to begin!</p>
+        <p v-else class="text-lg font-bold">Waiting for host to start the game...</p>
+        <button v-if="peerStore.isHost" 
+                @click="startGame" 
+                class="mt-4 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">
+          Start Game
+        </button>
+      </div>
+    </div>
+
     <div id="players-container" 
           class="text-center grid gap-2"
         :class="[`grid-cols-${playerCount}`]">
@@ -85,10 +104,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useGameStore } from '../stores/gameStore'
+import { usePeerStore } from '../stores/peerStore'
 import { Categories } from '../enums/Categories'
 import { GameState } from '../enums/GameState'
+import { GameMode } from '../enums/GameMode'
 import { SoundEffects } from '../enums/SoundEffects';
 import { showYahtzeeAnimation, showScoreAnimation } from '../utils/animations'
 
@@ -97,6 +118,7 @@ const emit = defineEmits<{
 }>()
 
 const gameStore = useGameStore()
+const peerStore = usePeerStore()
 
 // Local reactive states
 const isRolling = ref(false);
@@ -110,6 +132,13 @@ const rollsLeft = computed(() => currentGame.value?.rollsLeft || 0);
 const newRoll = computed(() => currentGame.value?.newRoll || false);
 const canRoll = computed(() => currentGame.value && currentGame.value.rollsLeft > 0);
 const totalTopScore = computed(() => currentGame.value?.getTotalTopScore() || 0);
+
+// Online game state
+const isOnlineGame = computed(() => gameStore.currentGameMode === GameMode.OnlineMultiPlayer)
+const isHostTurn = computed(() => {
+  if (!isOnlineGame.value || !gameStore.currentGame) return true
+  return peerStore.isHost ? gameStore.currentGame.currentPlayer === 0 : gameStore.currentGame.currentPlayer === 1
+})
 
 const totalTopScorePercent = computed(() => {
   return (totalTopScore.value / 63) * 100;
@@ -291,4 +320,22 @@ const colorCategories = [
 const endGame = () => {
   emit('end-game');
 }
-</script> 
+
+const startGame = () => {
+  gameStore.startOnlineGame();
+};
+</script>
+
+<style scoped>
+.waiting-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  width: 100%;
+  max-width: 400px;
+}
+
+/* ... rest of the styles ... */
+</style> 

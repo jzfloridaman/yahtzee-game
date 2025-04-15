@@ -3,6 +3,7 @@ import { YahtzeeGame } from '../game'
 import { GameMode } from '../enums/GameMode'
 import { SoundEffects } from '../enums/SoundEffects'
 import { usePeerStore } from './peerStore'
+import { Categories } from '../enums/Categories'
 
 interface PlayerScore {
   playerNumber: number;
@@ -70,48 +71,68 @@ export const useGameStore = defineStore('game', {
     },
 
     sendGameState() {
-      const peerStore = usePeerStore()
+      const peerStore = usePeerStore();
       if (this.game && peerStore.isConnected) {
+        console.log('Sending game state');
         const gameState = {
           type: 'gameState',
-          data: {
-            currentPlayer: this.game.currentPlayer,
-            dice: this.game.dice,
-            rollsLeft: this.game.rollsLeft,
-            scores: this.game.scores,
-            categories: this.game.categories
-          }
-        }
-        peerStore.sendData(gameState)
+          data: this.game.getGameState()
+        };
+        peerStore.sendData(gameState);
+      } else {
+        console.log('Cannot send game state:', {
+          hasGame: !!this.game,
+          isConnected: peerStore.isConnected
+        });
       }
     },
 
     handleIncomingData(data: any) {
-      if (!this.game || this.gameMode !== GameMode.OnlineMultiPlayer) return
+      if (this.gameMode !== GameMode.OnlineMultiPlayer) {
+        console.log('Not in online mode');
+        return;
+      }
+
+      console.log('Received data:', data);
 
       switch (data.type) {
-        case 'gameState':
-          // Update game state from host
+        case 'gameStarted':
+          console.log('Game started message received');
           if (!usePeerStore().isHost) {
-            this.game.updateFromState(data.data)
+            this.initializeGame(GameMode.OnlineMultiPlayer, 2);
           }
-          break
+          break;
+        case 'gameState':
+          console.log('Updating game state');
+          if (!usePeerStore().isHost && this.game) {
+            this.game.updateFromState(data.data);
+            console.log('Game state updated');
+          }
+          break;
         case 'rollDice':
+          console.log('Rolling dice');
           if (usePeerStore().isHost) {
-            this.rollDice()
+            this.rollDice();
           }
-          break
+          break;
         case 'holdDice':
+          console.log('Holding dice at index:', data.index);
           if (usePeerStore().isHost) {
-            this.game?.toggleHold(data.index)
+            this.game?.toggleHold(data.index);
+            this.sendGameState();
           }
-          break
+          break;
         case 'selectCategory':
+          console.log('Selecting category:', data.category);
           if (usePeerStore().isHost) {
-            this.game?.selectCategory(data.category)
-            this.sendGameState()
+            this.game?.selectCategory(data.category as Categories);
+            this.sendGameState();
+            // After selecting a category, move to next player
+            this.nextPlayer();
           }
-          break
+          break;
+        default:
+          console.log('Unknown data type:', data.type);
       }
     },
 
@@ -254,13 +275,15 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    selectCategory(category: string) {
+    selectCategory(category: Categories) {
       if (this.game) {
         if (this.gameMode === GameMode.OnlineMultiPlayer) {
           const peerStore = usePeerStore()
           if (peerStore.isHost) {
             this.game.selectCategory(category)
             this.sendGameState()
+            // After selecting a category, move to next player
+            this.nextPlayer()
           } else {
             peerStore.sendData({ type: 'selectCategory', category })
           }
@@ -268,6 +291,20 @@ export const useGameStore = defineStore('game', {
           this.game.selectCategory(category)
         }
       }
-    }
+    },
+
+    startOnlineGame() {
+      if (this.gameMode === GameMode.OnlineMultiPlayer) {
+        const peerStore = usePeerStore();
+        if (peerStore.isHost) {
+          // Host initializes game
+          this.initializeGame(GameMode.OnlineMultiPlayer, 2);
+          // Send game started message to client
+          peerStore.sendData({ type: 'gameStarted' });
+          // Send initial game state
+          this.sendGameState();
+        }
+      }
+    },
   },
 }) 

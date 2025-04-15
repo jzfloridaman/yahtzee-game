@@ -90,7 +90,7 @@ import { useGameStore } from '../stores/gameStore'
 import { Categories } from '../enums/Categories'
 import { GameState } from '../enums/GameState'
 import { SoundEffects } from '../enums/SoundEffects';
-import { showYahtzeeAnimation } from '../utils/animations'
+import { showYahtzeeAnimation, showScoreAnimation } from '../utils/animations'
 
 const emit = defineEmits<{
   (e: 'end-game'): void
@@ -216,6 +216,7 @@ const selectCategory = (category: { value: Categories }) => {
         showYahtzeeAnimation();
         gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
       }else{  
+        showScoreAnimation(score);
         gameStore.playSoundEffect?.(SoundEffects.Score)
       }
     }else{

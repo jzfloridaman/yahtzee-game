@@ -67,6 +67,9 @@ export const createConfetti = () => {
 }
 
 export const showYahtzeeAnimation = () => {
+
+  document.querySelector('.overlay')?.classList.add('active');
+
   // Create the Yahtzee text animation
   const yahtzeeText = document.createElement('div');
   yahtzeeText.className = 'yahtzee-animation';
@@ -79,5 +82,33 @@ export const showYahtzeeAnimation = () => {
   // Clean up Yahtzee text
   setTimeout(() => {
     document.body.removeChild(yahtzeeText);
+    document.querySelector('.overlay')?.classList.remove('active');
   }, 4000);
+}
+
+export const showScoreAnimation = (score: number) => {
+
+  document.querySelector('.overlay')?.classList.add('active');
+
+  // Create the score text animation
+  const scoreText = document.createElement('div');
+  scoreText.className = 'score-popup-animation';
+  scoreText.textContent = `+${score}`;
+  
+  // Add color class based on score value
+  if (score >= 50) {
+    scoreText.classList.add('high-score');
+  } else if (score >= 30) {
+    scoreText.classList.add('medium-score');
+  } else {
+    scoreText.classList.add('normal-score');
+  }
+  
+  document.body.appendChild(scoreText);
+
+  // Clean up after animation
+  setTimeout(() => {
+    document.body.removeChild(scoreText);
+    document.querySelector('.overlay')?.classList.remove('active');
+  }, 2000);
 } 

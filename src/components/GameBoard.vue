@@ -90,6 +90,8 @@ import { useGameStore } from '../stores/gameStore'
 import { Categories } from '../enums/Categories'
 import { GameState } from '../enums/GameState'
 import { SoundEffects } from '../enums/SoundEffects';
+import { showYahtzeeAnimation } from '../utils/animations'
+
 const emit = defineEmits<{
   (e: 'end-game'): void
 }>()
@@ -203,7 +205,7 @@ const selectCategory = (category: { value: Categories }) => {
                 let updateYahtzeeScore = currentYahtzeeScore + 100;
                 currentGame.value.updateSelectedScore(Categories.Yahtzee, updateYahtzeeScore);
                 gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
-                // showYahtzeeAnimation();
+                showYahtzeeAnimation();
             }
         }
     }
@@ -211,6 +213,7 @@ const selectCategory = (category: { value: Categories }) => {
     currentGame.value.updateSelectedScore(category.value, score, false);
     if(score > 0){
       if(category.value === Categories.Yahtzee){
+        showYahtzeeAnimation();
         gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
       }else{  
         gameStore.playSoundEffect?.(SoundEffects.Score)

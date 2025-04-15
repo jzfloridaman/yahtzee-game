@@ -331,55 +331,59 @@ h2 {
     animation: scoreAnimation 1s ease-out forwards;
 }
 
+/* Yahtzee Animation */
 @keyframes yahtzeeAnimation {
-    0%, 100% {
-        transform: scale(0.5) rotate(-10deg);
-        opacity: 0;
-        color: #ffd700;
-    }
-    25%, 75% {
-        transform: scale(1.5) rotate(10deg);
-        opacity: 1;
-        color: #ff4500;
-    }
-    50% {
-        transform: scale(1.2) rotate(0deg);
-        opacity: 1;
-        color: #ffd700;
-    }
-}
-
-@keyframes confettiAnimation {
-    0% {
-        transform: translate(0, 0) rotate(0deg);
-        opacity: 1;
-    }
-    100% {
-        transform: translate(var(--tx), var(--ty)) rotate(360deg);
-        opacity: 0;
-    }
-}
-
-.confetti {
-    position: fixed;
-    width: 10px;
-    height: 10px;
-    background: linear-gradient(45deg, #ffd700, #ff4500, #ff69b4, #00ff00, #00ffff);
-    animation: confettiAnimation 3s ease-out forwards;
-    z-index: 1000;
-    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  0%, 100% {
+    transform: scale(0.3) rotate(-10deg);
+    opacity: 0;
+    color: #ffd700;
+  }
+  25%, 75% {
+    transform: scale(1) rotate(10deg);
+    opacity: 1;
+    color: #ff4500;
+  }
+  50% {
+    transform: scale(.75) rotate(0deg);
+    opacity: 1;
+    color: #ffd700;
+  }
 }
 
 .yahtzee-animation {
-    position: fixed;
-    top: 35%;
-    left:10%;
-    transform: translate(-50%, -50%);
-    font-size: 5rem;
-    font-weight: bold;
-    text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
-    animation: yahtzeeAnimation 2s ease-out 2;
-    z-index: 1001;
+  position: fixed;
+  top: 30%;
+  left: 0;
+  transform: translate(-50%, -50%);
+  font-size: 5rem;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+  animation: yahtzeeAnimation 2s ease-out forwards;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* Confetti Animation */
+@keyframes confettiAnimation {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.confetti {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  animation: confettiAnimation 3s ease-out forwards;
+  z-index: 999;
+  pointer-events: none;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
 }
 
 .yahtzee-container {

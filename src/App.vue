@@ -37,11 +37,16 @@
         <h3 class="text-lg font-bold mb-2">Recent Games</h3>
         <div class="flex flex-col gap-2 overflow-y-auto max-h-96">
           <div v-for="(game, index) in gameStore.gameHistory" :key="index" 
-               class="p-2 bg-gray-700 rounded">
-            <div class="text-sm">{{ new Date(game.date).toLocaleString() }}</div>
-            <div class="text-sm">{{ game.mode === GameMode.SinglePlayer ? 'Single Player' : 'Multi Player' }}</div>
-            <div class="text-sm">Players: {{ game.players }}</div>
-            <div class="text-sm">Scores: {{ game.scores.join(', ') }}</div>
+               class="p-3 bg-gray-700 rounded">
+            <div class="text-sm mb-1">{{ new Date(game.date).toLocaleString() }}</div>
+            <div class="text-sm mb-1">{{ game.mode === GameModeEnum.SinglePlayer ? 'Single Player' : 'Multi Player' }}</div>
+            <div class="grid gap-1">
+              <div v-for="playerScore in game.scores" :key="playerScore.playerNumber"
+                   class="text-sm grid grid-cols-2 items-center bg-gray-600/50 p-1 rounded">
+                <span>Player {{ playerScore.playerNumber }}</span>
+                <span class="text-right font-bold">{{ playerScore.score }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

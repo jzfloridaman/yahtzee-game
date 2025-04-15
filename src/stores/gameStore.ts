@@ -3,12 +3,19 @@ import { YahtzeeGame } from '../game'
 import { GameMode } from '../enums/GameMode'
 import { SoundEffects } from '../enums/SoundEffects'
 
-interface GameHistory {
-  date: string
-  mode: GameMode
-  players: number
-  scores: number[]
+interface PlayerScore {
+  playerNumber: number;
+  score: number;
 }
+
+interface GameHistory {
+  date: string;
+  mode: GameMode;
+  players: number;
+  scores: PlayerScore[];
+}
+
+const MAX_HISTORY_ITEMS = 10;
 
 export const useGameStore = defineStore('game', {
   state: () => ({
@@ -29,7 +36,7 @@ export const useGameStore = defineStore('game', {
     showGameOptions: false,
 
     // Game history
-    gameHistory: [] as GameHistory[],
+    gameHistory: JSON.parse(localStorage.getItem('gameHistory') || '[]') as GameHistory[],
   }),
 
   getters: {
@@ -52,24 +59,38 @@ export const useGameStore = defineStore('game', {
       this.game.startNewGame(players)
     },
 
+    saveGameHistory() {
+      localStorage.setItem('gameHistory', JSON.stringify(this.gameHistory))
+    },
+
     endGame() {
       if (this.game) {
-        // Save game to history
-        this.gameHistory.push({
+        // Create scores array with player numbers
+        const scores: PlayerScore[] = Array.from(
+          { length: this.game.getPlayerCount() }, 
+          (_, i) => ({
+            playerNumber: i + 1,
+            score: this.game!.getPlayerScore(i)
+          })
+        );
+
+        // Add new game to history
+        this.gameHistory.unshift({
           date: new Date().toISOString(),
           mode: this.gameMode!,
           players: this.game.getPlayerCount(),
-          scores: Array.from({ length: this.game.getPlayerCount() }, (_, i) => 
-            this.game!.getPlayerScore(i)
-          )
+          scores
         })
+
+        // Keep only the last 10 games
+        this.gameHistory = this.gameHistory.slice(0, MAX_HISTORY_ITEMS)
+        
+        // Save to localStorage
+        this.saveGameHistory()
       }
 
       // enable the game over screen
       this.gameIsOver = true;
-      // this.game = null
-      // this.gameMode = null
-      // this.isGameActive = false
     },
 
     nextPlayer() {

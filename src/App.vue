@@ -75,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import GameMode from './components/GameMode.vue'
 import GameBoard from './components/GameBoard.vue'
 import GameOver from './components/GameOver.vue'
@@ -83,6 +83,52 @@ import { useGameStore } from './stores/gameStore'
 import { GameMode as GameModeEnum } from './enums/GameMode'
 
 const gameStore = useGameStore()
+
+// Audio setup
+const musicTracks = [
+  '/yahtzee/music/bgsample.mp3',
+  '/yahtzee/music/bgsample-2.mp3',
+  '/yahtzee/music/bgsample-3.mp3'
+]
+let backgroundMusic: HTMLAudioElement | null = null
+
+const initializeBackgroundMusic = () => {
+  if (!gameStore.bgmEnabled) return
+
+  // Randomly select a track
+  const randomTrack = musicTracks[Math.floor(Math.random() * musicTracks.length)]
+  backgroundMusic = new Audio(randomTrack)
+  backgroundMusic.loop = true
+  backgroundMusic.volume = 0.4
+
+  // Start playing on user interaction
+  const startMusic = () => {
+    if (backgroundMusic && backgroundMusic.paused && gameStore.bgmEnabled) {
+      backgroundMusic.play().catch(error => {
+        console.log("Error playing background music:", error)
+      })
+    }
+  }
+  document.addEventListener('click', startMusic, { once: true })
+}
+
+// Watch for changes in background music setting
+watch(() => gameStore.bgmEnabled, (newValue) => {
+  if (newValue) {
+    if (!backgroundMusic) {
+      initializeBackgroundMusic()
+    } else {
+      backgroundMusic.play().catch(console.error)
+    }
+  } else if (backgroundMusic) {
+    backgroundMusic.pause()
+  }
+})
+
+// Initialize music on component mount
+onMounted(() => {
+  initializeBackgroundMusic()
+})
 
 const startGame = (mode: GameModeEnum, players?: number) => {
   gameStore.initializeGame(mode, players);

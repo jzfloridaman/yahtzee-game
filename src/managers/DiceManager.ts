@@ -23,7 +23,15 @@ export class DiceManager implements IDiceManager {
     }
 
     setDice(dice: Die[]) {
-        this.dice = dice;
+        //console.log('Setting dice in DiceManager. Incoming dice:', JSON.stringify(dice, null, 2));
+        // Ensure we're creating new Die objects with all properties
+        this.dice = dice.map(die => ({
+            value: die.value,
+            color: die.color,
+            held: die.held,
+            isRolling: die.isRolling
+        }));
+        //console.log('Dice after update in DiceManager:', JSON.stringify(this.dice, null, 2));
     }
 
     resetDice(): Die[] {

@@ -11,6 +11,8 @@ interface GameStateData {
   rollsLeft: number;
   scores: number[];
   categories: { [key: string]: boolean };
+  newRoll: boolean;
+  selectedCategories?: Categories[];
 }
 
 // Game state
@@ -52,6 +54,11 @@ export class YahtzeeGame {
     }
 
     dice(): Die[] {
+        // In online multiplayer, always return current dice state
+        if (this.gameType === GameMode.OnlineMultiPlayer) {
+            return this.diceManager.getDice();
+        }
+        // For single player and local multiplayer, handle newRoll reset
         if(this.newRoll){
             return this.diceManager.resetDice();
         }
@@ -206,43 +213,65 @@ export class YahtzeeGame {
         this.updateSelectedScore(category, score);
     }
 
-    updateFromState(stateData: GameStateData) {
-        this.currentPlayer = stateData.currentPlayer;
+    updateFromState(stateData: GameStateData): void {
+        console.log('Updating game state:', stateData);
+        
+        // Update dice state
+        if (stateData.dice) {
+            console.log('Updating dice:', stateData.dice);
+            this.diceManager.setDice(stateData.dice);
+        }
+
+        // Update rolls left and newRoll state
         this.rollsLeft = stateData.rollsLeft;
-        
-        // Update dice
-        this.diceManager.setDice(stateData.dice);
-        
-        // Update scores
-        stateData.scores.forEach((score, index) => {
-            if (this.scoreManager[index]) {
-                this.scoreManager[index].setTotalScore(score);
-            }
-        });
-        
-        // Update categories
-        Object.entries(stateData.categories).forEach(([category, isSelected]) => {
-            if (isSelected) {
-                const categoryEnum = Categories[category as keyof typeof Categories];
-                if (categoryEnum !== undefined) {
-                    this.scoreManager[this.currentPlayer].updateScorecard(categoryEnum, 0, true);
+        this.newRoll = stateData.newRoll;
+
+        // Update current player
+        this.currentPlayer = stateData.currentPlayer;
+
+        // Update scores for all players
+        if (stateData.scores) {
+            console.log('Updating scores:', stateData.scores);
+            stateData.scores.forEach((score, index) => {
+                console.log(`Updating score for player ${index}:`, score);
+                if (this.scoreManager[index]) {
+                    this.scoreManager[index].setTotalScore(score);
                 }
-            }
-        });
+            });
+        }
+
+        // Update selected categories
+        if (stateData.categories) {
+            Object.entries(stateData.categories).forEach(([category, isSelected]) => {
+                if (isSelected) {
+                    const categoryEnum = Categories[category as keyof typeof Categories];
+                    if (categoryEnum !== undefined) {
+                        // Get the score for this category from the current dice
+                        const score = this.calculateScore(categoryEnum);
+                        this.scoreManager[this.currentPlayer].updateScorecard(categoryEnum, score, true);
+                    }
+                }
+            });
+        }
+
+        console.log('Game state updated');
     }
 
     getGameState(): GameStateData {
+        const scores = this.scoreManager.map(manager => manager.getTotalScore());
+        console.log('Getting game state with scores:', scores);
         return {
             currentPlayer: this.currentPlayer,
             dice: this.diceManager.getDice(),
             rollsLeft: this.rollsLeft,
-            scores: this.scoreManager.map(manager => manager.getTotalScore()),
+            scores: scores,
             categories: Object.entries(Categories)
                 .filter(([key]) => isNaN(Number(key)))
                 .reduce((acc, [key]) => {
                     acc[key] = this.scoreManager[this.currentPlayer].isCategorySelected(Categories[key as keyof typeof Categories]);
                     return acc;
-                }, {} as { [key: string]: boolean })
+                }, {} as { [key: string]: boolean }),
+            newRoll: this.newRoll
         };
     }
 }

@@ -127,4 +127,10 @@ export class ScoreManager implements IScoreManager {
     setTotalScore(totalScore: number) {
         this.score = totalScore;
     }
+
+    selectCategory(category: Categories): void {
+        if (this.scorecard[category]) {
+            this.scorecard[category].selected = true;
+        }
+    }
 }

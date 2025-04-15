@@ -3,7 +3,14 @@
     <div v-if="isOnlineGame && !isHostTurn" class="waiting-message">
       <div class="bg-purple-600 text-white p-4 rounded-lg shadow-lg text-center">
         <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
-        <p class="text-lg font-bold">Waiting for host to make their move...</p>
+        <p class="text-lg font-bold">
+          <template v-if="peerStore.isHost">
+            Waiting for Player 2 to make their move...
+          </template>
+          <template v-else>
+            Waiting for Player 1 to make their move...
+          </template>
+        </p>
       </div>
     </div>
     <div v-else-if="isOnlineGame && !gameStore.isGameActive" class="waiting-message">
@@ -53,7 +60,7 @@
           <div class="category-icon">
             <i :class="['fas', `${getDieIcon(index + 1)}`]"></i>
           </div>
-          <div class="score-cell" @click="selectCategory(category)">
+          <div class="score-cell" @click="selectCategory(category.value)">
             {{ getScoreDisplay(category.value) }}
           </div>
         </div>
@@ -77,7 +84,7 @@
                 {{ category.text }}
               </template>
           </div>
-          <div class="score-cell" @click="selectCategory(category)">
+          <div class="score-cell" @click="selectCategory(category.value)">
             {{ getScoreDisplay(category.value) }}
           </div>
         </div>
@@ -94,7 +101,7 @@
                 {{ category.text }}
               </template>
           </div>
-          <div class="score-cell" @click="selectCategory(category)">
+          <div class="score-cell" @click="selectCategory(category.value)">
             {{ getScoreDisplay(category.value) }}
           </div>
         </div>
@@ -104,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { usePeerStore } from '../stores/peerStore'
 import { Categories } from '../enums/Categories'
@@ -127,8 +134,24 @@ const isRolling = ref(false);
 const currentGame = computed(() => gameStore.currentGame);
 const playerCount = computed(() => currentGame.value?.getPlayerCount() || 0);
 const currentPlayer = computed(() => currentGame.value?.currentPlayer || 0);
-const dice = computed(() => currentGame.value?.dice() || []);
-const rollsLeft = computed(() => currentGame.value?.rollsLeft || 0);
+const dice = computed(() => {
+  if (!currentGame.value) return [];
+  const currentDice = currentGame.value.dice();
+  console.log('Dice computed property updated:', JSON.stringify(currentDice, null, 2));
+  return currentDice.map(die => ({
+    value: die.value,
+    color: die.color,
+    held: die.held,
+    isRolling: die.isRolling
+  }));
+});
+
+const rollsLeft = computed(() => {
+  const rolls = currentGame.value?.rollsLeft || 0;
+  console.log('Rolls left updated:', rolls);
+  return rolls;
+});
+
 const newRoll = computed(() => currentGame.value?.newRoll || false);
 const canRoll = computed(() => currentGame.value && currentGame.value.rollsLeft > 0);
 const totalTopScore = computed(() => currentGame.value?.getTotalTopScore() || 0);
@@ -137,7 +160,11 @@ const totalTopScore = computed(() => currentGame.value?.getTotalTopScore() || 0)
 const isOnlineGame = computed(() => gameStore.currentGameMode === GameMode.OnlineMultiPlayer)
 const isHostTurn = computed(() => {
   if (!isOnlineGame.value || !gameStore.currentGame) return true
-  return peerStore.isHost ? gameStore.currentGame.currentPlayer === 0 : gameStore.currentGame.currentPlayer === 1
+  // Host is always player 0, client is always player 1
+  // If it's host's turn (currentPlayer === 0) and we're the host, or
+  // if it's client's turn (currentPlayer === 1) and we're the client
+  return (gameStore.currentGame.currentPlayer === 0 && peerStore.isHost) || 
+         (gameStore.currentGame.currentPlayer === 1 && !peerStore.isHost)
 })
 
 const totalTopScorePercent = computed(() => {
@@ -146,19 +173,39 @@ const totalTopScorePercent = computed(() => {
 
 // Game actions
 const rollDice = () => {
-  isRolling.value = true;
-  gameStore.rollDice();
-  dice.value.forEach((die) => {
-    if (!die.held) {
-      die.isRolling = true;
+  if (isOnlineGame.value) {
+    if (peerStore.isHost) {
+      isRolling.value = true;
+      gameStore.rollDice();
+      dice.value.forEach((die) => {
+        if (!die.held) {
+          die.isRolling = true;
+          setTimeout(() => {
+            die.isRolling = false;
+          }, 1000);
+        }
+      });
       setTimeout(() => {
-        die.isRolling = false;
+        isRolling.value = false;
       }, 1000);
+    } else {
+      peerStore.sendData({ type: 'rollDice' });
     }
-  });
-  setTimeout(() => {
-    isRolling.value = false;
-  }, 1000);
+  } else {
+    isRolling.value = true;
+    gameStore.rollDice();
+    dice.value.forEach((die) => {
+      if (!die.held) {
+        die.isRolling = true;
+        setTimeout(() => {
+          die.isRolling = false;
+        }, 1000);
+      }
+    });
+    setTimeout(() => {
+      isRolling.value = false;
+    }, 1000);
+  }
 }
 
 const rollDiceText = computed(() => {
@@ -189,12 +236,23 @@ const rollDiceText = computed(() => {
 })
 
 const toggleHold = (index: number) => {
-  currentGame.value?.toggleHold(index);
-  gameStore.playSoundEffect?.(SoundEffects.DiceHold);
+  if (isOnlineGame.value) {
+    if (peerStore.isHost) {
+      currentGame.value?.toggleHold(index);
+      gameStore.playSoundEffect?.(SoundEffects.DiceHold);
+    } else {
+      peerStore.sendData({ type: 'holdDice', index });
+    }
+  } else {
+    currentGame.value?.toggleHold(index);
+    gameStore.playSoundEffect?.(SoundEffects.DiceHold);
+  }
 }
 
 const getPlayerScore = (index: number): number => {
-  return currentGame.value?.getPlayerScore(index) || 0
+  const score = currentGame.value?.getPlayerScore(index) || 0;
+  console.log(`Getting score for player ${index}:`, score);
+  return score;
 }
 
 const getScoreDisplay = (category: Categories): string => {
@@ -216,58 +274,72 @@ const isCategorySelected = (category: Categories): boolean => {
   return currentGame.value?.isCategorySelected(category) || false
 }
 
-const selectCategory = (category: { value: Categories }) => {
-  if (!currentGame.value || currentGame.value.isCategorySelected(category.value) || newRoll.value) {
-    return;
-  }
+const selectCategory = (category: Categories) => {
+  if (!currentGame.value || currentGame.value.isCategorySelected(category)) return;
 
-  const score = currentGame.value.calculateScore(category.value);
-  if (score !== undefined && category.value !== Categories.TopBonus) {
-
-    // Check for additional Yahtzee
-    if(currentGame.value.isCategorySelected(Categories.Yahtzee) && category.value !== Categories.Yahtzee){
-        if (currentGame.value.dice().every(die => die.value === currentGame.value?.dice()[0].value) && 
-            currentGame.value.dice()[0].value !== 0) {  
-            // Check if all dice are the same and not blank
-            let currentYahtzeeScore = currentGame.value.getScoreByCategory(Categories.Yahtzee);
-            if(currentYahtzeeScore > 0 && score > 0){
-                let updateYahtzeeScore = currentYahtzeeScore + 100;
-                currentGame.value.updateSelectedScore(Categories.Yahtzee, updateYahtzeeScore);
-                gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
-                showYahtzeeAnimation();
-            }
-        }
+  if (isOnlineGame.value) {
+    const peerStore = usePeerStore()
+    if (peerStore.isHost) {
+      // Host calculates score and updates game state
+      const score = currentGame.value.calculateScore(category);
+      currentGame.value.updateSelectedScore(category, score, false);
+      peerStore.sendData({ type: 'selectCategory', category });
+      gameStore.sendGameState();
+      gameStore.nextPlayer();
+    } else {
+      // Client sends category selection to host
+      peerStore.sendData({ type: 'selectCategory', category });
     }
+  } else {
+    // Single player or local multiplayer
+    const score = currentGame.value.calculateScore(category);
+    currentGame.value.updateSelectedScore(category, score, false);
+  }
+}
 
-    currentGame.value.updateSelectedScore(category.value, score, false);
-    if(score > 0){
-      if(category.value === Categories.Yahtzee){
-        showYahtzeeAnimation();
+const handleCategorySelection = (category: Categories, score: number) => {
+  if (!currentGame.value) return;
+
+  // Check for additional Yahtzee
+  if(currentGame.value.isCategorySelected(Categories.Yahtzee) && category !== Categories.Yahtzee){
+    if (currentGame.value.dice().every(die => die.value === currentGame.value?.dice()[0].value) && 
+        currentGame.value.dice()[0].value !== 0) {  
+      let currentYahtzeeScore = currentGame.value.getScoreByCategory(Categories.Yahtzee);
+      if(currentYahtzeeScore > 0 && score > 0){
+        let updateYahtzeeScore = currentYahtzeeScore + 100;
+        currentGame.value.updateSelectedScore(Categories.Yahtzee, updateYahtzeeScore);
         gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
-      }else{  
-        showScoreAnimation(score);
-        gameStore.playSoundEffect?.(SoundEffects.Score)
+        showYahtzeeAnimation();
       }
-    }else{
-      gameStore.playSoundEffect?.(SoundEffects.NoScore)
     }
-
-    setTimeout(() => {
-      if (currentGame.value) {
-
-        if (currentGame.value.isGameOver()){
-          if(currentGame.value.state === GameState.GameOver){
-            endGame();
-          }
-        }
-
-        currentGame.value.nextPlayer();
-        currentGame.value.newRoll = true;
-        currentGame.value.rollsLeft = 2;
-        
-      }
-    }, 0);
   }
+
+  currentGame.value.updateSelectedScore(category, score, false);
+  if(score > 0){
+    if(category === Categories.Yahtzee){
+      showYahtzeeAnimation();
+      gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
+    }else{  
+      showScoreAnimation(score);
+      gameStore.playSoundEffect?.(SoundEffects.Score)
+    }
+  }else{
+    gameStore.playSoundEffect?.(SoundEffects.NoScore)
+  }
+
+  setTimeout(() => {
+    if (currentGame.value) {
+      if (currentGame.value.isGameOver()){
+        if(currentGame.value.state === GameState.GameOver){
+          endGame();
+        }
+      }
+
+      currentGame.value.nextPlayer();
+      currentGame.value.newRoll = true;
+      currentGame.value.rollsLeft = 2;
+    }
+  }, 0);
 }
 
 const getDieIcon = (die: number): string => {

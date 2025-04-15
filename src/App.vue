@@ -81,6 +81,7 @@ import GameBoard from './components/GameBoard.vue'
 import GameOver from './components/GameOver.vue'
 import { useGameStore } from './stores/gameStore'
 import { GameMode as GameModeEnum } from './enums/GameMode'
+import { SoundEffects, SoundVolumes } from './enums/SoundEffects'
 
 const gameStore = useGameStore()
 
@@ -91,6 +92,28 @@ const musicTracks = [
   '/yahtzee/music/bgsample-3.mp3'
 ]
 let backgroundMusic: HTMLAudioElement | null = null
+
+// Sound effect cache to prevent creating new Audio objects repeatedly
+const soundCache: { [key in SoundEffects]?: HTMLAudioElement } = {}
+
+const playSoundEffect = (effect: SoundEffects) => {
+  if (!gameStore.sfxEnabled) return
+
+  // Create or get cached audio element
+  if (!soundCache[effect]) {
+    soundCache[effect] = new Audio(effect)
+    soundCache[effect]!.volume = SoundVolumes[effect]
+  }
+
+  // Clone the audio to allow overlapping sounds
+  const sound = soundCache[effect]!.cloneNode() as HTMLAudioElement
+  sound.play().catch(error => {
+    console.log("Error playing sound effect:", error)
+  })
+}
+
+// Expose the playSoundEffect function to the store
+gameStore.playSoundEffect = playSoundEffect
 
 const initializeBackgroundMusic = () => {
   if (!gameStore.bgmEnabled) return

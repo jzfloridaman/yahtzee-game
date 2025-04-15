@@ -89,6 +89,7 @@ import { computed, ref } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { Categories } from '../enums/Categories'
 import { GameState } from '../enums/GameState'
+import { SoundEffects } from '../enums/SoundEffects';
 const emit = defineEmits<{
   (e: 'end-game'): void
 }>()
@@ -157,7 +158,8 @@ const rollDiceText = computed(() => {
 })
 
 const toggleHold = (index: number) => {
-  currentGame.value?.toggleHold(index)
+  currentGame.value?.toggleHold(index);
+  gameStore.playSoundEffect?.(SoundEffects.DiceHold);
 }
 
 const getPlayerScore = (index: number): number => {
@@ -200,13 +202,22 @@ const selectCategory = (category: { value: Categories }) => {
             if(currentYahtzeeScore > 0 && score > 0){
                 let updateYahtzeeScore = currentYahtzeeScore + 100;
                 currentGame.value.updateSelectedScore(Categories.Yahtzee, updateYahtzeeScore);
-                // playYahtzeeSound();
+                gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
                 // showYahtzeeAnimation();
             }
         }
     }
 
     currentGame.value.updateSelectedScore(category.value, score, false);
+    if(score > 0){
+      if(category.value === Categories.Yahtzee){
+        gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
+      }else{  
+        gameStore.playSoundEffect?.(SoundEffects.Score)
+      }
+    }else{
+      gameStore.playSoundEffect?.(SoundEffects.NoScore)
+    }
 
     setTimeout(() => {
       if (currentGame.value) {

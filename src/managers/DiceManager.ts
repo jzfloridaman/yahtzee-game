@@ -4,7 +4,7 @@ import { Die } from '../types/Die';
 export class DiceManager implements IDiceManager {
     
     private dice: Die[] = [];
-    private dieSides: number = 6; /* 1 for testing, 6 is normal */
+    private dieSides: number = 1; /* 1 for testing, 6 is normal */
 
     constructor(length: number = 5) {
         this.dice = Array.from({ length: length }, () => this.setupDice());

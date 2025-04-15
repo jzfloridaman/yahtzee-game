@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { YahtzeeGame } from '../game'
 import { GameMode } from '../enums/GameMode'
+import { SoundEffects } from '../enums/SoundEffects'
 
 interface GameHistory {
   date: string
@@ -20,6 +21,7 @@ export const useGameStore = defineStore('game', {
     // Audio settings
     bgmEnabled: localStorage.getItem('bgmEnabled') === 'true',
     sfxEnabled: localStorage.getItem('sfxEnabled') === 'true',
+    playSoundEffect: null as ((effect: SoundEffects) => void) | null,
 
     // UI state
     showAudioSettings: false,
@@ -128,14 +130,12 @@ export const useGameStore = defineStore('game', {
       if(this.game.newRoll){   
           this.game.newRoll = false;
           this.game.startNewRoll();
-          //playDiceRollSound();
+          this.playSoundEffect?.(SoundEffects.DiceRoll);
           this.game.rollDice();
           this.game.rollsLeft = 2;
-          //updateDice(game);
       }else{
-          //playDiceRollSound();
+          this.playSoundEffect?.(SoundEffects.DiceRoll);
           this.game.rollDice();
-          //updateDice(game);
       }
 
 

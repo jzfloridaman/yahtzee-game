@@ -72,7 +72,7 @@ const emit = defineEmits<{
 
 const showMultiplayerMenu = ref(false)
 const showOnlineMenu = ref(false)
-const roomCodeInput = ref('')
+const roomCodeInput = ref('test')
 const peerStore = usePeerStore()
 const gameStore = useGameStore()
 

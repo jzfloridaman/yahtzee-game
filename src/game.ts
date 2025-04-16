@@ -65,6 +65,10 @@ export class YahtzeeGame {
         return this.diceManager.getDice();
     }
 
+    forceDiceReset(){
+        this.diceManager.resetDice();
+    }
+
     startNewGame(players: number = 1) {
         this.players = players;
         this.scoreManager = Array.from({length: players}, () => new ScoreManager());
@@ -219,7 +223,12 @@ export class YahtzeeGame {
         // Update dice state
         if (stateData.dice) {
             console.log('Updating dice:', stateData.dice);
-            this.diceManager.setDice(stateData.dice);
+            if(stateData.newRoll){
+                console.log('Resetting dice');
+                this.diceManager.resetDice();
+            }else{
+                this.diceManager.setDice(stateData.dice);
+            }
         }
 
         // Update rolls left and newRoll state

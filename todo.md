@@ -60,4 +60,11 @@ the host handles the dice manager state
         - host holds a die, client will hold same die
     - clients turn
         - after a host category the host should set dice to reset (blanks), client will update.
-        - client needs to check if its not host
+        - client needs to check if its not host inside, selectCategory, rollDice and toggleHold
+            - client will send to the host an event. host will acknowledge and run that command on its end
+            - host only needs to run rollDice locally to send back.
+            
+            GameBoard.vue uses
+            peerStore.sendData
+
+            this needs to be reworked for category

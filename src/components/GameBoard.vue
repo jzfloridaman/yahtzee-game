@@ -251,7 +251,7 @@ const toggleHold = (index: number) => {
 
 const getPlayerScore = (index: number): number => {
   const score = currentGame.value?.getPlayerScore(index) || 0;
-  console.log(`Getting score for player ${index}:`, score);
+  //console.log(`Getting score for player ${index}:`, score);
   return score;
 }
 
@@ -282,14 +282,17 @@ const selectCategory = (category: Categories) => {
     if (peerStore.isHost) {
       // Host calculates score and updates game state
       const score = currentGame.value.calculateScore(category);
-      currentGame.value.updateSelectedScore(category, score, false);
+      //currentGame.value.updateSelectedScore(category, score, false);
       handleCategorySelection(category, score);
-      peerStore.sendData({ type: 'selectCategory', category });
+      console.log('sending select category to player 2 with score:', score);
+      peerStore.sendData({ type: 'selectCategory', category, score: score });
       gameStore.sendGameState();
       gameStore.nextPlayer();
     } else {
       // Client sends category selection to host
-      peerStore.sendData({ type: 'selectCategory', category });
+      const score = currentGame.value.calculateScore(category);
+      peerStore.sendData({ type: 'selectCategory', category, score: score });
+      showScoreAnimation(score);
     }
   } else {
     // Single player or local multiplayer

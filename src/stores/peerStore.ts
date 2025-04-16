@@ -21,10 +21,14 @@ export const usePeerStore = defineStore('peer', {
   }),
 
   actions: {
-    initializePeer() {
+    initializePeer(roomCode: string | null) {
       // Generate a random ID for the peer
-      const peerId = Math.random().toString(36).substring(2, 8)
-      this.peer = new Peer(peerId)
+      if(roomCode == null){
+        const peerId = Math.random().toString(36).substring(2, 8)
+        this.peer = new Peer(peerId)
+      }else{
+        this.peer = new Peer(roomCode)
+      }
       
       this.peer.on('open', (id) => {
         console.log('Peer connected with ID:', id)
@@ -43,7 +47,7 @@ export const usePeerStore = defineStore('peer', {
 
     createRoom() {
       if (!this.peer) {
-        this.initializePeer()
+        this.initializePeer("test")
       }
       this.isHost = true
       this.roomCode = this.peer?.id || null
@@ -54,9 +58,9 @@ export const usePeerStore = defineStore('peer', {
 
     joinRoom(roomCode: string) {
       if (!this.peer) {
-        this.initializePeer()
+        this.initializePeer("player2")
       }
-      this.roomCode = roomCode
+      this.roomCode = "test"//roomCode
       this.isHost = false
       
       // Set game mode for client

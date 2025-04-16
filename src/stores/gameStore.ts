@@ -5,6 +5,7 @@ import { SoundEffects } from '../enums/SoundEffects'
 import { usePeerStore } from './peerStore'
 import { Categories } from '../enums/Categories'
 
+import { showYahtzeeAnimation, showScoreAnimation } from '../utils/animations'
 interface PlayerScore {
   playerNumber: number;
   score: number;
@@ -130,12 +131,20 @@ export const useGameStore = defineStore('game', {
             // Host calculates score and updates game state
             const score = this.game?.calculateScore(data.category as Categories) || 0;
             this.game?.updateSelectedScore(data.category as Categories, score, false);
+            showScoreAnimation(score);
+            // reset dice
+            //this.game?.diceManager.resetDice();
+            
             this.sendGameState();
             // After selecting a category, move to next player
+            console.log('updated cateogry, sent game state to player 2 and calling Next player');
             this.nextPlayer();
+
           } else {
             // Client should not calculate scores locally - just wait for host's game state update
             console.log('Client received category selection, waiting for host state update');
+            // play animation
+            showScoreAnimation(data.score);
           }
           break;
         default:
@@ -189,6 +198,7 @@ export const useGameStore = defineStore('game', {
         this.game.rollsLeft = 2
         this.game.newRoll = true
         if (this.gameMode === GameMode.OnlineMultiPlayer) {
+          this.game.forceDiceReset();
           this.sendGameState()
         }
       }
@@ -294,12 +304,14 @@ export const useGameStore = defineStore('game', {
           if (peerStore.isHost) {
             this.game.selectCategory(category)
             // Send the category selection to the client
-            peerStore.sendData({ type: 'selectCategory', category })
+            peerStore.sendData({ type: 'selectCategory', category, score: 1000 })
             this.sendGameState()
             // After selecting a category, move to next player
             this.nextPlayer()
           } else {
+            console.log('selecting category on client, sending to host');
             peerStore.sendData({ type: 'selectCategory', category })
+            this.game.selectCategory(category)
           }
         } else {
           this.game.selectCategory(category)

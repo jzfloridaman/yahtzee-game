@@ -103,6 +103,10 @@ export const useGameStore = defineStore('game', {
             this.initializeGame(GameMode.OnlineMultiPlayer, 2);
           }
           break;
+        case 'gameOver':
+          console.log('Game over message received');
+          this.endGame();
+          break;
         case 'gameState':
           console.log('Updating game state');
           if (!usePeerStore().isHost && this.game) {
@@ -116,6 +120,8 @@ export const useGameStore = defineStore('game', {
             this.rollDice();
             // Send updated game state after rolling
             this.sendGameState();
+          }else{
+            // animate dice
           }
           break;
         case 'holdDice':
@@ -274,9 +280,10 @@ export const useGameStore = defineStore('game', {
         if (peerStore.isHost) {
           // Host sends updated game state after rolling
           this.sendGameState()
+          peerStore.sendData({ type: 'rollDice' });
         } else {
           // Client sends roll request to host
-          peerStore.sendData({ type: 'rollDice' })
+          peerStore.sendData({ type: 'rollDice' });
         }
       }
     },

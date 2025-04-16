@@ -171,6 +171,21 @@ const totalTopScorePercent = computed(() => {
   return (totalTopScore.value / 63) * 100;
 })
 
+// watch(() => dice.value.filter(die => !die.held).map(die => die.value), (newVal) => {
+//   if (isOnlineGame.value && !peerStore.isHost) {
+//     console.log('dice values updated:', newVal);
+//     animateDice();
+//   }
+// }, { deep: true });
+
+// const animateDice = () => {
+//   dice.value.forEach((die) => {
+//     if (!die.held) {
+//       die.isRolling = true;
+//     }
+//   });
+// }
+
 // Game actions
 const rollDice = () => {
   if (isOnlineGame.value) {
@@ -190,6 +205,7 @@ const rollDice = () => {
       }, 1000);
     } else {
       peerStore.sendData({ type: 'rollDice' });
+      // animate dice
     }
   } else {
     isRolling.value = true;

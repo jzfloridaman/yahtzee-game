@@ -137,7 +137,7 @@ const currentPlayer = computed(() => currentGame.value?.currentPlayer || 0);
 const dice = computed(() => {
   if (!currentGame.value) return [];
   const currentDice = currentGame.value.dice();
-  console.log('Dice computed property updated:', JSON.stringify(currentDice, null, 2));
+  //console.log('Dice computed property updated:', JSON.stringify(currentDice, null, 2));
   return currentDice.map(die => ({
     value: die.value,
     color: die.color,
@@ -283,6 +283,7 @@ const selectCategory = (category: Categories) => {
       // Host calculates score and updates game state
       const score = currentGame.value.calculateScore(category);
       currentGame.value.updateSelectedScore(category, score, false);
+      handleCategorySelection(category, score);
       peerStore.sendData({ type: 'selectCategory', category });
       gameStore.sendGameState();
       gameStore.nextPlayer();
@@ -293,7 +294,8 @@ const selectCategory = (category: Categories) => {
   } else {
     // Single player or local multiplayer
     const score = currentGame.value.calculateScore(category);
-    currentGame.value.updateSelectedScore(category, score, false);
+    handleCategorySelection(category, score);
+    //currentGame.value.updateSelectedScore(category, score, false);
   }
 }
 
@@ -335,9 +337,13 @@ const handleCategorySelection = (category: Categories, score: number) => {
         }
       }
 
-      currentGame.value.nextPlayer();
-      currentGame.value.newRoll = true;
-      currentGame.value.rollsLeft = 2;
+      if(!isOnlineGame.value){
+        currentGame.value.nextPlayer();
+        currentGame.value.newRoll = true;
+        currentGame.value.rollsLeft = 2;
+      }
+
+
     }
   }, 0);
 }

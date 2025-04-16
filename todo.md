@@ -14,14 +14,10 @@ Player Class
 UI.TS
 - this should handle all game input from the user
 - use updated scoremanager.ts 
-- abstract the audio / music / sfx functionality. 
-- abstract animations
 - handle the game state better
 - refactor all functions to be cleaner named
-- abstract game stats save and localstorage functionality
 - add more stats (high score, games played, time played, wins, losses)
 - simplify game input (button clicks)
-- add socket.io for online multiplayer mode
 - add computer player ai mode
 - use async functions, computed 
 
@@ -45,3 +41,23 @@ Multiplayer Modes
 - Rename game, update artwork
 - map out the flow of the game from page load 
     - page loads, initalize ui, game, storage, assets, etc
+
+
+
+Online Multiplayer Game Flow
+- Host, creates room with unique room code
+- Client, types in room code and clicks join
+- Host/Client will see Start Game button (only host can click)
+- game starts with Host (sends gamestate to client)
+    - client gets initial gamestate, updates its state, waits for host.
+- Host completes a turn (dice roll, dice hold, category select)
+    - host sends gamestate
+
+the host handles the dice manager state
+    - client side should be listening for events from host 
+        - if host rolls, client gets the dice manager, updates its dice manager with data
+        - host clicks a category, client will click same category
+        - host holds a die, client will hold same die
+    - clients turn
+        - after a host category the host should set dice to reset (blanks), client will update.
+        - client needs to check if its not host

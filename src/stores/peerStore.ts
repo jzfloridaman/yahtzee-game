@@ -1,14 +1,15 @@
 import { defineStore } from 'pinia'
-import Peer from 'peerjs'
+import Peer, { DataConnection } from 'peerjs'
 import { useGameStore } from './gameStore'
 import { GameMode } from '../enums/GameMode'
 
 interface PeerState {
   peer: Peer | null
-  connection: Peer.DataConnection | null
+  connection: DataConnection | null
   roomCode: string | null
   isHost: boolean
   isConnected: boolean
+  connectionLost: boolean
 }
 
 export const usePeerStore = defineStore('peer', {
@@ -17,7 +18,8 @@ export const usePeerStore = defineStore('peer', {
     connection: null,
     roomCode: null,
     isHost: false,
-    isConnected: false
+    isConnected: false,
+    connectionLost: false
   }),
 
   actions: {
@@ -80,9 +82,10 @@ export const usePeerStore = defineStore('peer', {
       this.connection.on('open', () => {
         console.log('Connection established')
         this.isConnected = true
+        this.connectionLost = false
       })
 
-      this.connection.on('data', (data) => {
+      this.connection.on('data', (data: any) => {
         console.log('Received data:', data)
         // Forward data to game store
         const gameStore = useGameStore()
@@ -92,10 +95,12 @@ export const usePeerStore = defineStore('peer', {
       this.connection.on('close', () => {
         console.log('Connection closed')
         this.isConnected = false
+        this.connectionLost = true
       })
 
-      this.connection.on('error', (err) => {
+      this.connection.on('error', (err: any) => {
         console.error('Connection error:', err)
+        this.connectionLost = true
       })
     },
 
@@ -119,6 +124,7 @@ export const usePeerStore = defineStore('peer', {
         this.peer.destroy()
       }
       this.$reset()
+      this.connectionLost = false
     }
   }
 }) 

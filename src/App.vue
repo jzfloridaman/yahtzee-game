@@ -1,5 +1,13 @@
 <template>
   <div>
+    <!-- Connection Lost Message -->
+    <div v-if="peerStore.connectionLost" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+      <div class="bg-red-700 text-white p-8 rounded-lg shadow-lg text-center max-w-xs mx-auto">
+        <h2 class="text-2xl font-bold mb-2">Connection Lost</h2>
+        <p class="mb-4">The connection to your opponent has been lost. Please try to reconnect or start a new game.</p>
+        <button @click="handleNewGame" class="bg-white text-red-700 font-bold px-4 py-2 rounded hover:bg-gray-200 transition">New Game</button>
+      </div>
+    </div>
     <!-- Overlay & Menus-->
     <div class="overlay" :class="{ active: isAnyMenuOpen }" @click="closeAllMenus()"></div>
     <div class="fixed top-4 right-4 z-50 flex gap-2">
@@ -87,8 +95,10 @@ import GameOver from './components/GameOver.vue'
 import { useGameStore } from './stores/gameStore'
 import { GameMode as GameModeEnum } from './enums/GameMode'
 import { SoundEffects, SoundVolumes } from './enums/SoundEffects'
+import { usePeerStore } from './stores/peerStore'
 
 const gameStore = useGameStore()
+const peerStore = usePeerStore()
 
 // Audio setup
 const musicTracks = [
@@ -174,6 +184,7 @@ const restartGame = () => {
 const newGame = () => {
   closeAllMenus();
   gameStore.newGame();
+  peerStore.connectionLost = false;
 }
 
 const closeAllMenus = (menu?: string) => {
@@ -206,6 +217,10 @@ const toggleGameOptions = () => {
 const isAnyMenuOpen = computed(() => {
   return gameStore.showAudioSettings || gameStore.showGameHistory || gameStore.showGameOptions;
 });
+
+function handleNewGame() {
+  newGame();
+}
 
 </script> 
 <style>

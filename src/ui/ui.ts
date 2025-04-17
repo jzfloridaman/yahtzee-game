@@ -531,10 +531,10 @@ function updateFinalScorecard(game: YahtzeeGame, playerIndex: number) {
 function saveGameStats(game: YahtzeeGame) {
     const stats = {
         gameType: game.gameType,
-        players: game.scoreManager.map((scoreManager, index) => ({
+        players: game.players.map((player, index) => ({
             name: `Player ${index + 1}`,
-            score: scoreManager.getTotalScore(),
-            scoreCard: scoreManager.getScorecard()
+            score: player.getTotalScore(),
+            scoreCard: player.getScorecard()
         })),
         date: new Date().toISOString()
     };

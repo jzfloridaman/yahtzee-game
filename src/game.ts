@@ -4,6 +4,7 @@ import { DiceManager } from './managers/DiceManager';
 import { ScoreManager } from './managers/ScoreManager';
 import { GameState } from './enums/GameState';
 import { GameMode } from './enums/GameMode';
+import { Player } from './models/Player';
 
 interface GameStateData {
   currentPlayer: number;
@@ -19,11 +20,10 @@ interface GameStateData {
 export class YahtzeeGame {
 
     private diceManager: DiceManager;
-    public scoreManager: ScoreManager[] = [];
+    public players: Player[] = [];
 
     public newRoll: boolean = true;
     public rollsLeft: number = 2;
-    public players: number = 1;    // array of Player objects
     public currentPlayer: number = 0;  // reference to current player in players array
     public playersGamesCompleted: number = 0;
     public gameType: GameMode = GameMode.SinglePlayer;
@@ -70,8 +70,7 @@ export class YahtzeeGame {
     }
 
     startNewGame(players: number = 1) {
-        this.players = players;
-        this.scoreManager = Array.from({length: players}, () => new ScoreManager());
+        this.players = Array.from({length: players}, (_, i) => new Player(`Player ${i+1}`));
         this.currentPlayer = 0;
         this.playersGamesCompleted = 0;
         this.newRoll = true;
@@ -84,8 +83,8 @@ export class YahtzeeGame {
     }
 
     initializeScorecard() {
-        this.scoreManager.forEach(scoreManager => {
-            scoreManager.initializeScorecard();
+        this.players.forEach(player => {
+            player.initializeScorecard();
         });
     }
 
@@ -95,28 +94,28 @@ export class YahtzeeGame {
 
     isGameOver(): Boolean {
 
-        if(this.playersGamesCompleted >= this.players){
+        if(this.playersGamesCompleted >= this.players.length){
             console.log('Game over, all players have completed their games');
             this.setGameOver();
             return true;
         }
-        const currentScoreManager = this.scoreManager[this.currentPlayer];
+        const currentPlayer = this.players[this.currentPlayer];
 
-        if(currentScoreManager.isGameOver){
+        if(currentPlayer.isGameOver){
             return true;
         }
 
-        if(currentScoreManager.getRemainingCategories() === 0){
-            currentScoreManager.setGameOver(true);
+        if(currentPlayer.getRemainingCategories() === 0){
+            currentPlayer.setGameOver(true);
             this.playersGamesCompleted++;
             return true;
         }
 
         // check to see if the last category is just the top bonus
         // this needs a better implementation. once topbonus is removed, this can be removed.
-        if(currentScoreManager.getRemainingCategories() === 1 && !currentScoreManager.isCategorySelected(Categories.TopBonus)){
+        if(currentPlayer.getRemainingCategories() === 1 && !currentPlayer.isCategorySelected(Categories.TopBonus)){
             this.calculateAllScores();
-            currentScoreManager.setGameOver(true);
+            currentPlayer.setGameOver(true);
             this.playersGamesCompleted++;
             return true;
         }
@@ -144,13 +143,13 @@ export class YahtzeeGame {
 
     // generate score for the scorecard ui board based on current dice roll.
     calculateScore(category: Categories): number {
-        return this.scoreManager[this.currentPlayer].calculateScore(category, this.diceManager.getDice());
+        return this.players[this.currentPlayer].calculateScore(category, this.diceManager.getDice());
     }
     calculateAllScores() {
         for (const category in Categories) {
             if (isNaN(Number(category))) { // Ensure it's a string key, not a numeric index
                 const score = this.calculateScore(Categories[category as keyof typeof Categories]);
-                this.scoreManager[this.currentPlayer].updateScorecard(Categories[category as keyof typeof Categories], score);
+                this.players[this.currentPlayer].updateScorecard(Categories[category as keyof typeof Categories], score);
             }
         }
     }
@@ -159,12 +158,12 @@ export class YahtzeeGame {
 
         // exception for yahtzee
         if(category === Categories.Yahtzee && score > 50){
-            this.scoreManager[this.currentPlayer].updateScorecard(category, score, true);
+            this.players[this.currentPlayer].updateScorecard(category, score, true);
         }
-        if(this.scoreManager[this.currentPlayer].isCategorySelected(category)){
+        if(this.players[this.currentPlayer].isCategorySelected(category)){
             return;
         }
-        this.scoreManager[this.currentPlayer].updateScorecard(category, score, true);
+        this.players[this.currentPlayer].updateScorecard(category, score, true);
         
         this.isGameOver();
 
@@ -175,19 +174,19 @@ export class YahtzeeGame {
     }
 
     isCategorySelected(category: Categories): boolean {
-        return this.scoreManager[this.currentPlayer].isCategorySelected(category);
+        return this.players[this.currentPlayer].isCategorySelected(category);
     }
 
     getScoreByCategory(category: Categories): number {
-        return this.scoreManager[this.currentPlayer].getScoreByCategory(category) || 0;
+        return this.players[this.currentPlayer].getScoreByCategory(category) || 0;
     }
 
     getTotalTopScore(): number {
-        return this.scoreManager[this.currentPlayer].isUpperScoreBonusApplicable();
+        return this.players[this.currentPlayer].isUpperScoreBonusApplicable();
     }
 
     getTotalScore(): number {
-        return this.scoreManager[this.currentPlayer].getTotalScore();
+        return this.players[this.currentPlayer].getTotalScore();
     }
 
     setGameMode(mode: GameMode): void {
@@ -195,27 +194,25 @@ export class YahtzeeGame {
     }
 
     setPlayers(num: number): void {
-        this.players = num;
+        // this.players = num; // now handled by players[]
     }
 
     getPlayerCount(): number {
-        return this.players;
+        return this.players.length;
     }
 
     nextPlayer(){
-        this.currentPlayer++;
-        if(this.currentPlayer >= this.players){
-            this.currentPlayer = 0;
-        }
+        this.currentPlayer = (this.currentPlayer + 1) % this.players.length;
     }
 
     getPlayerScore(player: number): number {
-        return this.scoreManager[player].getTotalScore();
+        return this.players[player].getTotalScore();
     }
 
     selectCategory(category: Categories) {
-        const score = this.calculateScore(category);
-        this.updateSelectedScore(category, score);
+        if (this.players[this.currentPlayer]) {
+            this.players[this.currentPlayer].selectCategory(category);
+        }
     }
 
     updateFromState(stateData: GameStateData): void {
@@ -244,8 +241,8 @@ export class YahtzeeGame {
             console.log('Updating scores:', stateData.scores);
             stateData.scores.forEach((score, index) => {
                 console.log(`Updating score for player ${index}:`, score);
-                if (this.scoreManager[index]) {
-                    this.scoreManager[index].setTotalScore(score);
+                if (this.players[index]) {
+                    this.players[index].setTotalScore(score);
                 }
             });
         }
@@ -258,7 +255,7 @@ export class YahtzeeGame {
                     if (categoryEnum !== undefined) {
                         // Get the score for this category from the current dice
                         const score = this.calculateScore(categoryEnum);
-                        this.scoreManager[this.currentPlayer].updateScorecard(categoryEnum, score, true);
+                        this.players[this.currentPlayer].updateScorecard(categoryEnum, score, true);
                     }
                 }
             });
@@ -268,7 +265,7 @@ export class YahtzeeGame {
     }
 
     getGameState(): GameStateData {
-        const scores = this.scoreManager.map(manager => manager.getTotalScore());
+        const scores = this.players.map(player => player.getTotalScore());
         console.log('Getting game state with scores:', scores);
         return {
             currentPlayer: this.currentPlayer,
@@ -278,7 +275,7 @@ export class YahtzeeGame {
             categories: Object.entries(Categories)
                 .filter(([key]) => isNaN(Number(key)))
                 .reduce((acc, [key]) => {
-                    acc[key] = this.scoreManager[this.currentPlayer].isCategorySelected(Categories[key as keyof typeof Categories]);
+                    acc[key] = this.players[this.currentPlayer].isCategorySelected(Categories[key as keyof typeof Categories]);
                     return acc;
                 }, {} as { [key: string]: boolean }),
             newRoll: this.newRoll

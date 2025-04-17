@@ -47,7 +47,7 @@ describe('YahtzeeGame', () => {
 
   test('should set game over when all categories are selected', () => {
     game.startNewGame(1);
-    const scoreManager = game['scoreManager'][0]; // Access the first player's ScoreManager
+    const scoreManager = game.players[0].scoreManager; // Access the first player's ScoreManager
     for (const category in Categories) {
       if (!isNaN(Number(category))) continue; // Skip numeric keys
       scoreManager.updateScorecard(Categories[category as keyof typeof Categories], 10, true);

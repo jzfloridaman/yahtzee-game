@@ -134,6 +134,14 @@ export const useGameStore = defineStore('game', {
         case 'selectCategory':
           console.log('Selecting category:', data.category);
           if (usePeerStore().isHost) {
+
+            if(this.game?.isGameOver()){
+              console.log('Game is over, cannot select category');
+              usePeerStore().sendData({ type: 'gameOver' });
+              this.endGame();
+              return;
+            }
+
             // Host calculates score and updates game state
             const score = this.game?.calculateScore(data.category as Categories) || 0;
             this.game?.updateSelectedScore(data.category as Categories, score, false);
@@ -209,6 +217,10 @@ export const useGameStore = defineStore('game', {
         this.game.rollsLeft = 2
         this.game.newRoll = true
         if (this.gameMode === GameMode.OnlineMultiPlayer) {
+          if(this.game.isGameOver()){
+            this.endGame();
+            return;
+          }
           this.game.forceDiceReset();
           this.sendGameState()
         }
@@ -282,7 +294,14 @@ export const useGameStore = defineStore('game', {
 
       if (this.gameMode === GameMode.OnlineMultiPlayer) {
         const peerStore = usePeerStore()
+
+        if(this.game.isGameOver()){
+          this.endGame();
+          console.log('Game is over, cannot roll dice');
+        }
+
         if (peerStore.isHost) {
+
           // Host sends updated game state after rolling
           this.sendGameState()
           peerStore.sendData({ type: 'rollDice' });

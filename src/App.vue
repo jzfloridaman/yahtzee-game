@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Connection Lost Message -->
-    <div v-if="peerStore.connectionLost" class="fixed inset-0 z-[5000] flex items-center justify-center bg-black bg-opacity-70">
+    <div v-if="peerStore.connectionLost && !gameStore.gameIsOver" class="fixed inset-0 z-[5000] flex items-center justify-center bg-black bg-opacity-70">
       <div class="bg-red-700 text-white p-8 rounded-lg shadow-lg text-center max-w-xs mx-auto">
         <h2 class="text-2xl font-bold mb-2">Connection Lost</h2>
         <p class="mb-4">The connection to your opponent has been lost. Please try to reconnect or start a new game.</p>

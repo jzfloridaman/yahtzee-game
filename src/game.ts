@@ -15,6 +15,8 @@ interface GameStateData {
   scorecard: { [key: string]: { value: number | null; selected: boolean; group: CategoryGroup } };
   newRoll: boolean;
   selectedCategories?: Categories[];
+  isGameOver: Boolean;
+  playersGamesCompleted: number;
 }
 
 // Game state
@@ -90,10 +92,12 @@ export class YahtzeeGame {
     }
 
     setGameOver(){
+        console.log('Setting game over');
         this.state = GameState.GameOver;
     }
 
     isGameOver(): Boolean {
+        //console.log('Checking if game is over');
 
         if(this.playersGamesCompleted >= this.players.length){
             console.log('Game over, all players have completed their games');
@@ -265,13 +269,19 @@ export class YahtzeeGame {
                 }
             });
         }
+
+        if(stateData.isGameOver){
+            console.log('Setting game over');
+            this.setGameOver();
+            
+        }
         console.log('Game state updated');
     }
 
     getGameState(): GameStateData {
 
         // might need to refactor this to get the scorecard for each player
-        
+
         const scores = this.players.map(player => player.getTotalScore());
         console.log('Getting game state with scores:', scores);
         return {
@@ -280,7 +290,9 @@ export class YahtzeeGame {
             rollsLeft: this.rollsLeft,
             scores: scores,
             scorecard: this.players[this.currentPlayer].getScorecard(),
-            newRoll: this.newRoll
+            newRoll: this.newRoll,
+            isGameOver: this.isGameOver(),
+            playersGamesCompleted: this.playersGamesCompleted
         };
     }
 }

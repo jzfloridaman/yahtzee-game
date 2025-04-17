@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- Connection Lost Message -->
-    <div v-if="peerStore.connectionLost" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+    <div v-if="peerStore.connectionLost" class="fixed inset-0 z-[5000] flex items-center justify-center bg-black bg-opacity-70">
       <div class="bg-red-700 text-white p-8 rounded-lg shadow-lg text-center max-w-xs mx-auto">
         <h2 class="text-2xl font-bold mb-2">Connection Lost</h2>
         <p class="mb-4">The connection to your opponent has been lost. Please try to reconnect or start a new game.</p>
@@ -59,7 +59,7 @@
         </div>
       </div>
 
-      <div class="relative" v-if="gameStore.gameMode !== null">
+      <div class="relative" v-if="gameStore.isGameActive">
         <button @click="toggleGameOptions" 
                 class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
           <i class="fas fa-bars text-white text-xl"></i>
@@ -68,13 +68,18 @@
              class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-64">
           <h3 class="text-lg font-bold mb-2">Game Options</h3>
           <div class="flex flex-col gap-2">
+            <button @click="endHostGame" 
+                    v-if="peerStore.isHost"
+                    class="bg-red-800 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+              End Game
+            </button>
             <button @click="restartGame" 
                     class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
               Restart Game
             </button>
             <button @click="newGame" 
                     class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-              New Game
+              Select Game
             </button>
           </div>
         </div>
@@ -176,6 +181,24 @@ const startGame = (mode: GameModeEnum, players?: number) => {
 
 const endGame = () => {
   gameStore.endGame();
+}
+
+const endHostGame = () => {
+
+  peerStore.sendData({
+    type: 'gameOver',
+    data: {
+      gameId: 'game over'
+    }
+  });
+
+  /// wait some time then close all menus, end game, and disconnect
+  setTimeout(() => {
+    closeAllMenus();
+    gameStore.endGame();
+    peerStore.disconnect();
+  }, 1000);
+
 }
 
 const restartGame = () => {

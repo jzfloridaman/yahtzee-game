@@ -35,7 +35,7 @@
             <p class="text-lg font-mono bg-gray-800 p-2 rounded">{{ peerStore.roomCode }}</p>
           </div>
         </div>
-        <div class="flex flex-col gap-2">
+        <div v-if="!peerStore.isHost" class="flex flex-col gap-2">
           <div class="flex gap-2">
             <input v-model="roomCodeInput" 
                    type="text" 
@@ -46,6 +46,12 @@
               Join
             </button>
           </div>
+        </div>
+        <div v-if="peerStore.isHost" class="mt-4">
+          <button @click="stopHosting"
+                  class="w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+            Stop Hosting
+          </button>
         </div>
         <div v-if="peerStore.isConnected" class="mt-4">
           <button @click="startOnlineGame" 
@@ -91,9 +97,15 @@ const createRoom = () => {
 }
 
 const joinRoom = () => {
+  
   if (roomCodeInput.value) {
+    console.log('joining room', roomCodeInput.value)
     peerStore.joinRoom(roomCodeInput.value)
   }
+}
+
+const stopHosting = () => {
+  peerStore.disconnect()
 }
 
 const startOnlineGame = () => {

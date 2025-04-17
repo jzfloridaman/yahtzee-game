@@ -179,21 +179,6 @@ const totalTopScorePercent = computed(() => {
   return (totalTopScore.value / 63) * 100;
 })
 
-// watch(() => dice.value.filter(die => !die.held).map(die => die.value), (newVal) => {
-//   if (isOnlineGame.value && !peerStore.isHost) {
-//     console.log('dice values updated:', newVal);
-//     animateDice();
-//   }
-// }, { deep: true });
-
-// const animateDice = () => {
-//   dice.value.forEach((die) => {
-//     if (!die.held) {
-//       die.isRolling = true;
-//     }
-//   });
-// }
-
 // Game actions
 const rollDice = () => {
   if (isOnlineGame.value) {
@@ -261,11 +246,17 @@ const rollDiceText = computed(() => {
 
 const toggleHold = (index: number) => {
   if (isOnlineGame.value) {
+
+    if(newRoll.value){
+      return;
+    }
+
     if (peerStore.isHost) {
       currentGame.value?.toggleHold(index);
       gameStore.playSoundEffect?.(SoundEffects.DiceHold);
     } else {
       peerStore.sendData({ type: 'holdDice', index });
+      gameStore.playSoundEffect?.(SoundEffects.DiceHold);
     }
   } else {
     currentGame.value?.toggleHold(index);
@@ -274,14 +265,16 @@ const toggleHold = (index: number) => {
 }
 
 const getPlayerScore = (index: number): number => {
-  const score = currentGame.value?.getPlayerScore(index) || 0;
-  //console.log(`Getting score for player ${index}:`, score);
-  return score;
+  return currentGame.value?.getPlayerScore(index) || 0;
 }
 
 const getScoreDisplay = (category: Categories): string => {
   // If category is already selected, just return the stored score
   if(currentGame.value?.isCategorySelected(category)){
+    // if score is 0 return X
+    if(currentGame.value?.getScoreByCategory(category) === 0){
+      return 'X';
+    }
     return currentGame.value?.getScoreByCategory(category)?.toString() || '-';
   }
   
@@ -302,6 +295,12 @@ const selectCategory = (category: Categories) => {
   if (!currentGame.value || currentGame.value.isCategorySelected(category)) return;
 
   if (isOnlineGame.value) {
+
+    // dont allow to select category if newroll
+    if(newRoll.value){
+      return;
+    }
+
     const peerStore = usePeerStore()
     if (peerStore.isHost) {
       // Host calculates score and updates game state
@@ -418,7 +417,6 @@ const colorCategories = [
   { name: 'Red', value: Categories.Reds, text: 'R', color: 'red' },
   { name: 'Green', value: Categories.Greens, text: 'G', color: 'green' },
   { name: 'Color Full House', value: Categories.ColorFullHouse, icon: 'fas fa-home', color: 'purple' },
-  // { name: 'Top Bonus', value: Categories.TopBonus, text: 'B!' }
 ]
 
 

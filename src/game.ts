@@ -5,13 +5,14 @@ import { ScoreManager } from './managers/ScoreManager';
 import { GameState } from './enums/GameState';
 import { GameMode } from './enums/GameMode';
 import { Player } from './models/Player';
+import { CategoryGroup } from './enums/CategoryGroup';
 
 interface GameStateData {
   currentPlayer: number;
   dice: Die[];
   rollsLeft: number;
   scores: number[];
-  categories: { [key: string]: boolean };
+  scorecard: { [key: string]: { value: number | null; selected: boolean; group: CategoryGroup } };
   newRoll: boolean;
   selectedCategories?: Categories[];
 }
@@ -225,7 +226,6 @@ export class YahtzeeGame {
 
     updateFromState(stateData: GameStateData): void {
         console.log('Updating game state:', stateData);
-        
         // Update dice state
         if (stateData.dice) {
             console.log('Updating dice:', stateData.dice);
@@ -236,14 +236,11 @@ export class YahtzeeGame {
                 this.diceManager.setDice(stateData.dice);
             }
         }
-
         // Update rolls left and newRoll state
         this.rollsLeft = stateData.rollsLeft;
         this.newRoll = stateData.newRoll;
-
         // Update current player
         this.currentPlayer = stateData.currentPlayer;
-
         // Update scores for all players
         if (stateData.scores) {
             console.log('Updating scores:', stateData.scores);
@@ -254,25 +251,27 @@ export class YahtzeeGame {
                 }
             });
         }
-
-        // Update selected categories
-        if (stateData.categories) {
-            Object.entries(stateData.categories).forEach(([category, isSelected]) => {
-                if (isSelected) {
-                    const categoryEnum = Categories[category as keyof typeof Categories];
-                    if (categoryEnum !== undefined) {
-                        // Get the score for this category from the current dice
-                        const score = this.calculateScore(categoryEnum);
-                        this.players[this.currentPlayer].updateScorecard(categoryEnum, score, true);
+        // Update scorecard for the current player
+        if (stateData.scorecard) {
+            const player = this.players[this.currentPlayer];
+            const scorecard = player.getScorecard();
+            Object.entries(stateData.scorecard).forEach(([category, entry]) => {
+                if (scorecard[category as Categories]) {
+                    scorecard[category as Categories].value = entry.value;
+                    scorecard[category as Categories].selected = entry.selected;
+                    if ('group' in entry) {
+                        scorecard[category as Categories].group = entry.group as CategoryGroup;
                     }
                 }
             });
         }
-
         console.log('Game state updated');
     }
 
     getGameState(): GameStateData {
+
+        // might need to refactor this to get the scorecard for each player
+        
         const scores = this.players.map(player => player.getTotalScore());
         console.log('Getting game state with scores:', scores);
         return {
@@ -280,12 +279,7 @@ export class YahtzeeGame {
             dice: this.diceManager.getDice(),
             rollsLeft: this.rollsLeft,
             scores: scores,
-            categories: Object.entries(Categories)
-                .filter(([key]) => isNaN(Number(key)))
-                .reduce((acc, [key]) => {
-                    acc[key] = this.players[this.currentPlayer].isCategorySelected(Categories[key as keyof typeof Categories]);
-                    return acc;
-                }, {} as { [key: string]: boolean }),
+            scorecard: this.players[this.currentPlayer].getScorecard(),
             newRoll: this.newRoll
         };
     }

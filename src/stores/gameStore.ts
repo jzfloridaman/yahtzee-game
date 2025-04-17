@@ -153,6 +153,11 @@ export const useGameStore = defineStore('game', {
             showScoreAnimation(data.score);
           }
           break;
+        case 'resyncRequest':
+          if (usePeerStore().isHost) {
+            this.sendGameState();
+          }
+          break;
         default:
           console.log('Unknown data type:', data.type);
       }

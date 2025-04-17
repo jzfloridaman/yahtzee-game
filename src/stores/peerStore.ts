@@ -83,6 +83,11 @@ export const usePeerStore = defineStore('peer', {
         console.log('Connection established')
         this.isConnected = true
         this.connectionLost = false
+
+        // If this is a client, request a resync from the host
+        if (!this.isHost) {
+          this.sendData({ type: 'resyncRequest' });
+        }
       })
 
       this.connection.on('data', (data: any) => {

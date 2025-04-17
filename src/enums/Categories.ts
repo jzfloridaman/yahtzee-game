@@ -19,5 +19,4 @@ export enum Categories {
     Reds = 'red',
     Greens = 'green',
     ColorFullHouse = 'Color Full House',
-    TopBonus = 'Top Bonus', // needs to be removed
 }

@@ -45,8 +45,8 @@ export class Player {
     getTotalCategories(): number {
         return this.scoreManager.getTotalCategories();
     }
-    isUpperScoreBonusApplicable(): number {
-        return this.scoreManager.isUpperScoreBonusApplicable();
+    isUpperScoreBonusApplicable(): boolean {
+        return this.scoreManager.isUpperSectionBonusAchieved();
     }
     setGameOver(isGameOver: boolean) {
         this.scoreManager.setGameOver(isGameOver);

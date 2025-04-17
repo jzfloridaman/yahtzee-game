@@ -105,6 +105,14 @@
             {{ getScoreDisplay(category.value) }}
           </div>
         </div>
+        <div class="score-item">
+          <div class="category-icon">
+            <i class="fas fa-star"></i>
+          </div>
+          <div class="score-cell">
+            {{ currentGame?.players[currentPlayer].scoreManager.isUpperSectionBonusAchieved() ? '35' : '-' }}
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -410,7 +418,7 @@ const colorCategories = [
   { name: 'Red', value: Categories.Reds, text: 'R', color: 'red' },
   { name: 'Green', value: Categories.Greens, text: 'G', color: 'green' },
   { name: 'Color Full House', value: Categories.ColorFullHouse, icon: 'fas fa-home', color: 'purple' },
-  { name: 'Top Bonus', value: Categories.TopBonus, text: 'B!' }
+  // { name: 'Top Bonus', value: Categories.TopBonus, text: 'B!' }
 ]
 
 

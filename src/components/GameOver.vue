@@ -90,6 +90,5 @@ const colorCategories = [
   { name: 'Red', value: Categories.Reds, icon: 'R' },
   { name: 'Green', value: Categories.Greens, icon: 'G' },
   { name: 'Color Full House', value: Categories.ColorFullHouse, icon: '🏠' },
-  { name: 'Top Bonus', value: Categories.TopBonus, icon: 'B!' }
 ]
 </script> 

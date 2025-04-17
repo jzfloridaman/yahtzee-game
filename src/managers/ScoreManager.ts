@@ -42,11 +42,12 @@ export class ScoreManager implements IScoreManager {
             [Categories.Reds]: { value: null, selected: false, group: CategoryGroup.LowerSection },
             [Categories.Greens]: { value: null, selected: false, group: CategoryGroup.LowerSection },
             [Categories.ColorFullHouse]: { value: null, selected: false, group: CategoryGroup.LowerSection },
-
-            [Categories.TopBonus]: { value: null, selected: false, group: CategoryGroup.Bonus },    // this needs to be removed
         };
+
+        // this section should allow for other type of scorecards
     }
 
+    // this needs to be renamed to calculateCategoryScore
     calculateScore(category: Categories, dice: Die[]): number {
         return useCalculateScore(category, dice);
     }
@@ -57,9 +58,6 @@ export class ScoreManager implements IScoreManager {
         }
         if(selected){
             this.scorecard[category].selected = selected;
-            if(category !== Categories.TopBonus){
-                this.isUpperScoreBonusApplicable();
-            }
             if(category === Categories.Yahtzee){
                 this.scorecard[Categories.Yahtzee].value = score;
             }
@@ -70,7 +68,7 @@ export class ScoreManager implements IScoreManager {
         return this.scorecard[category].selected;
     }
 
-    getScorecard(): { [key in Categories]: { value: number | null, selected: boolean } } {
+    getScorecard(): { [key in Categories]: { value: number | null, selected: boolean, group: CategoryGroup } } {
         return this.scorecard;
     }
 
@@ -79,9 +77,14 @@ export class ScoreManager implements IScoreManager {
     }
 
     getTotalScore(): number {
-        return Object.values(this.scorecard)
+        let total = Object.values(this.scorecard)
             .filter(item => item.selected)
             .reduce((total, item) => total + (item.value || 0), 0);
+        if (this.isUpperSectionBonusAchieved()) {
+            total += 35;
+        }
+        // maybe add this.score = total;
+        return total;
     }
 
     getCompletedCategories(): number {
@@ -96,7 +99,8 @@ export class ScoreManager implements IScoreManager {
         return Object.keys(this.scorecard).length;
     }
 
-    isUpperScoreBonusApplicable(): number {
+    isUpperSectionBonusAchieved(): boolean {
+        // TODO: have this check the scorecard for all upper section categories
         const upperSectionCategories = [
             Categories.Ones,
             Categories.Twos,
@@ -105,19 +109,17 @@ export class ScoreManager implements IScoreManager {
             Categories.Fives,
             Categories.Sixes
         ];
-        
+        //const upperSectionCategories = Object.values(this.scorecard).filter(item => item.group === CategoryGroup.UpperSection);
+        // only sum the scores in scorecard with a group of upper section
+
         const totalScore = upperSectionCategories.reduce((sum, category) => {
-            if(this.scorecard[category].selected){
-                return sum + (this.scorecard[category].value || 0);
+            const entry = this.scorecard[category];
+            if(entry.selected && entry.value !== null && entry.group === CategoryGroup.UpperSection){
+                return sum + entry.value;
             }
             return sum;
         }, 0);
-
-        if(totalScore >= 63){
-            this.updateScorecard(Categories.TopBonus, 35, true);
-        }
-
-        return totalScore;
+        return totalScore >= 63;
     }
 
     setGameOver(isGameOver: boolean){

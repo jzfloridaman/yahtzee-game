@@ -111,15 +111,6 @@ export class YahtzeeGame {
             return true;
         }
 
-        // check to see if the last category is just the top bonus
-        // this needs a better implementation. once topbonus is removed, this can be removed.
-        if(currentPlayer.getRemainingCategories() === 1 && !currentPlayer.isCategorySelected(Categories.TopBonus)){
-            this.calculateAllScores();
-            currentPlayer.setGameOver(true);
-            this.playersGamesCompleted++;
-            return true;
-        }
-
         return false;
     }
 
@@ -182,7 +173,24 @@ export class YahtzeeGame {
     }
 
     getTotalTopScore(): number {
-        return this.players[this.currentPlayer].isUpperScoreBonusApplicable();
+        // This should berefactored to use the player scorecard
+        // Return the sum of upper section values for the current player
+        const upperSectionCategories = [
+            Categories.Ones,
+            Categories.Twos,
+            Categories.Threes,
+            Categories.Fours,
+            Categories.Fives,
+            Categories.Sixes
+        ];
+        const scorecard = this.players[this.currentPlayer].getScorecard();
+        return upperSectionCategories.reduce((sum, category) => {
+            const entry = scorecard[category];
+            if(entry.selected && entry.value !== null){
+                return sum + entry.value;
+            }
+            return sum;
+        }, 0);
     }
 
     getTotalScore(): number {

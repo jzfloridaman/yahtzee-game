@@ -84,6 +84,8 @@
     <GameMode v-if="!gameStore.gameIsActive" @start-game="startGame" />
     <GameBoard v-else-if="!gameStore.gameIsOver" @end-game="endGame" />
     <GameOver v-if="gameStore.gameIsOver" @restart-game="newGame" />
+
+    <div class="hidden grid-cols-3 grid-cols-4">Tailwind forced classes</div>
   </div>
 </template>
 
@@ -223,20 +225,3 @@ function handleNewGame() {
 }
 
 </script> 
-<style>
-.overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.75); /* Semi-transparent black */
-  opacity: 0;
-  z-index: -10;
-  transition: opacity 0.75s ease;
-}
-.overlay.active {
-  opacity: 1;
-  z-index: 40;
-}
-</style>

@@ -13,7 +13,6 @@ Player Class
 
 UI.TS
 - this should handle all game input from the user
-- use updated scoremanager.ts 
 - handle the game state better
 - refactor all functions to be cleaner named
 - add more stats (high score, games played, time played, wins, losses)
@@ -68,3 +67,18 @@ the host handles the dice manager state
             peerStore.sendData
 
             this needs to be reworked for category
+
+
+
+PWA Stuff
+
+- add the service worker
+  if ('serviceWorker' in navigator) {
+     window.addEventListener('load', () => {
+       navigator.serviceWorker.register('/service-worker.js');
+     });
+   }
+
+- fix subdomain to point correctly so we dont use a subdirectory on the server
+- clean up assets
+- create icons / splash screens / logos (need new game name)

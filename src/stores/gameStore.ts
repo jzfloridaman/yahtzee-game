@@ -123,8 +123,10 @@ export const useGameStore = defineStore('game', {
             this.rollDice();
             // Send updated game state after rolling
             this.sendGameState();
+            this.playRollDiceAnimation();
           }else{
-            // animate dice
+            // animate dice on client
+            this.playRollDiceAnimation();
           }
           break;
         case 'holdDice':
@@ -328,6 +330,22 @@ export const useGameStore = defineStore('game', {
         } else {
           this.game.toggleHold(index)
         }
+      }
+    },
+
+    playRollDiceAnimation() {
+      if (this.game) {
+        const dice = this.game.dice();
+        dice.forEach((die) => {
+          if (!die.held) {
+            die.isRolling = true;
+          }
+        });
+        setTimeout(() => {
+          dice.forEach((die) => {
+            die.isRolling = false;
+          });
+        }, 1000);
       }
     },
 

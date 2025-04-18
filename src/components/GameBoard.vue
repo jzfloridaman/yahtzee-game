@@ -244,6 +244,9 @@ const rollDiceText = computed(() => {
 })
 
 const toggleHold = (index: number) => {
+
+  // this needs to be refactored to keep it DRY
+
   if (isOnlineGame.value) {
 
     if(newRoll.value){
@@ -258,6 +261,11 @@ const toggleHold = (index: number) => {
       gameStore.playSoundEffect?.(SoundEffects.DiceHold);
     }
   } else {
+
+    if(newRoll.value){
+      return;
+    }
+    
     currentGame.value?.toggleHold(index);
     gameStore.playSoundEffect?.(SoundEffects.DiceHold);
   }
@@ -293,6 +301,8 @@ const isCategorySelected = (category: Categories): boolean => {
 const selectCategory = (category: Categories) => {
   if (!currentGame.value || currentGame.value.isCategorySelected(category)) return;
 
+    // this needs to be refactored to keep it DRY
+
   if (isOnlineGame.value) {
 
     // dont allow to select category if newroll
@@ -317,7 +327,12 @@ const selectCategory = (category: Categories) => {
       showScoreAnimation(score);
     }
   } else {
+
     // Single player or local multiplayer
+    if(newRoll.value){
+      return;
+    }
+
     const score = currentGame.value.calculateScore(category);
     handleCategorySelection(category, score);
     //currentGame.value.updateSelectedScore(category, score, false);

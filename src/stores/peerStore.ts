@@ -65,18 +65,27 @@ export const usePeerStore = defineStore('peer', {
     joinRoom(roomCode: string) {
       if (!this.peer) {
         this.initializePeer(null);
+        const tempPeer = this.peer as Peer | null;
+        if (tempPeer) {
+          tempPeer.on('open', () => {
+            this._connectToRoom(roomCode);
+          });
+        }
+      } else {
+        this._connectToRoom(roomCode);
       }
-      this.roomCode = roomCode; //"test"//roomCode
-      this.isHost = false
-      
+      this.roomCode = roomCode;
+      this.isHost = false;
       // Set game mode for client
-      const gameStore = useGameStore()
-      gameStore.gameMode = GameMode.OnlineMultiPlayer
-      
+      const gameStore = useGameStore();
+      gameStore.gameMode = GameMode.OnlineMultiPlayer;
+    },
+
+    _connectToRoom(roomCode: string) {
       if (this.peer) {
-        const conn = this.peer.connect(roomCode)
-        this.connection = conn
-        this.setupConnectionListeners()
+        const conn = this.peer.connect(roomCode);
+        this.connection = conn;
+        this.setupConnectionListeners();
       }
     },
 

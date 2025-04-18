@@ -156,7 +156,6 @@ const dice = computed(() => {
 
 const rollsLeft = computed(() => {
   const rolls = currentGame.value?.rollsLeft || 0;
-  console.log('Rolls left updated:', rolls);
   return rolls;
 });
 
@@ -307,7 +306,7 @@ const selectCategory = (category: Categories) => {
       const score = currentGame.value.calculateScore(category);
       //currentGame.value.updateSelectedScore(category, score, false);
       handleCategorySelection(category, score);
-      console.log('sending select category to player 2 with score:', score);
+      //console.log('sending select category to player 2 with score:', score);
       peerStore.sendData({ type: 'selectCategory', category, score: score });
       gameStore.sendGameState();
       gameStore.nextPlayer();

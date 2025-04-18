@@ -229,12 +229,12 @@ export class YahtzeeGame {
     }
 
     updateFromState(stateData: GameStateData): void {
-        console.log('Updating game state:', stateData);
+        //console.log('Updating game state:', stateData);
         // Update dice state
         if (stateData.dice) {
-            console.log('Updating dice:', stateData.dice);
+            //console.log('Updating dice:', stateData.dice);
             if(stateData.newRoll){
-                console.log('Resetting dice');
+                //console.log('Resetting dice');
                 this.diceManager.resetDice();
             }else{
                 this.diceManager.setDice(stateData.dice);
@@ -247,9 +247,9 @@ export class YahtzeeGame {
         this.currentPlayer = stateData.currentPlayer;
         // Update scores for all players
         if (stateData.scores) {
-            console.log('Updating scores:', stateData.scores);
+            //console.log('Updating scores:', stateData.scores);
             stateData.scores.forEach((score, index) => {
-                console.log(`Updating score for player ${index}:`, score);
+                //console.log(`Updating score for player ${index}:`, score);
                 if (this.players[index]) {
                     this.players[index].setTotalScore(score);
                 }

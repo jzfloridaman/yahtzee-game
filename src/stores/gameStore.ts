@@ -112,10 +112,13 @@ export const useGameStore = defineStore('game', {
           if (!usePeerStore().isHost && this.game) {
             this.game.updateFromState(data.data);
             console.log('Game state updated');
+            if (data.data.isGameOver) {
+              this.gameIsOver = true;
+            }
           }
           break;
         case 'rollDice':
-          console.log('Rolling dice');
+          //console.log('Rolling dice');
           if (usePeerStore().isHost) {
             this.rollDice();
             // Send updated game state after rolling
@@ -125,14 +128,14 @@ export const useGameStore = defineStore('game', {
           }
           break;
         case 'holdDice':
-          console.log('Holding dice at index:', data.index);
+          //console.log('Holding dice at index:', data.index);
           if (usePeerStore().isHost) {
             this.game?.toggleHold(data.index);
             this.sendGameState();
           }
           break;
         case 'selectCategory':
-          console.log('Selecting category:', data.category);
+          //console.log('Selecting category:', data.category);
           if (usePeerStore().isHost) {
 
             if(this.game?.isGameOver()){
@@ -151,12 +154,12 @@ export const useGameStore = defineStore('game', {
             
             this.sendGameState();
             // After selecting a category, move to next player
-            console.log('updated cateogry, sent game state to player 2 and calling Next player');
+            //console.log('updated cateogry, sent game state to player 2 and calling Next player');
             this.nextPlayer();
 
           } else {
             // Client should not calculate scores locally - just wait for host's game state update
-            console.log('Client received category selection, waiting for host state update');
+            //console.log('Client received category selection, waiting for host state update');
             // play animation
             showScoreAnimation(data.score);
           }
@@ -340,7 +343,7 @@ export const useGameStore = defineStore('game', {
             // After selecting a category, move to next player
             this.nextPlayer()
           } else {
-            console.log('selecting category on client, sending to host');
+            //console.log('selecting category on client, sending to host');
             peerStore.sendData({ type: 'selectCategory', category })
             this.game.selectCategory(category)
           }

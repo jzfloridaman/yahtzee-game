@@ -198,6 +198,7 @@ const rollDice = () => {
     } else {
       peerStore.sendData({ type: 'rollDice' });
       // animate dice
+      gameStore.playRollDiceAnimation();
     }
   } else {
     isRolling.value = true;

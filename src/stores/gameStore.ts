@@ -94,7 +94,7 @@ export const useGameStore = defineStore('game', {
         return;
       }
 
-      console.log('Received data:', data);
+      //console.log('Received data:', data);
 
       switch (data.type) {
         case 'gameStarted':
@@ -338,6 +338,7 @@ export const useGameStore = defineStore('game', {
     },
 
     playRollDiceAnimation() {
+      console.log('playing roll dice animation from gamestore.');
       if (this.game) {
         const dice = this.game.dice();
         dice.forEach((die) => {

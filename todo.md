@@ -82,3 +82,8 @@ PWA Stuff
 - fix subdomain to point correctly so we dont use a subdirectory on the server
 - clean up assets
 - create icons / splash screens / logos (need new game name)
+
+- make it so you can "share a host link"
+    - you can text or share it with someone, if they click it, it will embed the hostid in the link
+    - and type it into the join box for easier multiplayer action.
+    - this might need to change if using android/ios app.

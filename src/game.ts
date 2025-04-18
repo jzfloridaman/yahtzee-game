@@ -97,23 +97,18 @@ export class YahtzeeGame {
     }
 
     isGameOver(): Boolean {
-        //console.log('Checking if game is over');
 
         if(this.playersGamesCompleted >= this.players.length){
             console.log('Game over, all players have completed their games');
             this.setGameOver();
             return true;
         }
+
         const currentPlayer = this.players[this.currentPlayer];
 
-        if(currentPlayer.isGameOver){
-            return true;
-        }
-
-        if(currentPlayer.getRemainingCategories() === 0){
+        if(currentPlayer.getRemainingCategories() === 0 && !currentPlayer.isGameOver){
             currentPlayer.setGameOver(true);
             this.playersGamesCompleted++;
-            return true;
         }
 
         return false;

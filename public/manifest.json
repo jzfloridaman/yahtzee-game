@@ -1,6 +1,7 @@
 {
   "name": "Color Yahtzee",
   "short_name": "Yahtzee",
+  "id": "/?standalone=true",
   "description": "Play Yahtzee online or locally with friends!",
   "start_url": ".",
   "display": "standalone",

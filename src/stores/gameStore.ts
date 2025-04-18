@@ -103,15 +103,23 @@ export const useGameStore = defineStore('game', {
             this.initializeGame(GameMode.OnlineMultiPlayer, 2);
           }
           break;
+
         case 'gameOver':
           console.log('Game over message received');
           this.endGame();
           break;
+
         case 'gameState':
           console.log('Updating game state');
           if (!usePeerStore().isHost && this.game) {
+
             this.game.updateFromState(data.data);
-            console.log('Game state updated');
+
+            if(!data.data.newRoll){
+              this.playRollDiceAnimation();
+            }
+            
+            
             if (data.data.isGameOver) {
               this.gameIsOver = true;
             }
@@ -133,12 +141,24 @@ export const useGameStore = defineStore('game', {
           //console.log('Holding dice at index:', data.index);
           if (usePeerStore().isHost) {
             this.game?.toggleHold(data.index);
-            this.sendGameState();
+            //this.sendGameState();
           } else {
             // Client should update its held state
             this.game?.toggleHold(data.index);
           }
           break;
+
+        case 'bonusYahtzee':
+          //console.log('Bonus yahtzee message received');
+          if(usePeerStore().isHost){
+            this.game?.updateSelectedScore(Categories.Yahtzee, data.score, false);
+          }
+
+          showYahtzeeAnimation();
+          //showScoreAnimation(data.score);
+
+          break;
+
         case 'selectCategory':
           //console.log('Selecting category:', data.category);
           if (usePeerStore().isHost) {
@@ -151,22 +171,25 @@ export const useGameStore = defineStore('game', {
             }
 
             // Host calculates score and updates game state
+            // needs to check for bonus yahtzee scores.
             const score = this.game?.calculateScore(data.category as Categories) || 0;
             this.game?.updateSelectedScore(data.category as Categories, score, false);
+
+            if(data.category === Categories.Yahtzee){
+              showYahtzeeAnimation();
+            }
+
             showScoreAnimation(score);
-            // reset dice
-            //this.game?.diceManager.resetDice();
             
             this.sendGameState();
-            // After selecting a category, move to next player
-            //console.log('updated cateogry, sent game state to player 2 and calling Next player');
             this.nextPlayer();
 
           } else {
-            // Client should not calculate scores locally - just wait for host's game state update
-            //console.log('Client received category selection, waiting for host state update');
-            // play animation
+            if(data.category === Categories.Yahtzee){
+              showYahtzeeAnimation();
+            }
             showScoreAnimation(data.score);
+
           }
           break;
         case 'resyncRequest':
@@ -303,11 +326,6 @@ export const useGameStore = defineStore('game', {
       if (this.gameMode === GameMode.OnlineMultiPlayer) {
         const peerStore = usePeerStore()
 
-        if(this.game.isGameOver()){
-          this.endGame();
-          console.log('Game is over, cannot roll dice');
-        }
-
         if (peerStore.isHost) {
 
           // Host sends updated game state after rolling
@@ -338,7 +356,7 @@ export const useGameStore = defineStore('game', {
     },
 
     playRollDiceAnimation() {
-      console.log('playing roll dice animation from gamestore.');
+
       if (this.game) {
         const dice = this.game.dice();
         dice.forEach((die) => {
@@ -354,6 +372,7 @@ export const useGameStore = defineStore('game', {
       }
     },
 
+    // i dont think this is needed
     selectCategory(category: Categories) {
       if (this.game) {
         if (this.gameMode === GameMode.OnlineMultiPlayer) {

@@ -270,7 +270,7 @@ export class YahtzeeGame {
             this.setGameOver();
             
         }
-        console.log('Game state updated');
+        //console.log('Game state updated');
     }
 
     getGameState(): GameStateData {
@@ -278,7 +278,7 @@ export class YahtzeeGame {
         // might need to refactor this to get the scorecard for each player
 
         const scores = this.players.map(player => player.getTotalScore());
-        console.log('Getting game state with scores:', scores);
+        //console.log('Getting game state with scores:', scores);
         return {
             currentPlayer: this.currentPlayer,
             dice: this.diceManager.getDice(),

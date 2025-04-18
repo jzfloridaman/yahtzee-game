@@ -180,6 +180,7 @@ const totalTopScorePercent = computed(() => {
 
 // Game actions
 const rollDice = () => {
+  // this really needs to be refactored to keep it DRY
   if (isOnlineGame.value) {
     if (peerStore.isHost) {
       isRolling.value = true;
@@ -262,6 +263,7 @@ const toggleHold = (index: number) => {
       peerStore.sendData({ type: 'holdDice', index });
       gameStore.playSoundEffect?.(SoundEffects.DiceHold);
       //gameStore.toggleHold(index);
+      currentGame.value?.toggleHold(index);
     }
   } else {
 
@@ -324,10 +326,26 @@ const selectCategory = (category: Categories) => {
       gameStore.sendGameState();
       gameStore.nextPlayer();
     } else {
-      // Client sends category selection to host
+
       const score = currentGame.value.calculateScore(category);
+      // check for bonus yahtzee scores.
+      if(currentGame.value.isCategorySelected(Categories.Yahtzee) && category !== Categories.Yahtzee){
+        if (currentGame.value.dice().every(die => die.value === currentGame.value?.dice()[0].value) && 
+            currentGame.value.dice()[0].value !== 0) {  
+          let currentYahtzeeScore = currentGame.value.getScoreByCategory(Categories.Yahtzee);
+          if(currentYahtzeeScore > 0 && score > 0){
+            let updateYahtzeeScore = currentYahtzeeScore + 100;
+            peerStore.sendData({ type: 'bonusYahtzee', category, score: updateYahtzeeScore });
+            gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
+            showYahtzeeAnimation();
+          }
+        }
+      }
+      // Client sends category selection to host
+      
       peerStore.sendData({ type: 'selectCategory', category, score: score });
-      showScoreAnimation(score);
+      // showScoreAnimation(score);
+      scoringAudioAndAnimation(category,score);
     }
   } else {
 
@@ -342,24 +360,7 @@ const selectCategory = (category: Categories) => {
   }
 }
 
-const handleCategorySelection = (category: Categories, score: number) => {
-  if (!currentGame.value) return;
-
-  // Check for additional Yahtzee
-  if(currentGame.value.isCategorySelected(Categories.Yahtzee) && category !== Categories.Yahtzee){
-    if (currentGame.value.dice().every(die => die.value === currentGame.value?.dice()[0].value) && 
-        currentGame.value.dice()[0].value !== 0) {  
-      let currentYahtzeeScore = currentGame.value.getScoreByCategory(Categories.Yahtzee);
-      if(currentYahtzeeScore > 0 && score > 0){
-        let updateYahtzeeScore = currentYahtzeeScore + 100;
-        currentGame.value.updateSelectedScore(Categories.Yahtzee, updateYahtzeeScore);
-        gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
-        showYahtzeeAnimation();
-      }
-    }
-  }
-
-  currentGame.value.updateSelectedScore(category, score, false);
+const scoringAudioAndAnimation = (category: Categories, score: number) => {
   if(score > 0){
     if(category === Categories.Yahtzee){
       showYahtzeeAnimation();
@@ -371,6 +372,30 @@ const handleCategorySelection = (category: Categories, score: number) => {
   }else{
     gameStore.playSoundEffect?.(SoundEffects.NoScore)
   }
+}
+
+const handleCategorySelection = (category: Categories, score: number) => {
+  if (!currentGame.value) return;
+
+  // Check for additional Yahtzee
+  if(currentGame.value.isCategorySelected(Categories.Yahtzee) && category !== Categories.Yahtzee){
+    if (currentGame.value.dice().every(die => die.value === currentGame.value?.dice()[0].value) && 
+        currentGame.value.dice()[0].value !== 0) {  
+      let currentYahtzeeScore = currentGame.value.getScoreByCategory(Categories.Yahtzee);
+      if(currentYahtzeeScore > 0 && score > 0){
+        let updateYahtzeeScore = currentYahtzeeScore + 100;
+        currentGame.value.updateSelectedScore(Categories.Yahtzee, updateYahtzeeScore);
+        if(isOnlineGame.value && peerStore.isHost){
+          peerStore.sendData({ type: 'bonusYahtzee', category, score: updateYahtzeeScore });
+        }
+        gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
+        showYahtzeeAnimation();
+      }
+    }
+  }
+
+  currentGame.value.updateSelectedScore(category, score, false);
+  scoringAudioAndAnimation(category,score);
 
   setTimeout(() => {
     if (currentGame.value) {

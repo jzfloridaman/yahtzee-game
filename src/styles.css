@@ -44,6 +44,13 @@ body:has(#game-container) {
     @apply max-w-2xl;
 }
 
+#game-container {
+    /* prevent text selection */
+    user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+}
+
 #dice-container {
     @apply flex gap-4 my-4 mx-auto flex-nowrap justify-between ;
 }

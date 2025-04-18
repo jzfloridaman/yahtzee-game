@@ -31,12 +31,13 @@
                   class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
             Create Room
           </button>
-          <div v-if="peerStore.roomCode && peerStore.isHost" class="mt-2 flex flex-col items-center">
-            <p class="text-sm font-bold">Room Code:</p>
-            <div class="flex items-center gap-2">
-              <p class="text-lg font-mono bg-gray-800 p-2 rounded select-all">{{ peerStore.roomCode }}</p>
-              <button @click="copyRoomCode" class="ml-2 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors duration-200 text-xs">
-                Copy
+
+          <div v-if="peerStore.roomCode && peerStore.isHost" class="flex flex-col ">
+            <p class="text-sm font-bold">Room Code</p>
+            <div class="flex gap-2">
+              <p class="text-lg font-mono bg-gray-800 p-2 rounded select-all flex-1">{{ peerStore.roomCode }}</p>
+              <button @click="copyRoomCode" class=" bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors duration-200 px-2">
+                <i class="fa-solid fa-share"></i> Share 
               </button>
             </div>
             <transition name="fade">
@@ -182,7 +183,7 @@ const copyRoomCode = async () => {
       setTimeout(() => copied.value = false, 1500)
     } catch (e) {
       copied.value = false
-      alert('Failed to copy!')
+      //alert('Failed to copy!')
     }
   }
 }

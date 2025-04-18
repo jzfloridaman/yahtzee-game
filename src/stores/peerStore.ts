@@ -10,7 +10,10 @@ interface PeerState {
   isHost: boolean
   isConnected: boolean
   connectionLost: boolean
+  versionMismatch: boolean
 }
+
+export const VERSION = '0.1.0'; // Update this as needed
 
 export const usePeerStore = defineStore('peer', {
   state: (): PeerState => ({
@@ -19,7 +22,8 @@ export const usePeerStore = defineStore('peer', {
     roomCode: null,
     isHost: false,
     isConnected: false,
-    connectionLost: false
+    connectionLost: false,
+    versionMismatch: false
   }),
 
   actions: {
@@ -84,6 +88,9 @@ export const usePeerStore = defineStore('peer', {
         this.isConnected = true
         this.connectionLost = false
 
+        // Version check
+        this.sendData({ type: 'versionCheck', version: VERSION });
+
         // If this is a client, request a resync from the host
         if (!this.isHost) {
           this.sendData({ type: 'resyncRequest' });
@@ -92,6 +99,17 @@ export const usePeerStore = defineStore('peer', {
 
       this.connection.on('data', (data: any) => {
         console.log('Received data:', data)
+        // Version check handling
+        if (data.type === 'versionCheck') {
+          if (data.version !== VERSION) {
+            this.versionMismatch = true;
+            console.warn('Version mismatch! Local:', VERSION, 'Remote:', data.version);
+            // Optionally disconnect or show a warning here
+          } else {
+            this.versionMismatch = false;
+          }
+          return; // Don't forward versionCheck to game store
+        }
         // Forward data to game store
         const gameStore = useGameStore()
         gameStore.handleIncomingData(data)

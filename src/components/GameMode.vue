@@ -62,6 +62,7 @@
       </div>
 
       <div class="text-sm text-gray-500 mt-4 text-center">Programmed by John Zappone</div>
+      <div class="text-xs text-gray-400 mt-1 text-center">Version: {{ version }}</div>
     </div>
   </div>
 </template>
@@ -69,7 +70,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { GameMode } from '../enums/GameMode'
-import { usePeerStore } from '../stores/peerStore'
+import { usePeerStore, VERSION } from '../stores/peerStore'
 import { useGameStore } from '../stores/gameStore'
 
 const emit = defineEmits<{
@@ -81,6 +82,7 @@ const showOnlineMenu = ref(false)
 const roomCodeInput = ref('test')
 const peerStore = usePeerStore()
 const gameStore = useGameStore()
+const version = VERSION;
 
 const toggleMultiplayerMenu = () => {
   showMultiplayerMenu.value = !showMultiplayerMenu.value

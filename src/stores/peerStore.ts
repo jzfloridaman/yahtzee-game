@@ -53,7 +53,7 @@ export const usePeerStore = defineStore('peer', {
 
     createRoom() {
       if (!this.peer) {
-        this.initializePeer("test")
+        this.initializePeer(null);
       }
       this.isHost = true
       this.roomCode = this.peer?.id || null
@@ -64,9 +64,9 @@ export const usePeerStore = defineStore('peer', {
 
     joinRoom(roomCode: string) {
       if (!this.peer) {
-        this.initializePeer("player2")
+        this.initializePeer(null);
       }
-      this.roomCode = "test"//roomCode
+      this.roomCode = roomCode; //"test"//roomCode
       this.isHost = false
       
       // Set game mode for client

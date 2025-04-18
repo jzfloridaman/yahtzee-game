@@ -26,13 +26,22 @@
       <div v-if="showOnlineMenu" class="flex flex-col gap-4 mt-4">
         <h3 class="text-lg font-bold">Online Game</h3>
         <div class="flex flex-col gap-2">
-          <button @click="createRoom" 
+          <button v-if="!peerStore.isHost" 
+                  @click="createRoom" 
                   class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
             Create Room
           </button>
-          <div v-if="peerStore.roomCode" class="mt-2">
+          <div v-if="peerStore.roomCode" class="mt-2 flex flex-col items-center">
             <p class="text-sm font-bold">Room Code:</p>
-            <p class="text-lg font-mono bg-gray-800 p-2 rounded">{{ peerStore.roomCode }}</p>
+            <div class="flex items-center gap-2">
+              <p class="text-lg font-mono bg-gray-800 p-2 rounded select-all">{{ peerStore.roomCode }}</p>
+              <button @click="copyRoomCode" class="ml-2 px-2 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors duration-200 text-xs">
+                Copy
+              </button>
+            </div>
+            <transition name="fade">
+              <span v-if="copied" class="text-green-400 text-xs mt-1">Copied!</span>
+            </transition>
           </div>
         </div>
         <div v-if="!peerStore.isHost" class="flex flex-col gap-2">
@@ -68,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { GameMode } from '../enums/GameMode'
 import { usePeerStore, VERSION } from '../stores/peerStore'
 import { useGameStore } from '../stores/gameStore'
@@ -79,10 +88,11 @@ const emit = defineEmits<{
 
 const showMultiplayerMenu = ref(false)
 const showOnlineMenu = ref(false)
-const roomCodeInput = ref('test')
+const roomCodeInput = ref('')
 const peerStore = usePeerStore()
 const gameStore = useGameStore()
 const version = VERSION;
+const copied = ref(false)
 
 const toggleMultiplayerMenu = () => {
   showMultiplayerMenu.value = !showMultiplayerMenu.value
@@ -127,10 +137,35 @@ const startGame = (mode: GameMode, players?: number) => {
   showOnlineMenu.value = false
 }
 
+const copyRoomCode = async () => {
+  if (peerStore.roomCode) {
+    try {
+      // Build the shareable URL with ?room=roomCode
+      const url = new URL(window.location.href)
+      url.searchParams.set('room', peerStore.roomCode)
+      await navigator.clipboard.writeText(url.toString())
+      copied.value = true
+      setTimeout(() => copied.value = false, 1500)
+    } catch (e) {
+      copied.value = false
+      alert('Failed to copy!')
+    }
+  }
+}
+
 // Watch for connection status changes
 watch(() => peerStore.isConnected, (isConnected) => {
   if (!isConnected) {
     showOnlineMenu.value = false
+  }
+})
+
+onMounted(() => {
+  const params = new URLSearchParams(window.location.search)
+  const code = params.get('room')
+  if (code) {
+    roomCodeInput.value = code
+    showOnlineMenu.value = true // Optionally open the online menu automatically
   }
 })
 </script>
@@ -142,5 +177,12 @@ watch(() => peerStore.isConnected, (isConnected) => {
 
 .player-count-button {
   @apply bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-colors duration-200;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style> 

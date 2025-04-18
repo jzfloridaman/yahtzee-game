@@ -134,6 +134,9 @@ export const useGameStore = defineStore('game', {
           if (usePeerStore().isHost) {
             this.game?.toggleHold(data.index);
             this.sendGameState();
+          } else {
+            // Client should update its held state
+            this.game?.toggleHold(data.index);
           }
           break;
         case 'selectCategory':
@@ -324,6 +327,7 @@ export const useGameStore = defineStore('game', {
           if (peerStore.isHost) {
             this.game.toggleHold(index)
             this.sendGameState()
+            peerStore.sendData({ type: 'holdDice', index })
           } else {
             peerStore.sendData({ type: 'holdDice', index })
           }

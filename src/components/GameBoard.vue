@@ -254,18 +254,20 @@ const toggleHold = (index: number) => {
     }
 
     if (peerStore.isHost) {
+      peerStore.sendData({ type: 'holdDice', index });
       currentGame.value?.toggleHold(index);
       gameStore.playSoundEffect?.(SoundEffects.DiceHold);
     } else {
       peerStore.sendData({ type: 'holdDice', index });
       gameStore.playSoundEffect?.(SoundEffects.DiceHold);
+      //gameStore.toggleHold(index);
     }
   } else {
 
     if(newRoll.value){
       return;
     }
-    
+
     currentGame.value?.toggleHold(index);
     gameStore.playSoundEffect?.(SoundEffects.DiceHold);
   }

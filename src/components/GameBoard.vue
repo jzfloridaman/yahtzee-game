@@ -53,18 +53,21 @@
 
     <div id="scorecard">
       <div class="grid grid-cols-6 gap-2">
+
         <!-- singles -->
         <div v-for="(category, index) in singleCategories" :key="index" 
              class="score-item grid-singles" :data-category="category.name"
-             :class="{ 'selected': isCategorySelected(category.value) }">
+             :class="{ 'selected': isCategorySelected(category.value) }"
+             @click="selectCategory(category.value)">
           <div class="category-icon">
             <i :class="['fas', `${getDieIcon(index + 1)}`]"></i>
           </div>
-          <div class="score-cell" @click="selectCategory(category.value)">
+          <div class="score-cell">
             {{ getScoreDisplay(category.value) }}
           </div>
         </div>
 
+        <!-- upper bonus progress bar-->
         <div class="upper-score-progress-bar col-span-6 text-center flex items-center justify-center grid-singles" 
               :style="{ '--progress-width': totalTopScorePercent + '%' }">
           <span>
@@ -76,7 +79,8 @@
         <!-- multiples -->
         <div v-for="(category, index) in multipleCategories" :key="index" 
             class="score-item grid-multiples" :data-category="category.name"
-            :class="{ 'selected': isCategorySelected(category.value) }">
+            :class="{ 'selected': isCategorySelected(category.value) }"
+            @click="selectCategory(category.value)">
           <div class="category-icon">
               <template v-if="category.icon">
                 <i :class="['fas', `${category.icon}`]"></i>
@@ -85,7 +89,7 @@
                 {{ category.text }}
               </template>
           </div>
-          <div class="score-cell" @click="selectCategory(category.value)">
+          <div class="score-cell">
             {{ getScoreDisplay(category.value) }}
           </div>
         </div>
@@ -93,7 +97,8 @@
         <!-- colors -->
         <div v-for="(category, index) in colorCategories" :key="index" 
             class="score-item grid-colors" :data-category="category.name"
-            :class="{ 'selected': isCategorySelected(category.value), [`${category.color}`]: true }">
+            :class="{ 'selected': isCategorySelected(category.value), [`${category.color}`]: true }"
+            @click="selectCategory(category.value)">
           <div class="category-icon">
               <template v-if="category.icon">
                 <i :class="['fas', `${category.icon}`]"></i>
@@ -102,10 +107,12 @@
                 {{ category.text }}
               </template>
           </div>
-          <div class="score-cell" @click="selectCategory(category.value)">
+          <div class="score-cell">
             {{ getScoreDisplay(category.value) }}
           </div>
         </div>
+
+        <!-- upper bonus -->
         <div class="score-item grid-colors pointer-events-none"
              :class="{ 'no-upper-bonus': !playerUpperBonusAchieved, 'has-upper-bonus': playerUpperBonusAchieved }" >
           <div class="category-icon">
@@ -115,6 +122,7 @@
             {{ playerUpperBonusAchieved ? '35' : '-' }}
           </div>
         </div>
+
       </div>
     </div>
   </div>

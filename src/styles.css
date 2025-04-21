@@ -561,3 +561,7 @@ h2 {
 .emoji-fade-enter-from, .emoji-fade-leave-to {
 opacity: 0;
 }
+
+.chat-history-sender{
+    @apply text-blue-500;
+}

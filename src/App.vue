@@ -80,9 +80,9 @@
           <button @click="sendChatMessage" class="bg-blue-600 hover:bg-blue-700 text-white px-2 rounded">Send</button>
         </div>
 
-        <div class="chat-history flex flex-col gap-1 mb-2 max-h-32 overflow-y-auto">
+        <div ref="chatHistoryEl" class="chat-history flex flex-col gap-1 mb-2 max-h-32 overflow-y-auto">
           <div v-for="(msg, idx) in chatHistory" :key="idx" class="text-sm">
-            <span class="font-bold">{{ msg.sender }}:</span> {{ msg.message }}
+            <span class="font-bold chat-history-sender">{{ msg.sender }}:</span> {{ msg.message }}
           </div>
         </div>
 
@@ -133,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import GameMode from './components/GameMode.vue'
 import GameBoard from './components/GameBoard.vue'
 import GameOver from './components/GameOver.vue'
@@ -306,9 +306,10 @@ const sendEmojiAnimation = (emoji: string) => {
   showEmojiAnimation(emoji);
 }
 
-const chatHistory = ref<{ sender: string, message: string }[]>([])
-const chatInput = ref('')
-const unreadChatCount = ref(0)
+const chatHistory = ref<{ sender: string, message: string }[]>([]);
+const chatHistoryEl = ref<HTMLElement | null>(null);
+const chatInput = ref('');
+const unreadChatCount = ref(0);
 
 // Listen for chat messages from gameStore
 const originalHandleIncomingData = gameStore.handleIncomingData
@@ -323,6 +324,11 @@ gameStore.handleIncomingData = function (data: any) {
     if (!showChatMenu.value) {
       unreadChatCount.value++
     }
+    nextTick(() => {
+      if (chatHistoryEl.value) {
+        chatHistoryEl.value.scrollTop = chatHistoryEl.value.scrollHeight;
+      }
+    });
   }
   return originalHandleIncomingData.call(this, data)
 }
@@ -338,6 +344,11 @@ const sendChatMessage = () => {
     peerStore.sendData({ type: 'chatMessage', message: chatInput.value })
     chatInput.value = ''
   }
+  nextTick(() => {
+    if (chatHistoryEl.value) {
+      chatHistoryEl.value.scrollTop = chatHistoryEl.value.scrollHeight;
+    }
+  });
 }
 
 const requestResync = () => {

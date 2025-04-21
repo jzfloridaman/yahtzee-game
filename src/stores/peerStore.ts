@@ -13,7 +13,7 @@ interface PeerState {
   versionMismatch: boolean
 }
 
-export const VERSION = '0.1.1'; // Update this as needed
+export const VERSION = '0.1.2'; // Update this as needed
 
 export const usePeerStore = defineStore('peer', {
   state: (): PeerState => ({

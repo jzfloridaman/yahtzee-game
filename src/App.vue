@@ -63,24 +63,30 @@
 
       <!-- Chat Menu Button -->
       <button @click="toggleChatMenu" v-if="gameStore.isGameActive && peerStore.isConnected"
-              class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
+              class="bg-gray-800 p-3 relative rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
         <i class="fas fa-comment-dots text-white text-xl"></i>
+        <span v-if="unreadChatCount > 0" class="chat-counter-bubble">{{ unreadChatCount }}</span>
       </button>
       <div v-show="showChatMenu" 
             class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-96">
         <h3 class="text-lg font-bold mb-2">Chat</h3>
+
+        <div class="flex flex-wrap gap-2">
+          <span v-for="emoji in chatEmojis" :key="emoji" class="text-2xl cursor-pointer select-none hover:scale-125 transition-transform" @click="sendEmojiAnimation(emoji)">{{ emoji }}</span>
+        </div>
+
+        <div class="flex gap-1 mb-2 mt-2">
+          <input v-model="chatInput" @keyup.enter="sendChatMessage" class="flex-1 rounded p-1 bg-gray-700 text-white" placeholder="Type a message..." />
+          <button @click="sendChatMessage" class="bg-blue-600 hover:bg-blue-700 text-white px-2 rounded">Send</button>
+        </div>
+
         <div class="chat-history flex flex-col gap-1 mb-2 max-h-32 overflow-y-auto">
           <div v-for="(msg, idx) in chatHistory" :key="idx" class="text-sm">
             <span class="font-bold">{{ msg.sender }}:</span> {{ msg.message }}
           </div>
         </div>
-        <div class="flex gap-1 mb-2">
-          <input v-model="chatInput" @keyup.enter="sendChatMessage" class="flex-1 rounded p-1 bg-gray-700 text-white" placeholder="Type a message..." />
-          <button @click="sendChatMessage" class="bg-blue-600 hover:bg-blue-700 text-white px-2 rounded">Send</button>
-        </div>
-        <div class="flex flex-wrap gap-2">
-          <span v-for="emoji in chatEmojis" :key="emoji" class="text-2xl cursor-pointer select-none hover:scale-125 transition-transform" @click="sendEmojiAnimation(emoji)">{{ emoji }}</span>
-        </div>
+
+
       </div>
 
       <!-- Game Options Button -->
@@ -106,6 +112,12 @@
                   v-if="peerStore.isHost || !peerStore.isConnected"
                   class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
             Select Game
+          </button>
+
+          <button @click="requestResync"
+                  v-if="!peerStore.isHost && peerStore.isConnected"
+                  class="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+            Request Resync
           </button>
         </div>
       </div>
@@ -296,6 +308,7 @@ const sendEmojiAnimation = (emoji: string) => {
 
 const chatHistory = ref<{ sender: string, message: string }[]>([])
 const chatInput = ref('')
+const unreadChatCount = ref(0)
 
 // Listen for chat messages from gameStore
 const originalHandleIncomingData = gameStore.handleIncomingData
@@ -307,9 +320,17 @@ gameStore.handleIncomingData = function (data: any) {
       sender: peerStore.isHost ? 'Client' : 'Host', // invert for local display
       message: data.message
     })
+    if (!showChatMenu.value) {
+      unreadChatCount.value++
+    }
   }
   return originalHandleIncomingData.call(this, data)
 }
+
+// Reset unread count when chat menu is opened
+watch(showChatMenu, (open) => {
+  if (open) unreadChatCount.value = 0
+})
 
 const sendChatMessage = () => {
   if (chatInput.value.trim()) {
@@ -317,6 +338,10 @@ const sendChatMessage = () => {
     peerStore.sendData({ type: 'chatMessage', message: chatInput.value })
     chatInput.value = ''
   }
+}
+
+const requestResync = () => {
+  peerStore.sendData({ type: 'resyncRequest' });
 }
 
 function handleNewGame() {
@@ -330,5 +355,21 @@ function handleNewGame() {
   background: #23272f;
   border-radius: 0.5rem;
   padding: 0.5rem;
+}
+.chat-counter-bubble {
+  position: absolute;
+  top: 0.2rem;
+  right: 0.2rem;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border-radius: 9999px;
+  padding: 0.1rem 0.5rem;
+  min-width: 1.2rem;
+  text-align: center;
+  z-index: 10;
+  box-shadow: 0 0 2px #0008;
+  pointer-events: none;
 }
 </style> 

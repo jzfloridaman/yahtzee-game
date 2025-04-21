@@ -178,20 +178,20 @@ export const useGameStore = defineStore('game', {
             const score = this.game?.calculateScore(data.category as Categories) || 0;
             this.game?.updateSelectedScore(data.category as Categories, score, false);
 
-            if(data.category === Categories.Yahtzee){
+            if(data.category === Categories.Yahtzee && score > 0){
               showYahtzeeAnimation();
             }
 
-            showScoreAnimation(score);
+            showScoreAnimation(score, data.category);
             
             this.sendGameState();
             this.nextPlayer();
 
           } else {
-            if(data.category === Categories.Yahtzee){
+            if(data.category === Categories.Yahtzee && data.score > 0){
               showYahtzeeAnimation();
             }
-            showScoreAnimation(data.score);
+            showScoreAnimation(data.score, data.category);
 
           }
           break;

@@ -106,12 +106,13 @@
             {{ getScoreDisplay(category.value) }}
           </div>
         </div>
-        <div class="score-item grid-colors">
+        <div class="score-item grid-colors pointer-events-none"
+             :class="{ 'no-upper-bonus': !playerUpperBonusAchieved, 'has-upper-bonus': playerUpperBonusAchieved }" >
           <div class="category-icon">
             <i class="fas fa-star"></i>
           </div>
           <div class="score-cell">
-            {{ currentGame?.players[currentPlayer].scoreManager.isUpperSectionBonusAchieved() ? '35' : '-' }}
+            {{ playerUpperBonusAchieved ? '35' : '-' }}
           </div>
         </div>
       </div>
@@ -154,6 +155,10 @@ const dice = computed(() => {
     isRolling: die.isRolling
   }));
 });
+
+const playerUpperBonusAchieved = computed(() => {
+  return currentGame.value?.players[currentPlayer.value].scoreManager.isUpperSectionBonusAchieved() || false;
+})
 
 const rollsLeft = computed(() => {
   const rolls = currentGame.value?.rollsLeft || 0;
@@ -367,7 +372,7 @@ const scoringAudioAndAnimation = (category: Categories, score: number) => {
       showYahtzeeAnimation();
       gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
     }else{  
-      showScoreAnimation(score);
+      showScoreAnimation(score, category);
       gameStore.playSoundEffect?.(SoundEffects.Score)
     }
   }else{

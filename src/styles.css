@@ -128,7 +128,7 @@ body:has(#game-container) {
 }
 
 #roll-button {
-    @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded mb-8 w-full text-xl;
+    @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded mb-4 w-full text-xl;
 }
 #roll-button:disabled {
     @apply opacity-80 cursor-not-allowed bg-gray-500;
@@ -164,6 +164,14 @@ body:has(#game-container) {
 }
 .score-item.purple{
     @apply bg-purple-500;
+}
+
+.score-item.no-upper-bonus{
+    @apply bg-gray-100/[.40] border-black/50 ;
+}
+.score-item.has-upper-bonus{
+    @apply opacity-100;
+    background: linear-gradient(135deg, #ffe066 0%, #ffd700 100%);
 }
 
 #scorecard {
@@ -492,6 +500,12 @@ h2 {
   font-size: 4rem;
   text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
 }
+
+.score-popup-animation.no-score {
+    color: #c52222;
+    font-size: 4rem;
+    text-shadow: 0 0 10px rgba(127, 0, 0, 0.5);
+  }
 
 
 .overlay {

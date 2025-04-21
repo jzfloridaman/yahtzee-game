@@ -86,23 +86,40 @@ export const showYahtzeeAnimation = () => {
   }, 2000);
 }
 
-export const showScoreAnimation = (score: number) => {
+export const showScoreAnimation = (score: number, category: string = '') => {
 
   document.querySelector('.overlay')?.classList.add('active');
 
   // Create the score text animation
   const scoreText = document.createElement('div');
   scoreText.className = 'score-popup-animation';
-  scoreText.textContent = `+${score}`;
-  
+
+  let scoreToDisplay: string = score.toString();
+  if(score === 0){
+    scoreToDisplay = 'X';
+  }else{
+    scoreToDisplay = `+${score}`;
+  }
+
   // Add color class based on score value
   if (score >= 50) {
     scoreText.classList.add('high-score');
   } else if (score >= 30) {
     scoreText.classList.add('medium-score');
-  } else {
+  } else if(score === 0){
+    scoreText.classList.add('no-score');
+  }else {
     scoreText.classList.add('normal-score');
   }
+
+  if(category){
+    scoreText.style.whiteSpace = 'pre-line';
+    scoreText.textContent = `${category}\n${scoreToDisplay} `;
+  }else{
+    scoreText.textContent = `${scoreToDisplay}`;
+  }
+  
+
   
   document.body.appendChild(scoreText);
 

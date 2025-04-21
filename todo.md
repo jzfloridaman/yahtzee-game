@@ -53,9 +53,13 @@ PWA Stuff
 
 QA STUFF
 - after select category, make sure it deselects the button (no focus it)
-- send an animation for which selected category to other player
 - message that its your turn
 - fix layout for landscape mode , desktop mode
-- hide chat if click off of it.
 - if hosts ends game, do not log the save, only save completed games.
 - fix when a user selects yahtzee to not trigger animation if the score is 0
+- add sound effect when player joins, game started, game ended, your turn.
+- preload sound effects / assets
+- add the move dice order feature.
+- add peek other player's scorecard.
+- resync should send all scorecards.
+- add feature to add ur name.

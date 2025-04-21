@@ -480,27 +480,13 @@ const startGame = () => {
   height: 100vh;
   width: 100vw;
   background-color: rgba(0, 0, 0, 0.1);
-  /* bottom:0; 
-  z-index: 100;
-  width: 100%;
-  max-width: 400px; /*
-  /* top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  opacity: 0.75; */
 }
 
 .waiting-message .waiting-message-content{
 position:fixed;
-  /* top: 50%;
-   */
    bottom:0;
-  /* left: 50%;
-  transform: translate(-50%, -50%); */
   opacity: 0.98;
   width:100%;
 
 }
-
-/* ... rest of the styles ... */
 </style> 

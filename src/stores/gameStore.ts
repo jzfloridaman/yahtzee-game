@@ -204,6 +204,10 @@ export const useGameStore = defineStore('game', {
           }
           break;
 
+        case 'chatMessage':
+          console.log('Chat message received:', data.message);
+          break;
+
         case 'resyncRequest':
           if (usePeerStore().isHost) {
             this.sendGameState();

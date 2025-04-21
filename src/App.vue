@@ -13,28 +13,26 @@
     <div class="fixed top-4 right-4 z-50 flex gap-2">
 
       <!-- Audio Settings Button -->
-      <div class="relative">
-        <button @click="toggleAudioSettings" 
-                class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
-          <i class="fas fa-volume-up text-white text-xl"></i>
-        </button>
-        <div v-show="gameStore.showAudioSettings" 
-             class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-64">
-          <h3 class="text-lg font-bold mb-2">Audio Settings</h3>
-          <div class="flex flex-col gap-2">
-            <label class="flex items-center gap-2">
-              <input type="checkbox" v-model="gameStore.bgmEnabled" 
-                     @change="(e: Event) => gameStore.setBgmEnabled((e.target as HTMLInputElement).checked)"
-                     class="w-4 h-4">
-              <span>Background Music</span>
-            </label>
-            <label class="flex items-center gap-2">
-              <input type="checkbox" v-model="gameStore.sfxEnabled" 
-                     @change="(e: Event) => gameStore.setSfxEnabled((e.target as HTMLInputElement).checked)"
-                     class="w-4 h-4">
-              <span>Sound Effects</span>
-            </label>
-          </div>
+      <button @click="toggleAudioSettings" 
+              class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
+        <i class="fas fa-volume-up text-white text-xl"></i>
+      </button>
+      <div v-show="gameStore.showAudioSettings" 
+            class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-96">
+        <h3 class="text-lg font-bold mb-2">Audio Settings</h3>
+        <div class="flex flex-col gap-2">
+          <label class="flex items-center gap-2">
+            <input type="checkbox" v-model="gameStore.bgmEnabled" 
+                    @change="(e: Event) => gameStore.setBgmEnabled((e.target as HTMLInputElement).checked)"
+                    class="w-4 h-4">
+            <span>Background Music</span>
+          </label>
+          <label class="flex items-center gap-2">
+            <input type="checkbox" v-model="gameStore.sfxEnabled" 
+                    @change="(e: Event) => gameStore.setSfxEnabled((e.target as HTMLInputElement).checked)"
+                    class="w-4 h-4">
+            <span>Sound Effects</span>
+          </label>
         </div>
       </div>
 
@@ -64,46 +62,51 @@
 
 
       <!-- Chat Menu Button -->
-      <div class="relative" v-if="gameStore.isGameActive && peerStore.isConnected">
-        <button @click="toggleChatMenu"
-                class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
-          <i class="fas fa-comment-dots text-white text-xl"></i>
-        </button>
-        <div v-show="showChatMenu" 
-             class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-64">
-          <h3 class="text-lg font-bold mb-2">Chat</h3>
-          <div class="flex flex-wrap gap-2">
-            <span v-for="emoji in chatEmojis" :key="emoji" class="text-2xl cursor-pointer select-none hover:scale-125 transition-transform" @click="sendEmojiAnimation(emoji)">{{ emoji }}</span>
+      <button @click="toggleChatMenu" v-if="gameStore.isGameActive && peerStore.isConnected"
+              class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
+        <i class="fas fa-comment-dots text-white text-xl"></i>
+      </button>
+      <div v-show="showChatMenu" 
+            class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-96">
+        <h3 class="text-lg font-bold mb-2">Chat</h3>
+        <div class="chat-history flex flex-col gap-1 mb-2 max-h-32 overflow-y-auto">
+          <div v-for="(msg, idx) in chatHistory" :key="idx" class="text-sm">
+            <span class="font-bold">{{ msg.sender }}:</span> {{ msg.message }}
           </div>
+        </div>
+        <div class="flex gap-1 mb-2">
+          <input v-model="chatInput" @keyup.enter="sendChatMessage" class="flex-1 rounded p-1 bg-gray-700 text-white" placeholder="Type a message..." />
+          <button @click="sendChatMessage" class="bg-blue-600 hover:bg-blue-700 text-white px-2 rounded">Send</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span v-for="emoji in chatEmojis" :key="emoji" class="text-2xl cursor-pointer select-none hover:scale-125 transition-transform" @click="sendEmojiAnimation(emoji)">{{ emoji }}</span>
         </div>
       </div>
 
       <!-- Game Options Button -->
-      <div class="relative" v-if="gameStore.isGameActive">
-        <button @click="toggleGameOptions" 
-                class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
-          <i class="fas fa-bars text-white text-xl"></i>
-        </button>
-        <div v-show="gameStore.showGameOptions" 
-             class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-64">
-          <h3 class="text-lg font-bold mb-2">Game Options</h3>
-          <div class="flex flex-col gap-2">
-            <button @click="endHostGame" 
-                    v-if="peerStore.isHost"
-                    class="bg-red-800 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-              End Game
-            </button>
-            <button @click="restartGame" 
-                    v-if="peerStore.isHost || !peerStore.isConnected"
-                    class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-              Restart Game
-            </button>
-            <button @click="newGame" 
-                    v-if="peerStore.isHost || !peerStore.isConnected"
-                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-              Select Game
-            </button>
-          </div>
+      <button @click="toggleGameOptions" v-if="gameStore.isGameActive"
+              class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
+        <i class="fas fa-bars text-white text-xl"></i>
+      </button>
+      <div v-show="gameStore.showGameOptions" 
+            class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-96">
+        <h3 class="text-lg font-bold mb-2">Game Options</h3>
+        <div class="flex flex-col gap-2">
+          <button @click="endHostGame" 
+                  v-if="peerStore.isHost"
+                  class="bg-red-800 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+            End Game
+          </button>
+          <button @click="restartGame" 
+                  v-if="peerStore.isHost || !peerStore.isConnected"
+                  class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+            Restart Game
+          </button>
+          <button @click="newGame" 
+                  v-if="peerStore.isHost || !peerStore.isConnected"
+                  class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+            Select Game
+          </button>
         </div>
       </div>
 
@@ -132,10 +135,11 @@ const gameStore = useGameStore()
 const peerStore = usePeerStore()
 
 // Chat menu state and emojis
-const showChatMenu = ref(false)
+const showChatMenu = ref(false);
+const chatMessage = ref('');
 const chatEmojis = [
   '💩','😀', '😂', '😎', '😍', '😡', '😭', '👍', '👎', '🎲', '🔥', '👏', '🤔', '🥳', '😱', '😴', '💯', '🍀', '🍻', '🏆', '🤝' 
-]
+];
 
 // Audio setup
 const musicTracks = [
@@ -290,6 +294,31 @@ const sendEmojiAnimation = (emoji: string) => {
   showEmojiAnimation(emoji);
 }
 
+const chatHistory = ref<{ sender: string, message: string }[]>([])
+const chatInput = ref('')
+
+// Listen for chat messages from gameStore
+const originalHandleIncomingData = gameStore.handleIncomingData
+// Patch handleIncomingData to also handle chatMessage for chat history
+// (If you want to do this more cleanly, use an event bus or Pinia action)
+gameStore.handleIncomingData = function (data: any) {
+  if (data.type === 'chatMessage') {
+    chatHistory.value.push({
+      sender: peerStore.isHost ? 'Client' : 'Host', // invert for local display
+      message: data.message
+    })
+  }
+  return originalHandleIncomingData.call(this, data)
+}
+
+const sendChatMessage = () => {
+  if (chatInput.value.trim()) {
+    chatHistory.value.push({ sender: 'You', message: chatInput.value })
+    peerStore.sendData({ type: 'chatMessage', message: chatInput.value })
+    chatInput.value = ''
+  }
+}
+
 function handleNewGame() {
   newGame();
 }
@@ -297,6 +326,9 @@ function handleNewGame() {
 </script>
 
 <style scoped>
-
-
+.chat-history {
+  background: #23272f;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+}
 </style> 

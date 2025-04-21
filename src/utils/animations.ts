@@ -111,4 +111,24 @@ export const showScoreAnimation = (score: number) => {
     document.body.removeChild(scoreText);
     document.querySelector('.overlay')?.classList.remove('active');
   }, 2000);
+}
+
+export function showEmojiAnimation(emoji: string) {
+  // Remove any existing emoji animation
+  const prev = document.querySelector('.emoji-animation');
+  if (prev) prev.remove();
+
+  // Create the emoji element
+  const emojiDiv = document.createElement('div');
+  emojiDiv.className = 'emoji-animation';
+  emojiDiv.textContent = emoji;
+  document.body.appendChild(emojiDiv);
+
+  createConfetti();
+
+  // Remove after animation
+  setTimeout(() => {
+    emojiDiv.remove();
+    // document.querySelector('.overlay')?.classList.remove('active');
+  }, 1200);
 } 

@@ -5,7 +5,7 @@ import { SoundEffects } from '../enums/SoundEffects'
 import { usePeerStore } from './peerStore'
 import { Categories } from '../enums/Categories'
 
-import { showYahtzeeAnimation, showScoreAnimation } from '../utils/animations'
+import { showYahtzeeAnimation, showScoreAnimation, showEmojiAnimation } from '../utils/animations'
 interface PlayerScore {
   playerNumber: number;
   score: number;
@@ -154,8 +154,11 @@ export const useGameStore = defineStore('game', {
             this.game?.updateSelectedScore(Categories.Yahtzee, data.score, false);
           }
 
-          showYahtzeeAnimation();
-          //showScoreAnimation(data.score);
+          if(data.score > 0){
+            showYahtzeeAnimation();
+            //showScoreAnimation(data.score);
+          }
+          
 
           break;
 
@@ -192,6 +195,15 @@ export const useGameStore = defineStore('game', {
 
           }
           break;
+
+        case 'emoji':
+          if(data.emoji){
+            showEmojiAnimation(data.emoji);
+          }else{
+            console.log('Unknown emoji:', data.emoji);
+          }
+          break;
+
         case 'resyncRequest':
           if (usePeerStore().isHost) {
             this.sendGameState();

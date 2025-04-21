@@ -11,6 +11,8 @@
     <!-- Overlay & Menus-->
     <div class="overlay" :class="{ active: isAnyMenuOpen }" @click="closeAllMenus()"></div>
     <div class="fixed top-4 right-4 z-50 flex gap-2">
+
+      <!-- Audio Settings Button -->
       <div class="relative">
         <button @click="toggleAudioSettings" 
                 class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
@@ -36,6 +38,7 @@
         </div>
       </div>
 
+      <!-- History Button -->
       <button @click="toggleGameHistory" 
               class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
         <i class="fas fa-history text-white text-xl"></i>
@@ -59,8 +62,9 @@
         </div>
       </div>
 
+
       <!-- Chat Menu Button -->
-      <div class="relative">
+      <div class="relative" v-if="gameStore.isGameActive && peerStore.isConnected">
         <button @click="toggleChatMenu"
                 class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
           <i class="fas fa-comment-dots text-white text-xl"></i>
@@ -69,11 +73,12 @@
              class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-64">
           <h3 class="text-lg font-bold mb-2">Chat</h3>
           <div class="flex flex-wrap gap-2">
-            <span v-for="emoji in chatEmojis" :key="emoji" class="text-2xl cursor-pointer select-none hover:scale-125 transition-transform" @click="showEmojiAnimation(emoji)">{{ emoji }}</span>
+            <span v-for="emoji in chatEmojis" :key="emoji" class="text-2xl cursor-pointer select-none hover:scale-125 transition-transform" @click="sendEmojiAnimation(emoji)">{{ emoji }}</span>
           </div>
         </div>
       </div>
 
+      <!-- Game Options Button -->
       <div class="relative" v-if="gameStore.isGameActive">
         <button @click="toggleGameOptions" 
                 class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
@@ -89,26 +94,24 @@
               End Game
             </button>
             <button @click="restartGame" 
+                    v-if="peerStore.isHost || !peerStore.isConnected"
                     class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
               Restart Game
             </button>
             <button @click="newGame" 
+                    v-if="peerStore.isHost || !peerStore.isConnected"
                     class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
               Select Game
             </button>
           </div>
         </div>
       </div>
+
     </div>
 
     <GameMode v-if="!gameStore.gameIsActive" @start-game="startGame" />
     <GameBoard v-else-if="!gameStore.gameIsOver" @end-game="endGame" />
     <GameOver v-if="gameStore.gameIsOver" @restart-game="newGame" />
-
-    <!-- Emoji Animation -->
-    <transition name="emoji-fade">
-      <div v-if="animatedEmoji" class="emoji-animation">{{ animatedEmoji }}</div>
-    </transition>
 
     <div class="hidden grid-cols-3 grid-cols-4">Tailwind forced classes</div>
   </div>
@@ -123,6 +126,7 @@ import { useGameStore } from './stores/gameStore'
 import { GameMode as GameModeEnum } from './enums/GameMode'
 import { SoundEffects, SoundVolumes } from './enums/SoundEffects'
 import { usePeerStore } from './stores/peerStore'
+import { showEmojiAnimation } from './utils/animations'
 
 const gameStore = useGameStore()
 const peerStore = usePeerStore()
@@ -132,13 +136,6 @@ const showChatMenu = ref(false)
 const chatEmojis = [
   '💩','😀', '😂', '😎', '😍', '😡', '😭', '👍', '👎', '🎲', '🔥', '👏', '🤔', '🥳', '😱', '😴', '💯', '🍀', '🍻', '🏆', '🤝' 
 ]
-
-const animatedEmoji = ref('')
-
-const toggleChatMenu = () => {
-  closeAllMenus('chat');
-  showChatMenu.value = !showChatMenu.value;
-}
 
 // Audio setup
 const musicTracks = [
@@ -275,58 +272,31 @@ const toggleGameOptions = () => {
   gameStore.showGameOptions = !gameStore.showGameOptions;
 }
 
+const toggleChatMenu = () => {
+  closeAllMenus('chat');
+  showChatMenu.value = !showChatMenu.value;
+}
+
 const isAnyMenuOpen = computed(() => {
   return gameStore.showAudioSettings || gameStore.showGameHistory || gameStore.showGameOptions || showChatMenu.value;
 });
+
+const sendEmojiAnimation = (emoji: string) => {
+  // send emoji to peer
+  peerStore.sendData({
+    type: 'emoji',
+      emoji: emoji
+  });
+  showEmojiAnimation(emoji);
+}
 
 function handleNewGame() {
   newGame();
 }
 
-function showEmojiAnimation(emoji: string) {
-  animatedEmoji.value = emoji
-  setTimeout(() => {
-    animatedEmoji.value = ''
-  }, 1200)
-}
-
 </script>
 
 <style scoped>
-.emoji-animation {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 6rem;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 1;
-  animation: emojiGrowFade 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-  text-shadow: 0 0 20px rgba(0,0,0,0.2);
-}
-@keyframes emojiGrowFade {
-  0% {
-    transform: translate(-50%, -50%) scale(0.5);
-    opacity: 0;
-  }
-  20% {
-    transform: translate(-50%, -50%) scale(1.2);
-    opacity: 1;
-  }
-  60% {
-    transform: translate(-50%, -50%) scale(1.1);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(2.5);
-    opacity: 0;
-  }
-}
-.emoji-fade-enter-active, .emoji-fade-leave-active {
-  transition: opacity 0.3s;
-}
-.emoji-fade-enter-from, .emoji-fade-leave-to {
-  opacity: 0;
-}
+
+
 </style> 

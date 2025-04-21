@@ -502,3 +502,41 @@ h2 {
     opacity: 1;
     z-index: 40;
   }
+
+.emoji-animation {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 6rem;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 1;
+  animation: emojiGrowFade 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  text-shadow: 0 0 20px rgba(0,0,0,0.2);
+}
+@keyframes emojiGrowFade {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+  60% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.5);
+    opacity: 0;
+  }
+}
+
+.emoji-fade-enter-active, .emoji-fade-leave-active {
+    transition: opacity 0.3s;
+  }
+.emoji-fade-enter-from, .emoji-fade-leave-to {
+opacity: 0;
+}

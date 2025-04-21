@@ -55,7 +55,7 @@
       <div class="grid grid-cols-6 gap-2">
         <!-- singles -->
         <div v-for="(category, index) in singleCategories" :key="index" 
-             class="score-item" :data-category="category.name"
+             class="score-item grid-singles" :data-category="category.name"
              :class="{ 'selected': isCategorySelected(category.value) }">
           <div class="category-icon">
             <i :class="['fas', `${getDieIcon(index + 1)}`]"></i>
@@ -65,7 +65,8 @@
           </div>
         </div>
 
-        <div class="upper-score-progress-bar col-span-6 text-center flex items-center justify-center" :style="{ '--progress-width': totalTopScorePercent + '%' }">
+        <div class="upper-score-progress-bar col-span-6 text-center flex items-center justify-center grid-singles" 
+              :style="{ '--progress-width': totalTopScorePercent + '%' }">
           <span>
             Upper Score: 
             <span id="score-upper">{{ totalTopScore }}</span>/63
@@ -74,7 +75,7 @@
 
         <!-- multiples -->
         <div v-for="(category, index) in multipleCategories" :key="index" 
-            class="score-item" :data-category="category.name"
+            class="score-item grid-multiples" :data-category="category.name"
             :class="{ 'selected': isCategorySelected(category.value) }">
           <div class="category-icon">
               <template v-if="category.icon">
@@ -91,7 +92,7 @@
 
         <!-- colors -->
         <div v-for="(category, index) in colorCategories" :key="index" 
-            class="score-item" :data-category="category.name"
+            class="score-item grid-colors" :data-category="category.name"
             :class="{ 'selected': isCategorySelected(category.value), [`${category.color}`]: true }">
           <div class="category-icon">
               <template v-if="category.icon">
@@ -105,7 +106,7 @@
             {{ getScoreDisplay(category.value) }}
           </div>
         </div>
-        <div class="score-item">
+        <div class="score-item grid-colors">
           <div class="category-icon">
             <i class="fas fa-star"></i>
           </div>
@@ -454,7 +455,7 @@ const multipleCategories = [
 ]
 
 const colorCategories = [
-  { name: 'Yahtzee', value: Categories.Yahtzee, text: 'Y!' },
+  { name: 'Yahtzee', value: Categories.Yahtzee, text: 'Y!', color: '' },
   { name: 'Blue', value: Categories.Blues, text: 'B', color: 'blue' },
   { name: 'Red', value: Categories.Reds, text: 'R', color: 'red' },
   { name: 'Green', value: Categories.Greens, text: 'G', color: 'green' },

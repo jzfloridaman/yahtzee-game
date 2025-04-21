@@ -31,10 +31,6 @@ Game Modes
     - Battle, Classic, Rainbow, Puzzle
 
 
-Multiplayer Modes
-- Online, Local (Computer), Single
-
-
 -- MISC --
 - Remove any reference to Yahtzee
 - Rename game, update artwork
@@ -53,3 +49,13 @@ PWA Stuff
 - fix subdomain to point correctly so we dont use a subdirectory on the server
 - clean up assets
 - create icons / splash screens / logos (need new game name)
+
+
+QA STUFF
+- after select category, make sure it deselects the button (no focus it)
+- send an animation for which selected category to other player
+- message that its your turn
+- fix layout for landscape mode , desktop mode
+- hide chat if click off of it.
+- if hosts ends game, do not log the save, only save completed games.
+- fix when a user selects yahtzee to not trigger animation if the score is 0

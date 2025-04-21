@@ -56,7 +56,7 @@ body:has(#game-container) {
 }
 
 .die {
-    @apply w-14 h-14 md:w-48 md:h-48 flex items-center justify-center text-4xl md:text-6xl rounded-lg cursor-pointer text-black font-mono shadow-lg drop-shadow-lg;
+    @apply w-14 h-14 md:w-24 md:h-24 lg:w-48 lg:h-48 flex items-center justify-center text-4xl md:text-6xl rounded-lg cursor-pointer text-black font-mono shadow-lg drop-shadow-lg;
 }
     .die.blue {
         @apply bg-blue-500;
@@ -206,12 +206,13 @@ body:has(#game-container) {
 /* Responsive grid for scorecard */
 #scorecard .grid {
     @apply grid-cols-6 gap-2 md:gap-4;
+    /* grid-template-areas: "singles singles singles singles singles singles singles singles singles" */
     /* grid-cols-2 md:grid-cols-3 lg:grid-cols-6 */ 
 }
 
 /* Responsive grid for players */
 #players-container {
-    @apply gap-2 md:gap-4 w-full  mx-auto bg-gray-700 rounded-lg;
+    @apply gap-2 md:gap-4 w-full mb-0 mx-auto bg-gray-700 rounded-lg;
     /* max-w-4xl grid-cols-1 sm:grid-cols-2 md:grid-cols-4 */
 }
 
@@ -225,8 +226,14 @@ h2 {
 }
 
 /* Add some spacing between sections */
-#game-container > * {
-    @apply mb-6;
+.grid-singles {
+    /* grid-area: singles; */
+}
+.grid-multiples {
+    /* grid-area: multiples; */
+}
+.grid-colors {
+    /* grid-area: colors; */
 }
 
 .upper-score-progress-bar {

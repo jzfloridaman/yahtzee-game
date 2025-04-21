@@ -59,6 +59,21 @@
         </div>
       </div>
 
+      <!-- Chat Menu Button -->
+      <div class="relative">
+        <button @click="toggleChatMenu"
+                class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
+          <i class="fas fa-comment-dots text-white text-xl"></i>
+        </button>
+        <div v-show="showChatMenu" 
+             class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-64">
+          <h3 class="text-lg font-bold mb-2">Chat</h3>
+          <div class="flex flex-wrap gap-2">
+            <span v-for="emoji in chatEmojis" :key="emoji" class="text-2xl cursor-pointer select-none hover:scale-125 transition-transform">{{ emoji }}</span>
+          </div>
+        </div>
+      </div>
+
       <div class="relative" v-if="gameStore.isGameActive">
         <button @click="toggleGameOptions" 
                 class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
@@ -106,6 +121,17 @@ import { usePeerStore } from './stores/peerStore'
 
 const gameStore = useGameStore()
 const peerStore = usePeerStore()
+
+// Chat menu state and emojis
+const showChatMenu = ref(false)
+const chatEmojis = [
+  '😀', '😂', '😎', '😍', '😡', '😭', '👍', '👎', '🎲', '🔥', '👏', '🤔', '🥳', '😱', '😴', '💯', '🍀', '🍻', '🏆', '🤝'
+]
+
+const toggleChatMenu = () => {
+  closeAllMenus('chat');
+  showChatMenu.value = !showChatMenu.value;
+}
 
 // Audio setup
 const musicTracks = [
@@ -222,6 +248,9 @@ const closeAllMenus = (menu?: string) => {
   if(menu !== 'options'){
     gameStore.showGameOptions = false;
   }
+  if(menu !== 'chat'){
+    showChatMenu.value = false;
+  }
 }
 
 const toggleAudioSettings = () => {
@@ -240,7 +269,7 @@ const toggleGameOptions = () => {
 }
 
 const isAnyMenuOpen = computed(() => {
-  return gameStore.showAudioSettings || gameStore.showGameHistory || gameStore.showGameOptions;
+  return gameStore.showAudioSettings || gameStore.showGameHistory || gameStore.showGameOptions || showChatMenu.value;
 });
 
 function handleNewGame() {

@@ -1,11 +1,10 @@
 <template>
   <div id="game-over-container">
-    <h1 class="text-3xl font-bold text-center">Game Over</h1>
     <div class="text-center">
       <div v-if="winner" class="winner-banner mb-4">
         <h2 class="text-2xl font-bold text-green-400">Winner: {{ winner.name }} ({{ winner.score }})</h2>
       </div>
-      <div v-if="players.length > 1" class="player-tabs flex justify-center mb-4 gap-2">
+      <div v-if="players.length > 1" class="player-tabs flex justify-center gap-2">
         <button v-for="(player, idx) in players" :key="idx"
                 @click="selectedTab = idx"
                 :class="['player-tab', { active: selectedTab === idx }]">
@@ -83,7 +82,6 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { YahtzeeGame } from '../game'
 import { Categories } from '../enums/Categories'
 import { useGameStore } from '../stores/gameStore'
 
@@ -223,7 +221,7 @@ const getDieIcon = (die: number): string => {
   margin-bottom: 1rem;
 }
 .player-tabs {
-  margin-bottom: 1rem;
+  /* margin-bottom: 1rem; */
 }
 .player-tab {
   background: #23272f;

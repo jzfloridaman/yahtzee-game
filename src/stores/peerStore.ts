@@ -41,6 +41,15 @@ export const usePeerStore = defineStore('peer', {
       })
 
       this.peer.on('connection', (conn) => {
+        if (this.connection && this.isConnected) {
+          // Already connected, reject new connection
+          console.log('Rejecting additional connection from:', conn.peer)
+          conn.on('open', () => {
+            conn.send({ type: 'error', message: 'Host is already connected to another player.' });
+            conn.close();
+          });
+          return;
+        }
         console.log('Incoming connection from:', conn.peer)
         this.connection = conn
         this.setupConnectionListeners()

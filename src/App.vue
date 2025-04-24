@@ -161,23 +161,30 @@ const musicTracks = [
 ]
 let backgroundMusic: HTMLAudioElement | null = null
 
-// Sound effect cache to prevent creating new Audio objects repeatedly
+// Preload all SFX on mount for instant playback
 const soundCache: { [key in SoundEffects]?: HTMLAudioElement } = {}
+
+function preloadSoundEffects() {
+  Object.values(SoundEffects).forEach((effect) => {
+    const audio = new Audio(effect)
+    audio.volume = SoundVolumes[effect as SoundEffects]
+    audio.load() // Preload the audio
+    soundCache[effect as SoundEffects] = audio
+  })
+}
 
 const playSoundEffect = (effect: SoundEffects) => {
   if (!gameStore.sfxEnabled) return
 
-  // Create or get cached audio element
-  if (!soundCache[effect]) {
-    soundCache[effect] = new Audio(effect)
-    soundCache[effect]!.volume = SoundVolumes[effect]
+  const cached = soundCache[effect]
+  if (cached) {
+    // Clone for overlapping playback
+    const sound = cached.cloneNode() as HTMLAudioElement
+    sound.volume = cached.volume
+    sound.play().catch(error => {
+      console.log("Error playing sound effect:", error)
+    })
   }
-
-  // Clone the audio to allow overlapping sounds
-  const sound = soundCache[effect]!.cloneNode() as HTMLAudioElement
-  sound.play().catch(error => {
-    console.log("Error playing sound effect:", error)
-  })
 }
 
 // Expose the playSoundEffect function to the store
@@ -216,8 +223,9 @@ watch(() => gameStore.bgmEnabled, (newValue) => {
   }
 })
 
-// Initialize music on component mount
+// Initialize music and preload SFX on component mount
 onMounted(() => {
+  preloadSoundEffects()
   initializeBackgroundMusic()
 })
 

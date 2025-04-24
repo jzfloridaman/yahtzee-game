@@ -72,6 +72,10 @@ export class ScoreManager implements IScoreManager {
         return this.scorecard;
     }
 
+    setScorecard(scorecard: { [key: string]: { value: number | null; selected: boolean; group: CategoryGroup } }) {
+        this.scorecard = scorecard;
+    }
+
     getScoreByCategory(category: Categories): number | null {
         return this.scorecard[category].value;
     }

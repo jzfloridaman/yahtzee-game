@@ -205,6 +205,26 @@ onMounted(() => {
     roomCodeInput.value = code
     showOnlineMenu.value = true // Optionally open the online menu automatically
   }
+
+  window.addEventListener('rejoin-session', (e: any) => {
+    if (e.detail && e.detail.hostRoomId) {
+      roomCodeInput.value = e.detail.hostRoomId;
+      usePeerStore().joinRoom(e.detail.hostRoomId);
+
+      // Watch for connection, then send resyncRequest
+      const stop = watch(
+        () => peerStore.isConnected,
+        (connected) => {
+          if (connected) {
+            emit('start-game', GameMode.OnlineMultiPlayer, 2);
+            peerStore.sendData({ type: 'resyncRequest' });
+            stop(); // Stop watching after first trigger
+          }
+        }
+      );
+      console.log('Rejoining session', e.detail.hostRoomId);
+    }
+  })
 })
 </script>
 

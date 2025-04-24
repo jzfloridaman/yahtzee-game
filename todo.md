@@ -56,7 +56,6 @@ QA STUFF
 - fix layout for landscape mode , desktop mode
 - if hosts ends game, do not log the save, only save completed games.
 - add sound effect when player joins, game started, game ended, your turn.
-- preload sound effects / assets
 - add the move dice order feature. ()
 - add peek other player's scorecard.
 - resync should send all scorecards.
@@ -66,4 +65,3 @@ QA STUFF
 - add resync option for host.
 - heart beat log (debug for host)
 - prevent host from refreshing or leaving page 
-- have host only allow max connections (security)

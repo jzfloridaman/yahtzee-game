@@ -13,6 +13,7 @@ interface GameStateData {
   rollsLeft: number;
   scores: number[];
   scorecard: { [key: string]: { value: number | null; selected: boolean; group: CategoryGroup } };
+  scorecards: { [key: string]: { [key: string]: { value: number | null; selected: boolean; group: CategoryGroup } } }[];
   newRoll: boolean;
   selectedCategories?: Categories[];
   isGameOver: Boolean;
@@ -265,6 +266,13 @@ export class YahtzeeGame {
             });
         }
 
+        if (stateData.scorecards) {
+            this.players.forEach((player, index) => {
+                //const scorecard = stateData.scorecards[index];
+                //this.players[index].setScorecard(scorecard as any);
+            });
+        }
+
         if(stateData.isGameOver){
             console.log('Setting game over');
             this.setGameOver();
@@ -285,6 +293,7 @@ export class YahtzeeGame {
             rollsLeft: this.rollsLeft,
             scores: scores,
             scorecard: this.players[this.currentPlayer].getScorecard(),
+            scorecards: this.players.map(player => player.getScorecard()),
             newRoll: this.newRoll,
             isGameOver: this.isGameOver(),
             playersGamesCompleted: this.playersGamesCompleted

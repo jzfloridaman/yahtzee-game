@@ -106,6 +106,19 @@ export const usePeerStore = defineStore('peer', {
         this.isConnected = true
         this.connectionLost = false
 
+        // Save online session info to localStorage
+        try {
+          const sessionInfo = {
+            hostRoomId: this.isHost ? this.peer?.id : this.connection?.peer,
+            clientRoomId: this.isHost ? this.connection?.peer : this.peer?.id,
+            timestamp: Date.now(),
+            isHost: this.isHost
+          }
+          localStorage.setItem('online session', JSON.stringify(sessionInfo))
+        } catch (e) {
+          console.warn('Failed to save online session info:', e)
+        }
+
         // Version check
         this.sendData({ type: 'versionCheck', version: VERSION });
 

@@ -1,5 +1,16 @@
 <template>
   <div>
+    <!-- Rejoin Online Session Modal -->
+    <div v-if="showRejoinModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-70">
+      <div class="bg-red-700 p-8 rounded-lg shadow-lg text-center max-w-xs mx-auto">
+        <h2 class="text-2xl font-bold mb-2">Rejoin Game?</h2>
+        <p class="mb-4">Would you like to rejoin your previous online game session?</p>
+        <div class="flex justify-center gap-4">
+          <button @click="handleRejoinYes" class="bg-green-600 text-white px-4 py-2 rounded">Yes</button>
+          <button @click="handleRejoinNo" class="bg-red-600 text-white px-4 py-2 rounded">No</button>
+        </div>
+      </div>
+    </div>
     <!-- Connection Lost Message -->
     <div v-if="peerStore.connectionLost && !gameStore.gameIsOver" class="fixed inset-0 z-[5000] flex items-center justify-center bg-black bg-opacity-70">
       <div class="bg-red-700 text-white p-8 rounded-lg shadow-lg text-center max-w-xs mx-auto">
@@ -115,7 +126,7 @@
           </button>
 
           <button @click="requestResync"
-                  v-if="!peerStore.isHost && peerStore.isConnected"
+                  v-if="peerStore.isConnected"
                   class="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
             Request Resync
           </button>
@@ -223,10 +234,38 @@ watch(() => gameStore.bgmEnabled, (newValue) => {
   }
 })
 
+// Rejoin session modal state
+const showRejoinModal = ref(false)
+const pendingSessionData = ref<any>(null)
+
 // Initialize music and preload SFX on component mount
 onMounted(() => {
   preloadSoundEffects()
   initializeBackgroundMusic()
+
+  // Check for online session in localStorage, this might work better if a cookie is used instead.
+  const session = localStorage.getItem('online session')
+  if (session) {
+    try {
+      const data = JSON.parse(session);
+
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('room')
+      if (code) {
+        // roomCodeInput.value = code
+        // showOnlineMenu.value = true // Optionally open the online menu automatically
+      }
+
+      if (data && data.isHost === false || data.hostRoomId === code) {
+        pendingSessionData.value = data
+        showRejoinModal.value = true
+      }else{
+        console.log('No session data found or isHost is true')
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+  }
 })
 
 const startGame = (mode: GameModeEnum, players?: number) => {
@@ -360,11 +399,29 @@ const sendChatMessage = () => {
 }
 
 const requestResync = () => {
-  peerStore.sendData({ type: 'resyncRequest' });
+  if(peerStore.isHost){
+    peerStore.sendData({ type: 'resyncRequest' });
+  }else{
+    peerStore.sendData({ type: 'resyncRequest' });
+    console.log('Not the host, cannot request resync')
+  }
 }
 
 function handleNewGame() {
   newGame();
+}
+
+function handleRejoinNo() {
+  localStorage.removeItem('online session')
+  showRejoinModal.value = false
+  pendingSessionData.value = null
+}
+
+function handleRejoinYes() {
+  if (pendingSessionData.value) {
+    window.dispatchEvent(new CustomEvent('rejoin-session', { detail: pendingSessionData.value }))
+  }
+  showRejoinModal.value = false
 }
 
 </script>

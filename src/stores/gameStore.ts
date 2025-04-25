@@ -249,7 +249,8 @@ export const useGameStore = defineStore('game', {
 
         // Disconnect from peer if in online mode
         if (this.gameMode === GameMode.OnlineMultiPlayer) {
-          usePeerStore().disconnect()
+          usePeerStore().disconnect();
+          localStorage.removeItem('online session');
         }
       }
 

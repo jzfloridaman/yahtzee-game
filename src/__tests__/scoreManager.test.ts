@@ -20,11 +20,11 @@ describe('ScoreManager', () => {
 
   test('should calculate score for a category', () => {
     const dice: Die[] = [
-      { value: 1, color: 'red', held: false },
-      { value: 1, color: 'blue', held: false },
-      { value: 2, color: 'green', held: false },
-      { value: 3, color: 'red', held: false },
-      { value: 4, color: 'blue', held: false },
+      { value: 1, color: 'red', held: false, isRolling: false },
+      { value: 1, color: 'blue', held: false, isRolling: false },
+      { value: 2, color: 'green', held: false, isRolling: false },
+      { value: 3, color: 'red', held: false, isRolling: false },
+      { value: 4, color: 'blue', held: false, isRolling: false },
     ];
     const score = scoreManager.calculateScore(Categories.Ones, dice);
     expect(score).toBe(2); // Two dice with value 1

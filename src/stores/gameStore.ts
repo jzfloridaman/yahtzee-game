@@ -42,6 +42,11 @@ export const useGameStore = defineStore('game', {
 
     // Game history
     gameHistory: JSON.parse(localStorage.getItem('gameHistory') || '[]') as GameHistory[],
+
+    // Online sync diagnostics. Host increments broadcastSeq on every
+    // gameState send; clients track lastReceivedSeq and warn on gaps.
+    broadcastSeq: 0,
+    lastReceivedSeq: -1,
   }),
 
   getters: {
@@ -83,6 +88,8 @@ export const useGameStore = defineStore('game', {
       this.game.setGameMode(mode)
       this.gameMode = mode
       this.isGameActive = true
+      this.broadcastSeq = 0
+      this.lastReceivedSeq = -1
       this.game.startNewGame(this.buildSeatSpecs(players))
 
       if (mode === GameMode.OnlineMultiPlayer && usePeerStore().isHost) {
@@ -93,8 +100,10 @@ export const useGameStore = defineStore('game', {
     sendGameState() {
       const peerStore = usePeerStore();
       if (this.game && peerStore.isConnected) {
+        this.broadcastSeq++;
         peerStore.sendData({
           type: 'gameState',
+          seq: this.broadcastSeq,
           data: this.game.getGameState()
         });
       }
@@ -215,6 +224,12 @@ export const useGameStore = defineStore('game', {
 
         case 'gameState':
           if (!peer.isHost && this.game) {
+            const incomingSeq = typeof data.seq === 'number' ? data.seq : 0;
+            if (this.lastReceivedSeq >= 0 && incomingSeq > this.lastReceivedSeq + 1) {
+              const missed = incomingSeq - this.lastReceivedSeq - 1;
+              console.warn(`gameState seq gap: got ${incomingSeq}, expected ${this.lastReceivedSeq + 1} (missed ${missed})`);
+            }
+            this.lastReceivedSeq = incomingSeq;
             this.game.updateFromState(data.data);
             // Animation is driven by the dedicated 'rollDice' message; do
             // not animate on every state update or hold-broadcasts would

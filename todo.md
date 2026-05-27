@@ -19,7 +19,6 @@ This file is the backlog of items *not* in that plan: bug reports, polish, futur
 - [ ] Customizable player names (today they default to `Player 1`, `Player 2`, …).
 - [ ] Idle-player nudge: shake screen / play a sound / countdown timer until auto-roll if a player sits idle.
 - [ ] Reorderable dice (drag-to-rearrange).
-- [ ] Debug heartbeat log for hosts (helpful while we work on sync).
 
 ## Future features
 
@@ -40,6 +39,9 @@ This file is the backlog of items *not* in that plan: bug reports, polish, futur
 - Resync button (manual) for clients that fall out of sync
 - Removed legacy `src/ui/ui.ts` (replaced by Vue components)
 - Dockerized local dev — `docker-compose.yml`, plugged into shared `dev-network` + Caddy
+- **P1**: `PlayerController` abstraction (`src/controllers/`) — local/remote/ai controllers per `Player`
+- **P2**: Online multiplayer routes through controllers. Score:1000 placeholder gone; client holds reflect immediately; divergent selectCategory paths collapsed.
+- **P3**: Auto-resync on tab visibility-change. Sequence numbers on `gameState` broadcasts (host increments, client logs gaps). `isGameOver` split into `checkGameOver()` (mutating) and `isGameOver` getter (pure read). Resync now mirrors all players' scorecards (previously commented-out code).
 
 ## Obsolete (removed from old list)
 

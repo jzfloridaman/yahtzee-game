@@ -243,6 +243,15 @@ onMounted(() => {
   preloadSoundEffects()
   initializeBackgroundMusic()
 
+  // Auto-resync when the tab returns to the foreground. Covers the
+  // suspend/wake case where messages may have been dropped while the
+  // page was backgrounded without the WebRTC connection firing close.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      peerStore.requestResync()
+    }
+  })
+
   // Check for online session in localStorage, this might work better if a cookie is used instead.
   const session = localStorage.getItem('online session')
   if (session) {

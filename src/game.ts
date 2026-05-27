@@ -101,37 +101,43 @@ export class YahtzeeGame {
     }
 
     setGameOver(){
-        console.log('Setting game over');
         this.state = GameState.GameOver;
     }
 
-    isGameOver(): Boolean {
+    // Pure read: is the game in the GameOver terminal state?
+    get isGameOver(): boolean {
+        return this.state === GameState.GameOver;
+    }
 
-        if(this.playersGamesCompleted >= this.players.length){
-            console.log('Game over, all players have completed their games');
-            this.setGameOver();
-            return true;
-        }
-
+    // Mutating: marks the current player as done if they've finished all
+    // categories, then transitions to GameOver state if every player is done.
+    // Returns whether the game is now over. Idempotent across repeat calls.
+    checkGameOver(): boolean {
         const currentPlayer = this.players[this.currentPlayer];
-
-        if(currentPlayer.getRemainingCategories() === 0 && !currentPlayer.isGameOver){
+        if (currentPlayer && currentPlayer.getRemainingCategories() === 0 && !currentPlayer.isGameOver) {
             currentPlayer.setGameOver(true);
             this.playersGamesCompleted++;
+        }
+
+        if (this.players.length > 0 && this.playersGamesCompleted >= this.players.length) {
+            if (this.state !== GameState.GameOver) {
+                this.setGameOver();
+            }
+            return true;
         }
 
         return false;
     }
 
     startNewRoll(){
-        if(!this.isGameOver()){
+        if(!this.isGameOver){
             this.rollsLeft = 2;
             this.diceManager.resetDice();
         }
     }
 
     rollDice() {
-        if (this.rollsLeft > 0 && !this.isGameOver()) {
+        if (this.rollsLeft > 0 && !this.isGameOver) {
             this.diceManager.rollDice();
             this.rollsLeft--;
         }
@@ -164,8 +170,8 @@ export class YahtzeeGame {
             return;
         }
         this.players[this.currentPlayer].updateScorecard(category, score, true);
-        
-        this.isGameOver();
+
+        this.checkGameOver();
 
         if(roll){
             this.nextPlayer(); 
@@ -274,10 +280,24 @@ export class YahtzeeGame {
             });
         }
 
+        // Mirror every player's scorecard so a resync brings the whole table
+        // back, not just the current player. The single-`scorecard` field
+        // above keeps per-turn updates cheap on the wire; this loop covers
+        // recovery after a missed broadcast or rejoin.
         if (stateData.scorecards) {
-            this.players.forEach((player, index) => {
-                //const scorecard = stateData.scorecards[index];
-                //this.players[index].setScorecard(scorecard as any);
+            stateData.scorecards.forEach((incoming, index) => {
+                const player = this.players[index];
+                if (!player || !incoming) return;
+                const local = player.getScorecard();
+                Object.entries(incoming).forEach(([category, entry]) => {
+                    const slot = local[category as Categories];
+                    if (!slot || !entry) return;
+                    slot.value = entry.value;
+                    slot.selected = entry.selected;
+                    if ('group' in entry) {
+                        slot.group = entry.group as CategoryGroup;
+                    }
+                });
             });
         }
 
@@ -303,7 +323,7 @@ export class YahtzeeGame {
             scorecard: this.players[this.currentPlayer].getScorecard(),
             scorecards: this.players.map(player => player.getScorecard()),
             newRoll: this.newRoll,
-            isGameOver: this.isGameOver(),
+            isGameOver: this.isGameOver,
             playersGamesCompleted: this.playersGamesCompleted
         };
     }

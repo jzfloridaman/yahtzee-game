@@ -49,11 +49,9 @@ describe('YahtzeeGame', () => {
       if (!isNaN(Number(category))) continue;
       scoreManager.updateScorecard(Categories[category as keyof typeof Categories], 10, true);
     }
-    // isGameOver is currently side-effecting: first call marks player done,
-    // second call sees all players completed and flips state. Tracked as a
-    // P3 cleanup in docs/refactor-plan.md.
-    expect(game.isGameOver()).toBe(false);
-    expect(game.isGameOver()).toBe(true);
+    // checkGameOver marks the player done and transitions state in one pass.
+    expect(game.checkGameOver()).toBe(true);
+    expect(game.isGameOver).toBe(true);
     expect(game.state).toBe(GameState.GameOver);
   });
 });

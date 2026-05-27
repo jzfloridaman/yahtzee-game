@@ -58,7 +58,7 @@ export class LocalHumanController implements PlayerController {
 
         const { score, bonusYahtzee } = game.applySelectCategory(category);
 
-        if (game.currentGame?.isGameOver()) {
+        if (game.currentGame?.isGameOver) {
             if (game.isOnlineHost) {
                 game.sendGameState();
                 peer.sendData({ type: 'selectCategory', category, score });

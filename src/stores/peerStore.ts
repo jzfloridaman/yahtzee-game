@@ -170,6 +170,16 @@ export const usePeerStore = defineStore('peer', {
       }
     },
 
+    // Safe to call any time. Fires a resync if we're an online client with
+    // a live connection — used by the tab-visibility handler to recover
+    // from any state we may have missed while backgrounded.
+    requestResync() {
+      if (this.isConnected && !this.isHost) {
+        console.log('Requesting resync from host');
+        this.sendData({ type: 'resyncRequest' });
+      }
+    },
+
     disconnect() {
       if (this.connection) {
         this.connection.close()

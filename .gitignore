@@ -15,3 +15,7 @@ random/
 .DS_Store
 resources/android/**/*
 resources/ios/**/*
+
+# Editor swap files
+*.swp
+*.swo

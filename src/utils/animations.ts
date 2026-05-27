@@ -3,6 +3,39 @@ function reducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+// Spawn (or reuse) a fullscreen dimming backdrop and remove it after
+// `durationMs`. Used by the score / Yahtzee / emoji popups so the bright
+// text reads cleanly against busy game contents instead of getting lost
+// in the gradient + scorecard.
+function showBackdrop(durationMs: number): void {
+  if (typeof document === 'undefined') return;
+  let backdrop = document.getElementById('score-fx-backdrop') as HTMLDivElement | null;
+  if (!backdrop) {
+    backdrop = document.createElement('div');
+    backdrop.id = 'score-fx-backdrop';
+    Object.assign(backdrop.style, {
+      position: 'fixed',
+      inset: '0',
+      background: 'rgba(0, 0, 0, 0.72)',
+      backdropFilter: 'blur(2px)',
+      WebkitBackdropFilter: 'blur(2px)',
+      opacity: '0',
+      transition: 'opacity 0.18s ease',
+      pointerEvents: 'none',
+      zIndex: '950',
+    } as Partial<CSSStyleDeclaration>);
+    document.body.appendChild(backdrop);
+  }
+  // Reflow so the transition kicks in.
+  void backdrop.offsetWidth;
+  backdrop.style.opacity = '1';
+  window.setTimeout(() => {
+    if (!backdrop) return;
+    backdrop.style.opacity = '0';
+    window.setTimeout(() => backdrop?.remove(), 220);
+  }, Math.max(0, durationMs - 220));
+}
+
 export const createConfetti = () => {
   // Skip the 150-particle blast under reduced motion. Caller animations
   // (score popup, Yahtzee banner) still render, just without confetti.
@@ -75,8 +108,7 @@ export const createConfetti = () => {
 }
 
 export const showYahtzeeAnimation = () => {
-
-  document.querySelector('.overlay')?.classList.add('active');
+  showBackdrop(2000);
 
   // Create the Yahtzee text animation
   const yahtzeeText = document.createElement('div');
@@ -89,14 +121,12 @@ export const showYahtzeeAnimation = () => {
 
   // Clean up Yahtzee text
   setTimeout(() => {
-    document.body.removeChild(yahtzeeText);
-    document.querySelector('.overlay')?.classList.remove('active');
+    yahtzeeText.remove();
   }, 2000);
 }
 
 export const showScoreAnimation = (score: number, category: string = '') => {
-
-  document.querySelector('.overlay')?.classList.add('active');
+  showBackdrop(2000);
 
   // Create the score text animation
   const scoreText = document.createElement('div');
@@ -133,8 +163,7 @@ export const showScoreAnimation = (score: number, category: string = '') => {
 
   // Clean up after animation
   setTimeout(() => {
-    document.body.removeChild(scoreText);
-    document.querySelector('.overlay')?.classList.remove('active');
+    scoreText.remove();
   }, 2000);
 }
 

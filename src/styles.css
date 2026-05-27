@@ -14,14 +14,25 @@ body {
     border-radius: 0;
     box-shadow: none;
     min-height: 100dvh;
-    padding-top: calc(0.75rem + var(--safe-top));
-    /* The fixed .bottom-stack sits over the bottom edge of the viewport.
-       Reserve enough space at the bottom of the column so the scorecard's
-       last row isn't hidden underneath. ~11rem covers dice tray + action
-       row + paddings; we also add the device safe-area inset. */
-    padding-bottom: calc(11rem + var(--safe-bottom));
+    /* Top padding intentionally small — the floating .app-top-bar
+       (rendered above in App.vue) already provides the safe-area top
+       padding for the hamburger. */
+    padding-top: 0.25rem;
+    padding-bottom: calc(1rem + var(--safe-bottom));
     position: relative;
     z-index: 1; /* sits above the absolutely-positioned .world-fx */
+}
+
+/* GameBoard reserves heavy bottom space for the fixed .bottom-stack
+   (dice tray + roll button + held chip). ~11rem covers it + safe-area. */
+#game-container {
+    padding-bottom: calc(11rem + var(--safe-bottom));
+}
+
+/* Main menu is short — vertically center the whole stack so it sits in
+   the middle of the column rather than hugging the top. */
+#game-mode-container {
+    justify-content: center;
 }
 
 /* Middle region that holds the puzzle context box + bonus banner +
@@ -581,22 +592,20 @@ body {
 
 .players-header {
     position: sticky;
-    top: 0;
+    /* The .app-top-bar sits sticky at top:0 (z-index 30). Pin this row
+       directly below it so player chips remain visible while scrolling. */
+    top: calc(2.7rem + var(--safe-top, 0px));
     z-index: 20;
     width: calc(100% + 1rem);
     margin: 0 -0.5rem 0.5rem;
-    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
-    background: linear-gradient(180deg, var(--surface-strong) 0%, var(--surface-strong) 75%, rgba(15,23,42,0) 100%);
+    padding: 0.45rem 0.45rem 0.5rem;
+    background: linear-gradient(180deg, var(--surface-strong) 0%, var(--surface-strong) 80%, rgba(15,23,42,0) 100%);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     display: flex;
-    gap: 0.5rem;
+    gap: 0.4rem;
     align-items: stretch;
     justify-content: center;
-    /* Right padding reserves space so the rightmost player chip doesn't
-       run under the hamburger button (absolute-positioned top-right of
-       #app). The hamburger is ~48px wide; we add a bit more for breathing. */
-    padding-right: 3.25rem;
 }
 
 .player-chip {
@@ -604,12 +613,29 @@ body {
     min-width: 0;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0.6rem;
+    gap: 0.4rem;
+    padding: 0.3rem 0.4rem;
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px;
+    border-radius: 10px;
     transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+/* Tighter avatar + name when 3+ chips need to share the row. The
+   :nth-child counts the chip's siblings, so this triggers automatically. */
+.players-header:has(.player-chip:nth-child(3)) .player-avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 0.78rem;
+}
+.players-header:has(.player-chip:nth-child(3)) .player-name {
+    font-size: 0.62rem;
+}
+.players-header:has(.player-chip:nth-child(3)) .player-score {
+    font-size: 0.95rem;
+}
+.players-header:has(.player-chip:nth-child(3)) .player-chip {
+    padding: 0.28rem 0.32rem;
+    gap: 0.3rem;
 }
 .player-chip.active {
     background: rgba(255,255,255,0.14);
@@ -879,15 +905,20 @@ h2 {
 .yahtzee-animation {
   position: fixed;
   top: 30%;
-  left: 0;
+  left: 50%;
   transform: translate(-50%, -50%);
   font-size: 5rem;
-  font-weight: bold;
+  font-weight: 900;
   color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+  -webkit-text-stroke: 3px #4a2c00;
+  text-shadow:
+    0 0 24px rgba(255, 215, 0, 0.95),
+    0 0 60px rgba(255, 215, 0, 0.5),
+    0 6px 18px rgba(0, 0, 0, 0.7);
   animation: yahtzeeAnimation 2s ease-out forwards;
   z-index: 1000;
   pointer-events: none;
+  letter-spacing: 0.02em;
 }
 @media (prefers-reduced-motion: reduce) {
   .yahtzee-animation { animation: none; opacity: 1; transform: scale(1) rotate(0); }
@@ -985,37 +1016,60 @@ h2 {
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 4rem;
-  font-weight: bold;
+  font-weight: 900;
   text-align: center;
   pointer-events: none;
   z-index: 1000;
   animation: scorePopupAnimation 2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  /* Thick text stroke + drop shadow gives the popup real punch against
+     any background; the .score-fx-backdrop dims the page further. */
+  -webkit-text-stroke: 2px rgba(0, 0, 0, 0.85);
+  text-shadow:
+    0 0 18px rgba(0, 0, 0, 0.85),
+    0 4px 12px rgba(0, 0, 0, 0.65);
+  letter-spacing: 0.02em;
+  white-space: pre-line;
 }
 
 .score-popup-animation.high-score {
   color: #ffd700;
-  font-size: 5rem;
-  text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+  font-size: 5.25rem;
+  -webkit-text-stroke: 3px #4a2c00;
+  text-shadow:
+    0 0 22px rgba(255, 215, 0, 0.85),
+    0 0 50px rgba(255, 215, 0, 0.4),
+    0 6px 16px rgba(0, 0, 0, 0.7);
 }
 
 .score-popup-animation.medium-score {
-  color: #3b82f6;
+  color: #60a5fa;
   font-size: 4.5rem;
-  text-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+  -webkit-text-stroke: 3px #0c1e3d;
+  text-shadow:
+    0 0 20px rgba(96, 165, 250, 0.85),
+    0 0 40px rgba(59, 130, 246, 0.45),
+    0 6px 16px rgba(0, 0, 0, 0.7);
 }
 
 .score-popup-animation.normal-score {
-  color: #22c55e;
+  color: #4ade80;
   font-size: 4rem;
-  text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+  -webkit-text-stroke: 3px #0d2f17;
+  text-shadow:
+    0 0 18px rgba(74, 222, 128, 0.85),
+    0 0 36px rgba(34, 197, 94, 0.4),
+    0 6px 14px rgba(0, 0, 0, 0.7);
 }
 
 .score-popup-animation.no-score {
-    color: #c52222;
-    font-size: 4rem;
-    text-shadow: 0 0 10px rgba(127, 0, 0, 0.5);
-  }
+  color: #f87171;
+  font-size: 4rem;
+  -webkit-text-stroke: 3px #3a0e0e;
+  text-shadow:
+    0 0 18px rgba(248, 113, 113, 0.9),
+    0 0 36px rgba(220, 38, 38, 0.4),
+    0 6px 14px rgba(0, 0, 0, 0.7);
+}
 
 
 .overlay {

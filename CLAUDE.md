@@ -168,15 +168,67 @@ Adventure levels are grouped by `worldId` (`src/puzzle/levels/types.ts`). Worlds
 
 When `variant === Puzzle` and there are 2 players (vs-AI), `game.puzzleEngines` is a 2-element array. Both engines are built from the same `PuzzleConfig` (same placements) but have independent state — your ice doesn't help the AI and vice versa. The `GreedyStrategy` (`src/strategies/ai/GreedyStrategy.ts`) queries `game.getPuzzleEngine(game.currentPlayer)` to respect `canScore` in its decision branches.
 
-### File inventory (puzzle code)
+### Engine event bus + cell-anchored UI
+
+`PuzzleEngine` exposes a tiny pub/sub: `engine.on(listener) → unsubscribe` and (internally) `engine.emit(event)`. `PuzzleEngineCtx` forwards an `emit` to modifiers so each modifier kind emits lifecycle events from its hooks. The full `EngineEvent` union lives in `src/puzzle/types.ts`:
+
+```
+iceBlock:melt | flyingMultiplier:relocate | flyingMultiplier:applied
+| hotPotato:armed | hotPotato:tick | hotPotato:defuse | hotPotato:expire
+| multiplierBubble:pop | loopingMultiplier:change | loopingMultiplier:applied
+| engine:bonusTurn | engine:goalMet
+```
+
+`ctx.requestBonusTurn` emits `engine:bonusTurn` (single source). The store calls `engine.checkGoalMet(totalScore)` after every score; the engine emits `engine:goalMet` at most once per goal kind (`score` / `engagement`) so the chime fires only on the crossing turn.
+
+`GameBoard.vue` subscribes per-player on mount (`game.players.forEach` → `engine.on(handleEngineEvent)`) and unsubscribes on unmount. Re-subscribes on `currentGame` change (restart). The handler dispatches each event to:
+- a cell-anchored animation in `src/utils/cellAnimations.ts` (resolves the target cell via `[data-category="<value>"]`, spawns transient DOM in a `#cell-fx-layer` fixed overlay), and
+- a synthesized SFX call in `src/utils/synthSfx.ts` (`playModifierSfx(kind)`), gated by `gameStore.sfxEnabled`.
+
+`flyingMultiplier:applied` + `loopingMultiplier:applied` carry `{ raw, final, multiplier }` so the cell shows a `raw × mult = +final` score-breakdown popup over the originating cell instead of the regular center-screen popup.
+
+**Don't subscribe to engine events from places that survive engine reassignment** (`initFromConfig` keeps listeners, but a fresh `PuzzleEngine` constructor wipes them). `GameBoard.vue`'s `watch(currentGame, subscribe)` is the canonical pattern.
+
+### Web Audio synth (no audio assets)
+
+`src/utils/synthSfx.ts` lazily creates one `AudioContext` on first call (resumes if suspended) and a single master `GainNode` at 0.4. Each modifier event is a short envelope-shaped tone or filtered-noise burst. Helpers: `tone()` / `noiseBurst()` (private), `playModifierSfx(kind)` (public). Existing mp3 SFX (dice roll, hold, score, no-score, Yahtzee) still load via `App.vue`'s `preloadSoundEffects` — those are NOT synthesized.
+
+### Mobile-first UI shell
+
+The app is mobile-first. `#app` is locked to `max-width: 430px` and centered; outside that column an ambient gradient (per mode/world theme) fills the viewport on desktop. `body` gets one of:
+- `mode-rainbow` (default Rainbow variant) — animated multi-stop gradient
+- `mode-puzzle` (Puzzle variant) — deep indigo + magenta accent
+- `mode-puzzle world-<id>` (Adventure level) — additionally applies one of `world-beginnings` / `frostlands` / `echo-chamber` / `storm-front` / `storm-surge` / `finale` for per-world accent + particle atmosphere (`world-fx` layer)
+
+Body classes are managed by a `watch(activeThemeClasses, ...)` in `App.vue` keyed off `gameStore.gameVariant` + `gameStore.currentAdventureLevel`. The `<meta name="theme-color">` is updated alongside so the OS status bar matches.
+
+CSS variables in `src/styles/themes.css`: `--accent`, `--accent-soft`, `--bg-from`, `--bg-via`, `--bg-to`, `--surface`, `--surface-strong`, `--text`, `--text-soft`. All component CSS reads these vars instead of hard-coding colors.
+
+**Layout zones (GameBoard):**
+1. `.app-top-bar` (sticky top:0, z-index 30) — in `App.vue`, owns the hamburger button. Transparent strip, full column width.
+2. `.players-header` (sticky top:2.7rem) — player chips with avatar + name + score, magenta-accent glow on the active player. Auto-shrinks avatar + font when 3+ chips share the row (`.players-header:has(.player-chip:nth-child(3))`).
+3. `.game-main` (flex:1, justify-content:center) — vertically centers the puzzle goals + bonus banner + scorecard block in the remaining space.
+4. `.bottom-stack` (fixed bottom:0, max-width matches column, centered) — AI/online-waiting banner + dice tray + action row (held-count chip + Roll button + rolls-left dots). All grouped in one panel that pushes upward when the waiting banner is visible.
+
+**Puzzle context box** (`.puzzle-goals`) stretches to full column width and CONTAINS the collapsible modifier-help legend. The old standalone legend wrap below the scorecard is gone.
+
+**Dice are 3D pip cubes.** Each `<div class="die">` contains a `<div class="die-cube">` (preserve-3d) with six `<div class="face">` children translated to ±X/Y/Z normals. `.die[data-pips="N"] .die-cube` rotates the cube to bring face N forward. Roll animation replaces the static cube transform with a multi-axis tumble (rotateX + rotateY + rotateZ, ending at identity) so the data-pips rule resumes after the keyframe and the cube settles on the rolled value. Pre-roll (value 0) shows a "?" on face 1.
+
+**Score animation backdrop.** `src/utils/animations.ts` spawns its own `#score-fx-backdrop` (fixed, 72% black, 2px blur) for the popup's duration. The old `.overlay` element was retired when the dropdown menu cluster was rebuilt as a bottom sheet, so don't reference it.
+
+**Bottom-sheet menu.** Single hamburger in `.app-top-bar` opens a sheet with tabbed segments (audio / history / chat / options). State: `showSheet` + `activeTab` refs in `App.vue`. The four old top-right dropdowns are gone.
+
+`prefers-reduced-motion: reduce` is honored on every new animation (cube tumble, cell-fx, world particles, sheet slide, popup theatrics). Synth SFX always play; only visuals are suppressed.
+
+### File inventory (puzzle + UI shell)
 
 ```
 src/
 ├── enums/GameVariant.ts                    # Rainbow | Puzzle enum
 ├── config/scorecardTemplates.ts            # RAINBOW_TEMPLATE, PUZZLE_TEMPLATE
 ├── puzzle/
-│   ├── types.ts                            # PuzzleModifier, PuzzleConfig, PuzzleEngineCtx
-│   ├── PuzzleEngine.ts                     # engine + ctx builder
+│   ├── types.ts                            # PuzzleModifier, PuzzleConfig, PuzzleEngineCtx, EngineEvent union
+│   ├── PuzzleEngine.ts                     # engine + ctx builder + on/emit event bus + checkGoalMet
 │   ├── configs/
 │   │   ├── variants.ts                     # 10 random variant configs
 │   │   └── LevelPuzzleConfig.ts            # adapter for authored levels
@@ -184,19 +236,26 @@ src/
 │   │   ├── types.ts                        # LevelDefinition + World
 │   │   ├── definitions.ts                  # 34 levels, 6 WORLDS
 │   │   └── progression.ts                  # applyWinToProgress + computeStars
-│   └── modifiers/
+│   └── modifiers/                          # Each emits its own lifecycle events via ctx.emit
 │       ├── IceBlockModifier.ts
 │       ├── FlyingMultiplierModifier.ts
 │       ├── DoubleCategoryModifier.ts
 │       ├── HotPotatoModifier.ts
 │       ├── MultiplierBubbleModifier.ts
 │       └── LoopingMultiplierModifier.ts
+├── styles/
+│   └── themes.css                          # Mode + world CSS variables, particle atmospheres, cell-fx keyframes
+├── utils/
+│   ├── animations.ts                       # Yahtzee + score popup + emoji popup (with #score-fx-backdrop)
+│   ├── cellAnimations.ts                   # Cell-anchored modifier animations (ice melt, flying chip, bomb fx, etc.)
+│   └── synthSfx.ts                         # Web Audio synthesis (lazy AudioContext, master gain, tone/noise helpers)
 └── components/
-    ├── LevelSelect.vue                     # Adventure level-select screen
-    ├── ModifierBadge.vue                   # Per-cell modifier badge
-    ├── GameBoard.vue                       # Goals panel, bonus banner, help legend, cell badges
-    ├── GameMode.vue                        # Puzzle entry points in Single Player sub-menu
-    └── GameOver.vue                        # Solo / Adventure / vs-AI result banners
+    ├── App.vue                             # Top bar w/ hamburger, bottom-sheet menu, body theme-class controller
+    ├── LevelSelect.vue                     # Adventure level-select screen w/ per-world chapter cards
+    ├── ModifierBadge.vue                   # Per-cell modifier badge (top-left, gradient backgrounds)
+    ├── GameBoard.vue                       # Sticky player header, .game-main (centered), fixed .bottom-stack, engine event subscription
+    ├── GameMode.vue                        # Mode-card menu (vertically centered)
+    └── GameOver.vue                        # Solo / Adventure / vs-AI result banners + star reveal animation
 ```
 
 ### Capacitor / native / PWA
@@ -210,4 +269,5 @@ src/
 - **Engine state changes don't trigger Vue re-renders directly.** Mutations like `engine.modifiers = filter(...)` go to the raw underlying object and bypass Pinia's proxy `trigger`. The UI relies on the scorecard mutation (which IS reactive) that happens alongside every engine change. As a result, things like `pendingBonusCategory` MUST be read as a plain function call from the template, not a `computed()`, or the computed caches the initial `null` forever. See `GameBoard.vue` where `pendingBonusCategory()`, `puzzleGoals()`, etc. are explicitly functions.
 - **Puzzle Mode is single-player only in OnlineMultiPlayer-land.** `gameStore.initializeGame` coerces the variant back to Rainbow whenever `mode === OnlineMultiPlayer`. Local multiplayer + Puzzle is allowed (that's how vs-AI works). Online Puzzle would require a per-player engine sync protocol — see `docs/puzzle-mode-next.md` Option D.
 - **AI is greedy + only ice-aware.** The `GreedyStrategy` respects `canScore` (skips ice-blocked cells), but doesn't strategically value multiplier cells, defuse armed Hot Potatoes, or time Looping Multipliers. The AI plays decently but won't impress. See `docs/puzzle-mode-next.md` Option A.
-- `todo.md` predates the puzzle work; it's partially current.
+- **`vite.config.ts` `server.allowedHosts`** lists `web` (the docker-network hostname) so the playwright sidecar can reach `http://web:5173`. If you rename the compose service, update this list too or Vite will return a host-check 403.
+- **Playwright runs via docker** (`mcr.microsoft.com/playwright:v1.60.0-noble`) — the host system likely lacks `libnspr4` and the dev container doesn't have sudo. `docker compose run --rm playwright npm run e2e` for tests; `docker compose run --rm playwright npm run e2e:screenshots` for screenshots. The named `playwright-modules` volume keeps debian-ABI `node_modules` separate from the alpine web-container ones.

@@ -19,12 +19,15 @@
         <button @click="handleNewGame" class="bg-white text-red-700 font-bold px-4 py-2 rounded hover:bg-gray-200 transition">New Game</button>
       </div>
     </div>
-    <!-- Hamburger trigger -->
-    <button class="hamburger-btn" @click="toggleSheet"
-            :aria-expanded="showSheet" aria-label="Open menu">
-      <i class="fas fa-bars"></i>
-      <span v-if="unreadChatCount > 0 && peerStore.isConnected" class="chat-counter-bubble">{{ unreadChatCount }}</span>
-    </button>
+    <!-- Sticky top bar — owns the hamburger so player rows + section
+         headers below get the full column width back. -->
+    <header class="app-top-bar">
+      <button class="hamburger-btn" @click="toggleSheet"
+              :aria-expanded="showSheet" aria-label="Open menu">
+        <i class="fas fa-bars"></i>
+        <span v-if="unreadChatCount > 0 && peerStore.isConnected" class="chat-counter-bubble">{{ unreadChatCount }}</span>
+      </button>
+    </header>
 
     <!-- Bottom-sheet drawer -->
     <transition name="sheet">
@@ -496,13 +499,25 @@ function handleRejoinYes() {
 
 <style scoped>
 /* ============================================================
-   Hamburger trigger (fixed top-right of #app column)
+   Sticky top bar — owns the hamburger trigger in normal flow above
+   the active section. Sits at the top of the column on every screen
+   so child headers (player chips, level-select header) can use the
+   full column width.
    ============================================================ */
-.hamburger-btn {
-  position: absolute;
-  top: calc(0.5rem + var(--safe-top, 0px));
-  right: 0.65rem;
+.app-top-bar {
+  position: sticky;
+  top: 0;
   z-index: 30;
+  width: 100%;
+  padding: calc(0.4rem + var(--safe-top, 0px)) 0.55rem 0.4rem;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  pointer-events: none; /* let clicks fall through the empty space */
+}
+.app-top-bar > * { pointer-events: auto; }
+
+.hamburger-btn {
   width: 38px;
   height: 38px;
   display: flex;
@@ -510,15 +525,16 @@ function handleRejoinYes() {
   justify-content: center;
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.16);
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: var(--text, #fff);
   cursor: pointer;
   font-size: 1.05rem;
+  position: relative;
   transition: background 0.2s ease, transform 0.12s ease;
 }
-.hamburger-btn:hover { background: rgba(15, 23, 42, 0.85); }
+.hamburger-btn:hover { background: rgba(15, 23, 42, 0.92); }
 .hamburger-btn:active { transform: scale(0.95); }
 
 .chat-counter-bubble {

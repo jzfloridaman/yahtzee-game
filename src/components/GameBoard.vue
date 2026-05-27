@@ -1,19 +1,11 @@
 <template>
   <div id="game-container">
-    <div v-if="isOnlineGame && !isHostTurn" class="waiting-message">
-      <div class="bg-gray-800 text-white p-4 shadow-lg text-center waiting-message-content">
-        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
-        <p class="text-lg font-bold">
-          <template v-if="peerStore.isHost">
-            Waiting for Player 2 to make their move...
-          </template>
-          <template v-else>
-            Waiting for Player 1 to make their move...
-          </template>
-        </p>
-      </div>
-    </div>
-    <div v-else-if="isOnlineGame && !gameStore.isGameActive" class="waiting-message">
+    <!-- "Waiting for opponent's turn" message moved inline into
+         .bottom-stack so it doesn't cover the dice/roll panel. The
+         second waiting-message (host hasn't started yet) stays as a
+         full-screen overlay because no dice/roll panel is meaningful
+         until the host taps Start. -->
+    <div v-if="isOnlineGame && !gameStore.isGameActive" class="waiting-message">
       <div class="bg-purple-600 text-white p-4 rounded-lg shadow-lg text-center">
         <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
         <p v-if="peerStore.isHost" class="text-lg font-bold">Click the Start Game button to begin!</p>
@@ -39,12 +31,6 @@
         </div>
       </div>
     </header>
-
-    <div v-if="aiTurnInProgress" class="ai-thinking-banner">
-      <i class="fas fa-robot text-orange-400"></i>
-      <span>{{ getPlayerName(currentPlayer) }} is thinking</span>
-      <span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>
-    </div>
 
     <main class="game-main">
     <div v-if="puzzleGoals()" class="puzzle-goals">
@@ -206,8 +192,21 @@
     </main>
 
     <!-- Fixed bottom group: dice tray + action zone pinned to viewport
-         bottom; horizontally centered to the 430px column on desktop. -->
+         bottom; horizontally centered to the 430px column on desktop.
+         The AI-thinking banner slides in here when applicable so it
+         sits ABOVE the dice rather than covering them. -->
     <footer class="bottom-stack">
+      <div v-if="aiTurnInProgress" class="ai-thinking-banner">
+        <i class="fas fa-robot text-orange-400"></i>
+        <span>{{ getPlayerName(currentPlayer) }} is thinking</span>
+        <span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>
+      </div>
+
+      <div v-else-if="isOnlineGame && !isHostTurn" class="ai-thinking-banner">
+        <i class="fas fa-spinner fa-spin text-blue-300"></i>
+        <span>{{ peerStore.isHost ? 'Waiting for Player 2…' : 'Waiting for Player 1…' }}</span>
+      </div>
+
       <div id="dice-container">
         <div v-for="(die, index) in dice" :key="index"
              class="die"
@@ -613,21 +612,20 @@ position:fixed;
 }
 
 .ai-thinking-banner {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 30;
-  background-color: rgba(31, 41, 55, 0.95);
-  color: white;
-  padding: 0.75rem 1rem;
+  /* In-flow inside .bottom-stack so it sits above the dice tray. */
+  width: 100%;
+  padding: 0.4rem 0.75rem;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.45rem;
   font-weight: 600;
+  font-size: 0.85rem;
+  color: #fff;
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.22), rgba(31, 41, 55, 0.6));
+  border: 1px solid rgba(251, 146, 60, 0.4);
   pointer-events: none;
-  border-top: 2px solid rgba(251, 146, 60, 0.5);
 }
 
 .ai-thinking-banner .thinking-dots span {

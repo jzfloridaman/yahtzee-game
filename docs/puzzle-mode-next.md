@@ -67,7 +67,19 @@ YahtzeeGame
 
 ---
 
-## Option B — Polish: animations + sound
+## Option B — Polish: animations + sound  ✅ **SHIPPED (phase 7)**
+
+Implemented as part of the broader mobile-first UI overhaul. Highlights:
+- `PuzzleEngine` event bus (`on` / `emit` / typed `EngineEvent` union); each modifier emits lifecycle events from its hooks. Engine itself emits `engine:bonusTurn` (via `ctx.requestBonusTurn`) and `engine:goalMet` once per goal-kind crossing.
+- Cell-anchored animations in `src/utils/cellAnimations.ts` resolved via `[data-category]` lookup: ice melt + fragments, flying-chip flight, bomb arm vignette + tick / defuse / expire (with screen shake), bubble pop ring + scatter chips, looping flip, score-breakdown popup (raw × mult = final) above the cell.
+- Web Audio synth in `src/utils/synthSfx.ts` — zero asset cost. `playModifierSfx(kind)` covers `iceMelt`, `flyingWhoosh`, `bubblePop`, `bombTick`/`Arm`/`Defuse`/`Expire`, `loopChange`/`loopPeak`, `bonusTurn`, `goalChime`, `starWin`.
+- `prefers-reduced-motion` honored across every new animation + the legacy Yahtzee / score-popup / confetti / emoji animations.
+- Score-popup backdrop reinstated: `animations.ts` now spawns its own `#score-fx-backdrop` dimming layer (the old `.overlay` element was removed when the dropdown menus were rebuilt into the bottom sheet).
+- 13 new PuzzleEngine event-bus tests (84 total).
+
+The original scope notes are kept below for reference.
+
+---
 
 **Why now.** Mechanics are visible (badges + colors) but transitions are instant. A Flying Multiplier teleports to a new cell; ice doesn't melt; the bomb ticking down has no audio cue. Polishing the moment-to-moment feedback makes the puzzle feel alive without changing rules.
 

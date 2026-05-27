@@ -144,9 +144,6 @@ const modifierCounts = (level: LevelDefinition): ModSummary[] => {
   justify-content: space-between;
   gap: 0.5rem;
   padding-top: 0.25rem;
-  /* Reserve space on the right so the star-progress chip doesn't slide
-     under the floating hamburger (absolute top-right of #app, ~38px wide). */
-  padding-right: 3.25rem;
 }
 .ls-title {
   font-size: 1.4rem;

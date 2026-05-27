@@ -6,6 +6,7 @@ import { GameState } from './enums/GameState';
 import { GameMode } from './enums/GameMode';
 import { Player } from './models/Player';
 import { CategoryGroup } from './enums/CategoryGroup';
+import { SeatSpec, createController } from './controllers';
 
 interface GameStateData {
   currentPlayer: number;
@@ -13,7 +14,7 @@ interface GameStateData {
   rollsLeft: number;
   scores: number[];
   scorecard: { [key: string]: { value: number | null; selected: boolean; group: CategoryGroup } };
-  scorecards: { [key: string]: { [key: string]: { value: number | null; selected: boolean; group: CategoryGroup } } }[];
+  scorecards: { [key: string]: { value: number | null; selected: boolean; group: CategoryGroup } }[];
   newRoll: boolean;
   selectedCategories?: Categories[];
   isGameOver: Boolean;
@@ -73,8 +74,15 @@ export class YahtzeeGame {
         this.diceManager.resetDice();
     }
 
-    startNewGame(players: number = 1) {
-        this.players = Array.from({length: players}, (_, i) => new Player(`Player ${i+1}`));
+    startNewGame(playersOrSeats: number | SeatSpec[] = 1) {
+        const seats: SeatSpec[] = typeof playersOrSeats === 'number'
+            ? Array.from({length: playersOrSeats}, (_, i) => ({ name: `Player ${i+1}`, kind: 'local' as const }))
+            : playersOrSeats;
+        this.players = seats.map(seat => {
+            const player = new Player(seat.name, seat.kind === 'ai');
+            player.controller = createController(seat.kind);
+            return player;
+        });
         this.currentPlayer = 0;
         this.playersGamesCompleted = 0;
         this.newRoll = true;

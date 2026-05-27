@@ -1,17 +1,21 @@
 import { Categories } from "../enums/Categories";
 import { ScoreManager } from "../managers/ScoreManager";
 import { Die } from "../types/Die";
+import { PlayerController } from "../controllers/PlayerController";
+import { LocalHumanController } from "../controllers/LocalHumanController";
 
 export class Player {
     public scoreManager: ScoreManager;
     public rollsLeft: number = 2;
     public name: string;
     public isAI: boolean;
+    public controller: PlayerController;
 
     constructor(name: string, isAI: boolean = false, initialScore: number = 0) {
         this.name = name;
         this.isAI = isAI;
         this.scoreManager = new ScoreManager(initialScore);
+        this.controller = new LocalHumanController();
     }
 
     // Proxy methods to ScoreManager

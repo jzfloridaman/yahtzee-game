@@ -1,12 +1,18 @@
 import { IDiceManager } from '../interfaces/IDiceManager';
-import { Die } from '../types/Die';
+import { Die, DieColor } from '../types/Die';
+
+export type DiceManagerConfig = {
+    assignColor?: boolean;
+};
 
 export class DiceManager implements IDiceManager {
-    
+
     private dice: Die[] = [];
     private dieSides: number = 6; /* 1 for testing, 6 is normal */
+    private assignColor: boolean;
 
-    constructor(length: number = 5) {
+    constructor(length: number = 5, config: DiceManagerConfig = {}) {
+        this.assignColor = config.assignColor ?? true;
         this.dice = Array.from({ length: length }, () => this.setupDice());
     }
 
@@ -23,15 +29,18 @@ export class DiceManager implements IDiceManager {
     }
 
     setDice(dice: Die[]) {
-        //console.log('Setting dice in DiceManager. Incoming dice:', JSON.stringify(dice, null, 2));
         // Ensure we're creating new Die objects with all properties
-        this.dice = dice.map(die => ({
-            value: die.value,
-            color: die.color,
-            held: die.held,
-            isRolling: die.isRolling
-        }));
-        //console.log('Dice after update in DiceManager:', JSON.stringify(this.dice, null, 2));
+        this.dice = dice.map(die => {
+            const next: Die = {
+                value: die.value,
+                held: die.held,
+                isRolling: die.isRolling,
+            };
+            if (this.assignColor) {
+                next.color = die.color ?? 'blank';
+            }
+            return next;
+        });
     }
 
     resetDice(): Die[] {
@@ -39,21 +48,27 @@ export class DiceManager implements IDiceManager {
         return this.dice;
     }
 
-    setupDice(): Die{
-        return {
+    setupDice(): Die {
+        const die: Die = {
             value: 0,
-            color: 'blank',
             held: false,
             isRolling: false,
         };
+        if (this.assignColor) {
+            die.color = 'blank';
+        }
+        return die;
     }
 
     rollNewDie(): Die {
-        return {
+        const die: Die = {
             value: Math.floor(Math.random() * this.dieSides) + 1,
-            color: ['red', 'green', 'blue'][Math.floor(Math.random() * 3)] as 'red' | 'green' | 'blue',
             held: false,
             isRolling: false,
         };
+        if (this.assignColor) {
+            die.color = ['red', 'green', 'blue'][Math.floor(Math.random() * 3)] as DieColor;
+        }
+        return die;
     }
 }

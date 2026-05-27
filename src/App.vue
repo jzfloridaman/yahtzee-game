@@ -59,7 +59,7 @@
           <div v-for="(game, index) in gameStore.gameHistory" :key="index" 
                class="p-3 bg-gray-700 rounded">
             <div class="text-sm mb-1">{{ new Date(game.date).toLocaleString() }}</div>
-            <div class="text-sm mb-1">{{ game.mode === GameModeEnum.SinglePlayer ? 'Single Player' : 'Multi Player' }}</div>
+            <div class="text-sm mb-1">{{ formatHistoryMode(game) }}</div>
             <div class="grid gap-1">
               <div v-for="playerScore in game.scores" :key="playerScore.playerNumber"
                    class="text-sm grid grid-cols-2 items-center bg-gray-600/50 p-1 rounded">
@@ -135,9 +135,16 @@
 
     </div>
 
-    <GameMode v-if="!gameStore.gameIsActive" @start-game="startGame" />
+    <LevelSelect v-if="!gameStore.gameIsActive && gameStore.showAdventureMenu"
+                 @start-level="startAdventureLevel"
+                 @back="closeAdventure" />
+    <GameMode v-else-if="!gameStore.gameIsActive" @start-game="startGame" />
     <GameBoard v-else-if="!gameStore.gameIsOver" @end-game="endGame" />
-    <GameOver v-if="gameStore.gameIsOver" @restart-game="newGame" />
+    <GameOver v-if="gameStore.gameIsOver"
+              @restart-game="newGame"
+              @retry-puzzle="retryPuzzle"
+              @next-level="nextLevel"
+              @back-to-levels="backToLevels" />
 
     <div class="hidden grid-cols-3 grid-cols-4">Tailwind forced classes</div>
   </div>
@@ -148,8 +155,10 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import GameMode from './components/GameMode.vue'
 import GameBoard from './components/GameBoard.vue'
 import GameOver from './components/GameOver.vue'
+import LevelSelect from './components/LevelSelect.vue'
 import { useGameStore } from './stores/gameStore'
 import { GameMode as GameModeEnum } from './enums/GameMode'
+import { GameVariant } from './enums/GameVariant'
 import { SoundEffects, SoundVolumes } from './enums/SoundEffects'
 import { usePeerStore } from './stores/peerStore'
 import type { SeatSpec } from './controllers'
@@ -278,11 +287,17 @@ onMounted(() => {
   }
 })
 
-const startGame = (mode: GameModeEnum, players?: number, seats?: SeatSpec[]) => {
+const formatHistoryMode = (game: { mode: GameModeEnum; variant?: GameVariant }): string => {
+  const base = game.mode === GameModeEnum.SinglePlayer ? 'Single Player' : 'Multi Player'
+  if (game.variant === GameVariant.Puzzle) return `${base} — Puzzle`
+  return base
+}
+
+const startGame = (mode: GameModeEnum, players?: number, seats?: SeatSpec[], variant?: GameVariant) => {
   if (seats) {
-    gameStore.initializeGame(mode, seats);
+    gameStore.initializeGame(mode, seats, variant);
   } else {
-    gameStore.initializeGame(mode, players);
+    gameStore.initializeGame(mode, players, variant);
   }
 }
 
@@ -317,6 +332,35 @@ const newGame = () => {
   closeAllMenus();
   gameStore.newGame();
   peerStore.connectionLost = false;
+}
+
+// Puzzle Mode: restart the same variant after game-over. restartGame reuses
+// game.puzzleConfig (set in initializeGame) so the same level replays.
+const retryPuzzle = () => {
+  closeAllMenus();
+  gameStore.gameIsOver = false;
+  gameStore.restartGame();
+}
+
+// Adventure Mode UI plumbing.
+const startAdventureLevel = (n: number) => {
+  closeAllMenus();
+  gameStore.startAdventureLevel(n);
+}
+
+const closeAdventure = () => {
+  gameStore.closeAdventureMenu();
+}
+
+const nextLevel = () => {
+  closeAllMenus();
+  gameStore.gameIsOver = false;
+  gameStore.nextAdventureLevel();
+}
+
+const backToLevels = () => {
+  closeAllMenus();
+  gameStore.returnToAdventureMenu();
 }
 
 const closeAllMenus = (menu?: string) => {

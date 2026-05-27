@@ -3,6 +3,7 @@ import { ScoreManager } from "../managers/ScoreManager";
 import { Die } from "../types/Die";
 import type { PlayerController } from "../controllers/PlayerController";
 import { LocalHumanController } from "../controllers/LocalHumanController";
+import type { ScorecardTemplateEntry } from "../config/scorecardTemplates";
 
 export class Player {
     public scoreManager: ScoreManager;
@@ -19,8 +20,8 @@ export class Player {
     }
 
     // Proxy methods to ScoreManager
-    initializeScorecard() {
-        this.scoreManager.initializeScorecard();
+    initializeScorecard(template?: ScorecardTemplateEntry[]) {
+        this.scoreManager.initializeScorecard(template);
     }
     calculateScore(category: Categories, dice: Die[]): number {
         return this.scoreManager.calculateScore(category, dice);

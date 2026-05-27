@@ -1,6 +1,8 @@
+export type DieColor = 'red' | 'green' | 'blue' | 'blank';
+
 export type Die = {
   value: number;
-  color: 'red' | 'green' | 'blue' | 'blank';
+  color?: DieColor;
   held: boolean;
   isRolling: boolean;
 };

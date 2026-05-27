@@ -56,7 +56,7 @@ export class LocalHumanController implements PlayerController {
             return;
         }
 
-        const { score, bonusYahtzee } = game.applySelectCategory(category);
+        const { score, bonusYahtzee, bonusTurnQueued } = game.applySelectCategory(category);
 
         if (game.currentGame?.isGameOver) {
             if (game.isOnlineHost) {
@@ -68,6 +68,15 @@ export class LocalHumanController implements PlayerController {
                 peer.sendData({ type: 'gameOver' });
             }
             game.endGame();
+            return;
+        }
+
+        // Puzzle Mode: Double Category grants a bonus turn — keep the
+        // current player, just reset rolls. Only happens in single-player
+        // (Puzzle is not exposed in online multiplayer in V1), so no peer
+        // sync branch is needed.
+        if (bonusTurnQueued) {
+            game.startBonusTurn();
             return;
         }
 

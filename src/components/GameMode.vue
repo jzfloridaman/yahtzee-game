@@ -1,17 +1,32 @@
 <template>
   <div id="game-mode-container" class="flex flex-col items-center justify-center gap-8">
     <div class="flex flex-col w-full max-w-md">
-      <button @click="startGame(GameMode.SinglePlayer, 1)" 
+      <button @click="toggleSinglePlayerMenu"
               class="game-mode-button bg-blue-600 hover:bg-blue-700 text-white py-4 px-8 rounded-lg transition-colors duration-200">
         Single Player
       </button>
-      
-      <button @click="toggleMultiplayerMenu" 
+
+      <div v-if="showSinglePlayerMenu" class="flex flex-col gap-2 mt-2 mb-2 pl-4">
+        <button @click="startSinglePlayer(GameVariant.Rainbow)"
+                class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+          Classic Rainbow
+        </button>
+        <button @click="startSinglePlayer(GameVariant.Puzzle)"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+          <i class="fas fa-shuffle mr-2"></i>Puzzle — Random
+        </button>
+        <button @click="openAdventure"
+                class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+          <i class="fas fa-map mr-2"></i>Puzzle — Adventure
+        </button>
+      </div>
+
+      <button @click="toggleMultiplayerMenu"
               class="game-mode-button bg-green-600 hover:bg-green-700 text-white py-4 px-8 rounded-lg transition-colors duration-200">
         Local Multi Player
       </button>
 
-      <button @click="toggleOnlineMenu" 
+      <button @click="toggleOnlineMenu"
               class="game-mode-button bg-purple-600 hover:bg-purple-700 text-white py-4 px-8 rounded-lg transition-colors duration-200">
         Online Multi Player
       </button>
@@ -108,14 +123,16 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import { GameMode } from '../enums/GameMode'
+import { GameVariant } from '../enums/GameVariant'
 import { usePeerStore, VERSION } from '../stores/peerStore'
 import { useGameStore } from '../stores/gameStore'
 import type { SeatSpec, ControllerKind } from '../controllers'
 
 const emit = defineEmits<{
-  (e: 'start-game', mode: GameMode, players?: number, seats?: SeatSpec[]): void
+  (e: 'start-game', mode: GameMode, players?: number, seats?: SeatSpec[], variant?: GameVariant): void
 }>()
 
+const showSinglePlayerMenu = ref(false)
 const showMultiplayerMenu = ref(false)
 const showOnlineMenu = ref(false)
 const roomCodeInput = ref('')
@@ -166,14 +183,32 @@ const startLocalMultiplayer = () => {
   showMultiplayerMenu.value = false
 }
 
+const toggleSinglePlayerMenu = () => {
+  showSinglePlayerMenu.value = !showSinglePlayerMenu.value
+  showMultiplayerMenu.value = false
+  showOnlineMenu.value = false
+}
+
 const toggleMultiplayerMenu = () => {
   showMultiplayerMenu.value = !showMultiplayerMenu.value
+  showSinglePlayerMenu.value = false
   showOnlineMenu.value = false
 }
 
 const toggleOnlineMenu = () => {
   showOnlineMenu.value = !showOnlineMenu.value
+  showSinglePlayerMenu.value = false
   showMultiplayerMenu.value = false
+}
+
+const startSinglePlayer = (variant: GameVariant) => {
+  emit('start-game', GameMode.SinglePlayer, 1, undefined, variant)
+  showSinglePlayerMenu.value = false
+}
+
+const openAdventure = () => {
+  showSinglePlayerMenu.value = false
+  gameStore.openAdventureMenu()
 }
 
 const createRoom = () => {
@@ -205,12 +240,6 @@ const startOnlineGame = () => {
     // Client waits for host to start
     emit('start-game', GameMode.OnlineMultiPlayer, 2);
   }
-}
-
-const startGame = (mode: GameMode, players?: number) => {
-  emit('start-game', mode, players)
-  showMultiplayerMenu.value = false
-  showOnlineMenu.value = false
 }
 
 const copyRoomCode = async () => {

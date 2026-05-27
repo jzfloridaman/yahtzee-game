@@ -4,17 +4,24 @@ import { DiceManager } from './managers/DiceManager';
 import { ScoreManager } from './managers/ScoreManager';
 import { GameState } from './enums/GameState';
 import { GameMode } from './enums/GameMode';
+import { GameVariant } from './enums/GameVariant';
 import { Player } from './models/Player';
 import { CategoryGroup } from './enums/CategoryGroup';
 import { createController, type SeatSpec } from './controllers';
+import { getScorecardTemplate } from './config/scorecardTemplates';
+import { PuzzleEngine } from './puzzle/PuzzleEngine';
+import { pickRandomVariant } from './puzzle/configs/variants';
+import type { PuzzleConfig } from './puzzle/types';
+
+type ScorecardEntry = { value: number | null; selected: boolean; group: CategoryGroup };
 
 interface GameStateData {
   currentPlayer: number;
   dice: Die[];
   rollsLeft: number;
   scores: number[];
-  scorecard: { [key: string]: { value: number | null; selected: boolean; group: CategoryGroup } };
-  scorecards: { [key: string]: { value: number | null; selected: boolean; group: CategoryGroup } }[];
+  scorecard: Partial<Record<string, ScorecardEntry>>;
+  scorecards: Partial<Record<string, ScorecardEntry>>[];
   newRoll: boolean;
   selectedCategories?: Categories[];
   isGameOver: Boolean;
@@ -32,12 +39,15 @@ export class YahtzeeGame {
     public currentPlayer: number = 0;  // reference to current player in players array
     public playersGamesCompleted: number = 0;
     public gameType: GameMode = GameMode.SinglePlayer;
+    public variant: GameVariant = GameVariant.Rainbow;
+    public puzzleConfig: PuzzleConfig | null = null;
+    private puzzleEngine: PuzzleEngine | null = null;
 
     private _state: GameState = GameState.MainMenu;
     private stateChangeCallbacks: Array<(newState: GameState, oldState: GameState) => void> = [];
 
     constructor() {
-        this.diceManager = new DiceManager();
+        this.diceManager = this.buildDiceManager();
     }
 
     get state(): GameState {
@@ -56,6 +66,10 @@ export class YahtzeeGame {
 
     private notifyStateChange(newState: GameState, oldState: GameState) {
         this.stateChangeCallbacks.forEach(callback => callback(newState, oldState));
+    }
+
+    private buildDiceManager(): DiceManager {
+        return new DiceManager(5, { assignColor: this.variant === GameVariant.Rainbow });
     }
 
     dice(): Die[] {
@@ -86,17 +100,49 @@ export class YahtzeeGame {
         this.currentPlayer = 0;
         this.playersGamesCompleted = 0;
         this.newRoll = true;
+        this.diceManager = this.buildDiceManager();
         this.initializeScorecard();
+        this.initializePuzzleEngine();
         this.state = GameState.Playing;
     }
 
+    private initializePuzzleEngine() {
+        if (this.variant !== GameVariant.Puzzle) {
+            this.puzzleEngine = null;
+            return;
+        }
+        const template = getScorecardTemplate(this.variant);
+        const config = this.puzzleConfig ?? pickRandomVariant();
+        // PuzzleEngine reads the active player's scorecard via this closure.
+        // Single-player only in V1, so currentPlayer is always 0.
+        // The write callback supports Hot Potato's fuse-expiry "force a 0"
+        // behaviour; it bypasses the normal applySelectCategory flow.
+        this.puzzleEngine = new PuzzleEngine(
+            () => this.players[this.currentPlayer].getScorecard(),
+            (category, value) => {
+                this.players[this.currentPlayer].scoreManager.updateScorecard(category, value, true);
+                this.checkGameOver();
+            },
+        );
+        this.puzzleEngine.initFromConfig(config, template);
+    }
+
+    getPuzzleEngine(): PuzzleEngine | null {
+        return this.puzzleEngine;
+    }
+
+    setPuzzleConfig(config: PuzzleConfig | null): void {
+        this.puzzleConfig = config;
+    }
+
     initializeDice() {
-        this.diceManager = new DiceManager();
+        this.diceManager = this.buildDiceManager();
     }
 
     initializeScorecard() {
+        const template = getScorecardTemplate(this.variant);
         this.players.forEach(player => {
-            player.initializeScorecard();
+            player.initializeScorecard(template);
         });
     }
 
@@ -160,7 +206,7 @@ export class YahtzeeGame {
         }
     }
     // update the actual player score based on the selected category
-    updateSelectedScore(category: Categories, score: number, roll: boolean = true){ 
+    updateSelectedScore(category: Categories, score: number, roll: boolean = true){
 
         // exception for yahtzee
         if(category === Categories.Yahtzee && score > 50){
@@ -174,7 +220,7 @@ export class YahtzeeGame {
         this.checkGameOver();
 
         if(roll){
-            this.nextPlayer(); 
+            this.nextPlayer();
             this.newRoll = true;
         }
     }
@@ -188,8 +234,6 @@ export class YahtzeeGame {
     }
 
     getTotalTopScore(): number {
-        // This should berefactored to use the player scorecard
-        // Return the sum of upper section values for the current player
         const upperSectionCategories = [
             Categories.Ones,
             Categories.Twos,
@@ -201,7 +245,7 @@ export class YahtzeeGame {
         const scorecard = this.players[this.currentPlayer].getScorecard();
         return upperSectionCategories.reduce((sum, category) => {
             const entry = scorecard[category];
-            if(entry.selected && entry.value !== null){
+            if(entry?.selected && entry.value !== null){
                 return sum + entry.value;
             }
             return sum;
@@ -214,6 +258,10 @@ export class YahtzeeGame {
 
     setGameMode(mode: GameMode): void {
         this.gameType = mode;
+    }
+
+    setVariant(variant: GameVariant): void {
+        this.variant = variant;
     }
 
     setPlayers(num: number): void {
@@ -239,12 +287,9 @@ export class YahtzeeGame {
     }
 
     updateFromState(stateData: GameStateData): void {
-        //console.log('Updating game state:', stateData);
         // Update dice state
         if (stateData.dice) {
-            //console.log('Updating dice:', stateData.dice);
             if(stateData.newRoll){
-                //console.log('Resetting dice');
                 this.diceManager.resetDice();
             }else{
                 this.diceManager.setDice(stateData.dice);
@@ -257,9 +302,7 @@ export class YahtzeeGame {
         this.currentPlayer = stateData.currentPlayer;
         // Update scores for all players
         if (stateData.scores) {
-            //console.log('Updating scores:', stateData.scores);
             stateData.scores.forEach((score, index) => {
-                //console.log(`Updating score for player ${index}:`, score);
                 if (this.players[index]) {
                     this.players[index].setTotalScore(score);
                 }
@@ -270,11 +313,12 @@ export class YahtzeeGame {
             const player = this.players[this.currentPlayer];
             const scorecard = player.getScorecard();
             Object.entries(stateData.scorecard).forEach(([category, entry]) => {
-                if (scorecard[category as Categories]) {
-                    scorecard[category as Categories].value = entry.value;
-                    scorecard[category as Categories].selected = entry.selected;
+                const slot = scorecard[category as Categories];
+                if (slot && entry) {
+                    slot.value = entry.value;
+                    slot.selected = entry.selected;
                     if ('group' in entry) {
-                        scorecard[category as Categories].group = entry.group as CategoryGroup;
+                        slot.group = entry.group as CategoryGroup;
                     }
                 }
             });
@@ -304,24 +348,19 @@ export class YahtzeeGame {
         if(stateData.isGameOver){
             console.log('Setting game over');
             this.setGameOver();
-            
+
         }
-        //console.log('Game state updated');
     }
 
     getGameState(): GameStateData {
-
-        // might need to refactor this to get the scorecard for each player
-
         const scores = this.players.map(player => player.getTotalScore());
-        //console.log('Getting game state with scores:', scores);
         return {
             currentPlayer: this.currentPlayer,
             dice: this.diceManager.getDice(),
             rollsLeft: this.rollsLeft,
             scores: scores,
-            scorecard: this.players[this.currentPlayer].getScorecard(),
-            scorecards: this.players.map(player => player.getScorecard()),
+            scorecard: this.players[this.currentPlayer].getScorecard() as Partial<Record<string, ScorecardEntry>>,
+            scorecards: this.players.map(player => player.getScorecard() as Partial<Record<string, ScorecardEntry>>),
             newRoll: this.newRoll,
             isGameOver: this.isGameOver,
             playersGamesCompleted: this.playersGamesCompleted

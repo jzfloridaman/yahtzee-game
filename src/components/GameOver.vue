@@ -1,7 +1,40 @@
 <template>
   <div id="game-over-container">
     <div class="text-center">
-      <div v-if="winner" class="winner-banner mb-4">
+      <div v-if="puzzleResult" class="puzzle-result-banner mb-4" :class="puzzleResult.status">
+        <h2 class="text-2xl font-bold">
+          <i :class="['fas', puzzleResult.status === 'win' ? 'fa-trophy' : 'fa-circle-xmark']"></i>
+          {{ puzzleResult.status === 'win' ? 'Puzzle Cleared!' : 'Puzzle Failed' }}
+          <span class="text-sm font-normal block opacity-80">{{ puzzleVariantLabel }}</span>
+        </h2>
+        <div v-if="isAdventure && earnedStars > 0" class="puzzle-result-stars">
+          <i v-for="n in 3" :key="n" class="fas fa-star"
+             :class="{ filled: n <= earnedStars }"></i>
+        </div>
+        <div class="puzzle-result-rows mt-3">
+          <div class="puzzle-result-row" :class="{ 'goal-met': puzzleResult.scoreMet }">
+            <i :class="['fas', puzzleResult.scoreMet ? 'fa-check' : 'fa-xmark']"></i>
+            <span>Score</span>
+            <span class="puzzle-result-value">{{ puzzleResult.totalScore }} / {{ puzzleResult.targetScore }}</span>
+          </div>
+          <div v-if="puzzleResult.requiredEngagementCount > 0" class="puzzle-result-row" :class="{ 'goal-met': puzzleResult.engagementMet }">
+            <i :class="['fas', puzzleResult.engagementMet ? 'fa-check' : 'fa-xmark']"></i>
+            <span>Engagement</span>
+            <span class="puzzle-result-value">{{ puzzleResult.engagedKinds.length }} / {{ puzzleResult.requiredEngagementCount }}</span>
+            <span class="puzzle-result-kinds">
+              <span v-for="kind in puzzleResult.presentKinds" :key="kind"
+                    class="puzzle-result-kind" :class="['modifier-' + kind, { engaged: puzzleResult.engagedKinds.includes(kind) }]">
+                <i v-if="kind === 'iceBlock'" class="fas fa-snowflake"></i>
+                <i v-else-if="kind === 'doubleCategory'" class="fas fa-clone"></i>
+                <i v-else-if="kind === 'hotPotato'" class="fas fa-bomb"></i>
+                <i v-else-if="kind === 'multiplierBubble'" class="fas fa-circle-dot"></i>
+                <span v-else>×</span>
+              </span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div v-else-if="winner" class="winner-banner mb-4">
         <h2 class="text-2xl font-bold text-green-400">Winner: {{ winner.name }} ({{ winner.score }})</h2>
       </div>
       <div v-if="players.length > 1" class="player-tabs flex justify-center gap-2">
@@ -75,26 +108,104 @@
           </div>
         </div>
       </div>
-      <button @click="playAgain" class="game-mode-button w-full">Play Again</button>
+      <div class="flex flex-col gap-2 max-w-md mx-auto">
+        <button v-if="isAdventure && canAdvance"
+                @click="nextLevel"
+                class="game-mode-button w-full !bg-green-600 hover:!bg-green-700">
+          <i class="fas fa-arrow-right mr-2"></i>Next Level
+        </button>
+        <button v-if="puzzleResult" @click="retryPuzzle" class="game-mode-button w-full !bg-amber-500 hover:!bg-amber-600">
+          <i class="fas fa-rotate-right mr-2"></i>Retry — {{ isAdventure ? 'Same Level' : 'Same Puzzle' }}
+        </button>
+        <button v-if="isAdventure" @click="backToLevels" class="game-mode-button w-full">
+          <i class="fas fa-list mr-2"></i>Level Select
+        </button>
+        <button @click="playAgain" class="game-mode-button w-full">{{ puzzleResult ? 'Main Menu' : 'Play Again' }}</button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { Categories } from '../enums/Categories'
 import { useGameStore } from '../stores/gameStore'
+import { getLastLevelNumber } from '../puzzle/levels/definitions'
+import { computeStars } from '../puzzle/levels/progression'
 
 const gameStore = useGameStore()
 const game = computed(() => gameStore.currentGame)
 
 const emit = defineEmits<{
   (e: 'restart-game'): void
+  (e: 'retry-puzzle'): void
+  (e: 'next-level'): void
+  (e: 'back-to-levels'): void
 }>()
 
 const playAgain = () => {
   emit('restart-game');
 }
+
+const retryPuzzle = () => {
+  emit('retry-puzzle');
+}
+
+const nextLevel = () => {
+  emit('next-level');
+}
+
+const backToLevels = () => {
+  emit('back-to-levels');
+}
+
+const puzzleResult = computed(() => {
+  const g = game.value
+  const pe = g?.getPuzzleEngine()
+  if (!g || !pe) return null
+  // Single player only in V1 — puzzle result is the lone player's score.
+  return pe.getResult(g.players[0]?.getTotalScore() ?? 0)
+})
+
+const puzzleVariantLabel = computed(() => {
+  const config = game.value?.puzzleConfig
+  if (!config) return ''
+  // Prefix Adventure levels with their number for orientation.
+  if (gameStore.currentAdventureLevel != null) {
+    return `Level ${gameStore.currentAdventureLevel} — ${config.label}`
+  }
+  return config.label
+})
+
+const isAdventure = computed(() => gameStore.currentAdventureLevel != null)
+
+const canAdvance = computed(() => {
+  if (!isAdventure.value) return false
+  if (puzzleResult.value?.status !== 'win') return false
+  const next = (gameStore.currentAdventureLevel ?? 0) + 1
+  return next <= getLastLevelNumber() && gameStore.isLevelUnlocked(next)
+})
+
+// Persist Adventure progress when arriving at GameOver after a win.
+// recordAdventureWin is idempotent on best-score (only writes if higher)
+// and on highestUnlocked (only bumps if matching current ceiling), so
+// running it here is safe even if the user retries the same level.
+onMounted(() => {
+  if (!isAdventure.value) return
+  const result = puzzleResult.value
+  if (result?.status !== 'win') return
+  const levelId = game.value?.puzzleConfig?.id
+  const levelNumber = gameStore.currentAdventureLevel
+  if (levelId && levelNumber != null) {
+    gameStore.recordAdventureWin(levelId, levelNumber, result.totalScore, result.targetScore)
+  }
+})
+
+const earnedStars = computed(() => {
+  const result = puzzleResult.value
+  if (!isAdventure.value || result?.status !== 'win') return 0
+  return computeStars(result.totalScore, result.targetScore)
+})
 
 const singleCategories = [
   { name: 'Ones', value: Categories.Ones },
@@ -220,6 +331,81 @@ const getDieIcon = (die: number): string => {
   padding: 1rem;
   margin-bottom: 1rem;
 }
+.puzzle-result-banner {
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-width: 2px;
+  border-style: solid;
+  text-align: center;
+}
+.puzzle-result-banner.win {
+  background: linear-gradient(135deg, #064e3b 0%, #047857 100%);
+  border-color: #34d399;
+  color: #ecfdf5;
+}
+.puzzle-result-banner.lose {
+  background: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 100%);
+  border-color: #fca5a5;
+  color: #fef2f2;
+}
+.puzzle-result-stars {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  margin: 0.5rem 0;
+  font-size: 1.6rem;
+  color: rgba(252, 211, 77, 0.25);
+}
+.puzzle-result-stars .filled {
+  color: #fbbf24;
+  text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+}
+.puzzle-result-rows {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  align-items: stretch;
+  font-size: 0.95rem;
+}
+.puzzle-result-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0.85;
+}
+.puzzle-result-row.goal-met {
+  opacity: 1;
+  font-weight: 700;
+}
+.puzzle-result-value {
+  font-variant-numeric: tabular-nums;
+}
+.puzzle-result-kinds {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+}
+.puzzle-result-kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #fff;
+  opacity: 0.4;
+  filter: grayscale(80%);
+}
+.puzzle-result-kind.engaged { opacity: 1; filter: none; }
+.puzzle-result-kind.modifier-iceBlock          { background: #38bdf8; }
+.puzzle-result-kind.modifier-flyingMultiplier  { background: #f59e0b; color: #111; }
+.puzzle-result-kind.modifier-doubleCategory    { background: #a855f7; }
+.puzzle-result-kind.modifier-hotPotato         { background: #dc2626; }
+.puzzle-result-kind.modifier-multiplierBubble  { background: #14b8a6; }
+.puzzle-result-kind.modifier-loopingMultiplier { background: #ec4899; }
 .player-tabs {
   /* margin-bottom: 1rem; */
 }

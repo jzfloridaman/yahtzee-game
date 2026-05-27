@@ -136,7 +136,119 @@ body:has(#game-container) {
 
 .score-item {
     @apply text-center md:text-2xl rounded-lg border-white/50 border-2 bg-white text-black cursor-pointer p-1 md:p-2;
+    position: relative;
 }
+.score-item.puzzle-locked {
+    @apply !cursor-not-allowed opacity-60;
+    background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%) !important;
+}
+.score-item.puzzle-locked:hover {
+    background: linear-gradient(135deg, #bae6fd 0%, #7dd3fc 100%) !important;
+}
+.score-item.puzzle-bonus-eligible {
+    @apply !cursor-pointer;
+    background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%) !important;
+    border-color: #d97706 !important;
+    color: #111 !important;
+    animation: puzzle-bonus-pulse 1.4s ease-in-out infinite;
+}
+.score-item.puzzle-bonus-eligible:hover {
+    background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%) !important;
+}
+@keyframes puzzle-bonus-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6); }
+    50%      { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+}
+
+.puzzle-bonus-banner {
+    @apply mx-auto my-2 max-w-3xl rounded-lg py-2 px-4 text-center font-semibold flex items-center justify-center gap-2;
+    background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+    color: #1f2937;
+    border: 2px solid #d97706;
+}
+
+.puzzle-goals {
+    @apply mx-auto my-2 max-w-3xl rounded-lg py-2 px-4 text-sm;
+    background-color: rgba(31, 41, 55, 0.7);
+    color: #f3f4f6;
+    border: 1px solid rgba(99, 102, 241, 0.4);
+}
+.puzzle-goals-title {
+    @apply font-bold mb-1 flex items-center gap-2 text-base;
+    color: #c7d2fe;
+}
+.puzzle-goals-row {
+    @apply flex items-center gap-2 mb-1;
+}
+.puzzle-goals-label {
+    @apply text-gray-300 w-20;
+}
+.puzzle-goals-value {
+    @apply font-bold text-white;
+}
+.puzzle-goal-met {
+    color: #4ade80 !important;
+}
+.puzzle-goals-engaged {
+    @apply flex items-center gap-1 ml-2;
+}
+.puzzle-goals-kind {
+    @apply inline-flex items-center justify-center text-xs font-bold rounded-full text-white;
+    width: 1.4rem;
+    height: 1.4rem;
+    opacity: 0.4;
+    filter: grayscale(80%);
+    transition: opacity 0.3s, filter 0.3s;
+}
+.puzzle-goals-kind.engaged {
+    opacity: 1;
+    filter: none;
+}
+.puzzle-goals-kind.modifier-iceBlock          { background: #38bdf8; }
+.puzzle-goals-kind.modifier-flyingMultiplier  { background: #f59e0b; color: #111; }
+.puzzle-goals-kind.modifier-doubleCategory    { background: #a855f7; }
+.puzzle-goals-kind.modifier-hotPotato         { background: #dc2626; }
+.puzzle-goals-kind.modifier-multiplierBubble  { background: #14b8a6; }
+.puzzle-goals-kind.modifier-loopingMultiplier { background: #ec4899; }
+
+.puzzle-legend-wrap {
+    @apply mt-4 mx-auto max-w-3xl;
+}
+.puzzle-legend-toggle {
+    @apply w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-semibold transition-colors duration-200;
+    background-color: rgba(31, 41, 55, 0.6);
+    color: #c7d2fe;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+.puzzle-legend-toggle:hover {
+    background-color: rgba(31, 41, 55, 0.85);
+    color: #e0e7ff;
+}
+.puzzle-legend {
+    @apply mt-2 rounded-lg p-3 text-sm;
+    background-color: rgba(31, 41, 55, 0.6);
+    color: #f3f4f6;
+}
+.puzzle-legend-title {
+    @apply font-bold mb-2 text-base;
+}
+.puzzle-legend-row {
+    @apply flex items-center gap-2 mb-1;
+}
+.puzzle-legend-text {
+    @apply flex-1;
+}
+.puzzle-legend-badge {
+    @apply inline-flex items-center justify-center text-xs font-bold rounded-full text-white shrink-0;
+    width: 1.6rem;
+    height: 1.6rem;
+}
+.puzzle-legend-badge.modifier-iceBlock          { background: #38bdf8; }
+.puzzle-legend-badge.modifier-flyingMultiplier  { background: #f59e0b; color: #111; }
+.puzzle-legend-badge.modifier-doubleCategory    { background: #a855f7; }
+.puzzle-legend-badge.modifier-hotPotato         { background: #dc2626; }
+.puzzle-legend-badge.modifier-multiplierBubble  { background: #14b8a6; }
+.puzzle-legend-badge.modifier-loopingMultiplier { background: #ec4899; }
 .score-cell{
     @apply md:mt-2 text-xl;
 }

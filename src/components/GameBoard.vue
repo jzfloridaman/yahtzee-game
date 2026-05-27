@@ -46,9 +46,12 @@
     </div>
 
     <div id="dice-container" class="flex justify-center gap-4 my-8">
-      <div v-for="(die, index) in dice" :key="index" 
+      <div v-for="(die, index) in dice" :key="index"
            class="die"
-           :class="{ 'opacity-90 held': die.held, [`${die.color}`]: true, 'roll': die.isRolling }"
+           :class="[
+             { 'opacity-90 held': die.held, 'roll': die.isRolling },
+             die.color ? die.color : ''
+           ]"
            @click="toggleHold(index)">
         <i :class="['fas', `${getDieIcon(die.value)}`, 'text-white']"></i>
       </div>
@@ -60,20 +63,56 @@
             v-html="rollDiceText">
     </button>
 
+    <div v-if="puzzleGoals()" class="puzzle-goals">
+      <div class="puzzle-goals-title">
+        <i class="fas fa-bullseye"></i>
+        <span>{{ puzzleGoals()!.label }}</span>
+      </div>
+      <div class="puzzle-goals-row">
+        <span class="puzzle-goals-label">Score</span>
+        <span class="puzzle-goals-value" :class="{ 'puzzle-goal-met': puzzleGoals()!.scoreMet }">
+          {{ puzzleGoals()!.currentScore }} / {{ puzzleGoals()!.targetScore }}
+        </span>
+      </div>
+      <div v-if="puzzleGoals()!.requiredEngagementCount > 0" class="puzzle-goals-row">
+        <span class="puzzle-goals-label">Engaged</span>
+        <span class="puzzle-goals-value" :class="{ 'puzzle-goal-met': puzzleGoals()!.engagementMet }">
+          {{ puzzleGoals()!.engagedCount }} / {{ puzzleGoals()!.requiredEngagementCount }}
+        </span>
+        <span class="puzzle-goals-engaged">
+          <span v-for="kind in puzzleGoals()!.presentKinds" :key="kind"
+                class="puzzle-goals-kind" :class="['modifier-' + kind, { engaged: puzzleGoals()!.engagedKinds.includes(kind) }]"
+                :title="kindLabel(kind)">
+            <i v-if="kind === 'iceBlock'" class="fas fa-snowflake"></i>
+            <i v-else-if="kind === 'doubleCategory'" class="fas fa-clone"></i>
+            <i v-else-if="kind === 'hotPotato'" class="fas fa-bomb"></i>
+            <i v-else-if="kind === 'multiplierBubble'" class="fas fa-circle-dot"></i>
+            <span v-else>×</span>
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <div v-if="pendingBonusName()" class="puzzle-bonus-banner">
+      <i class="fas fa-clone"></i>
+      <span>Bonus turn — score <strong>{{ pendingBonusName() }}</strong> again to bank the double.</span>
+    </div>
+
     <div id="scorecard">
       <div class="grid grid-cols-6 gap-2">
 
         <!-- singles -->
-        <div v-for="(category, index) in singleCategories" :key="index" 
+        <div v-for="(category, index) in singleCategories" :key="index"
              class="score-item grid-singles" :data-category="category.name"
-             :class="{ 'selected': isCategorySelected(category.value) }"
-             @click="selectCategory(category.value)">
+             :class="{ 'selected': isCategorySelected(category.value) && !isPendingBonus(category.value), 'puzzle-locked': isCategoryLocked(category.value), 'puzzle-bonus-eligible': isPendingBonus(category.value) }"
+             @click="handleSelectCategory(category.value)">
           <div class="category-icon">
             <i :class="['fas', `${getDieIcon(index + 1)}`]"></i>
           </div>
           <div class="score-cell">
             {{ getScoreDisplay(category.value) }}
           </div>
+          <ModifierBadge v-if="getCategoryModifier(category.value)" :modifier="getCategoryModifier(category.value)!" />
         </div>
 
         <!-- upper bonus progress bar-->
@@ -86,10 +125,10 @@
         </div>
 
         <!-- multiples -->
-        <div v-for="(category, index) in multipleCategories" :key="index" 
+        <div v-for="(category, index) in multipleCategories" :key="index"
             class="score-item grid-multiples" :data-category="category.name"
-            :class="{ 'selected': isCategorySelected(category.value) }"
-            @click="selectCategory(category.value)">
+            :class="{ 'selected': isCategorySelected(category.value) && !isPendingBonus(category.value), 'puzzle-locked': isCategoryLocked(category.value), 'puzzle-bonus-eligible': isPendingBonus(category.value) }"
+            @click="handleSelectCategory(category.value)">
           <div class="category-icon">
               <template v-if="category.icon">
                 <i :class="['fas', `${category.icon}`]"></i>
@@ -101,13 +140,17 @@
           <div class="score-cell">
             {{ getScoreDisplay(category.value) }}
           </div>
+          <ModifierBadge v-if="getCategoryModifier(category.value)" :modifier="getCategoryModifier(category.value)!" />
         </div>
 
         <!-- colors -->
-        <div v-for="(category, index) in colorCategories" :key="index" 
+        <div v-for="(category, index) in colorCategories" :key="index"
             class="score-item grid-colors" :data-category="category.name"
-            :class="{ 'selected': isCategorySelected(category.value), [`${category.color}`]: true }"
-            @click="selectCategory(category.value)">
+            :class="[
+              { 'selected': isCategorySelected(category.value) && !isPendingBonus(category.value), 'puzzle-locked': isCategoryLocked(category.value), 'puzzle-bonus-eligible': isPendingBonus(category.value) },
+              category.color ? category.color : ''
+            ]"
+            @click="handleSelectCategory(category.value)">
           <div class="category-icon">
               <template v-if="category.icon">
                 <i :class="['fas', `${category.icon}`]"></i>
@@ -119,6 +162,7 @@
           <div class="score-cell">
             {{ getScoreDisplay(category.value) }}
           </div>
+          <ModifierBadge v-if="getCategoryModifier(category.value)" :modifier="getCategoryModifier(category.value)!" />
         </div>
 
         <!-- upper bonus -->
@@ -134,6 +178,41 @@
 
       </div>
     </div>
+
+    <div v-if="isPuzzleVariant" class="puzzle-legend-wrap">
+      <button type="button" class="puzzle-legend-toggle" @click="showLegend = !showLegend"
+              :aria-expanded="showLegend" aria-controls="puzzle-legend-panel">
+        <i class="fas fa-circle-question"></i>
+        <span>{{ showLegend ? 'Hide modifier help' : 'Modifier help' }}</span>
+        <i class="fas" :class="showLegend ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+      </button>
+      <div v-show="showLegend" id="puzzle-legend-panel" class="puzzle-legend">
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-iceBlock"><i class="fas fa-snowflake"></i></span>
+          <span class="puzzle-legend-text"><strong>Ice Block</strong> — locked. Score &gt;0 in the slot directly above or below to melt it.</span>
+        </div>
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-flyingMultiplier">×2</span>
+          <span class="puzzle-legend-text"><strong>Flying Multiplier</strong> — doubles the score in this slot. Moves to a new slot at the end of every turn.</span>
+        </div>
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-doubleCategory"><i class="fas fa-clone"></i></span>
+          <span class="puzzle-legend-text"><strong>Double Category</strong> — score here and you get a bonus turn to score it again. Both scores are added.</span>
+        </div>
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-hotPotato"><i class="fas fa-bomb"></i></span>
+          <span class="puzzle-legend-text"><strong>Hot Potato</strong> — arms after your first non-zero score. Defuse by scoring this cell before the fuse runs out, or it burns the slot at 0.</span>
+        </div>
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-multiplierBubble"><i class="fas fa-circle-dot"></i></span>
+          <span class="puzzle-legend-text"><strong>Multiplier Bubble</strong> — score here to pop it and scatter three ×2 chips to random unscored cells.</span>
+        </div>
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-loopingMultiplier">×2</span>
+          <span class="puzzle-legend-text"><strong>Looping Multiplier</strong> — value oscillates each turn between min and max. Wait for the high end before scoring.</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -143,6 +222,9 @@ import { useGameStore } from '../stores/gameStore'
 import { usePeerStore } from '../stores/peerStore'
 import { Categories } from '../enums/Categories'
 import { GameMode } from '../enums/GameMode'
+import { GameVariant } from '../enums/GameVariant'
+import { getScorecardTemplate } from '../config/scorecardTemplates'
+import ModifierBadge from './ModifierBadge.vue'
 
 const emit = defineEmits<{
   (e: 'end-game'): void
@@ -153,6 +235,7 @@ const peerStore = usePeerStore()
 
 // Local reactive states
 const isRolling = ref(false);
+const showLegend = ref(false);
 
 // Computed properties for game state
 const currentGame = computed(() => gameStore.currentGame);
@@ -276,6 +359,11 @@ const selectCategory = (category: Categories) => {
   gameStore.selectCategory(category);
 }
 
+const handleSelectCategory = (category: Categories) => {
+  if (isCategoryLocked(category)) return;
+  selectCategory(category);
+}
+
 const getDieIcon = (die: number): string => {
   switch (die) {
     case 1:
@@ -295,7 +383,7 @@ const getDieIcon = (die: number): string => {
   } 
 }
 
-const singleCategories = [
+const ALL_SINGLE_CATEGORIES = [
   { name: 'Ones', value: Categories.Ones },
   { name: 'Twos', value: Categories.Twos },
   { name: 'Threes', value: Categories.Threes },
@@ -304,7 +392,7 @@ const singleCategories = [
   { name: 'Sixes', value: Categories.Sixes }
 ]
 
-const multipleCategories = [
+const ALL_MULTIPLE_CATEGORIES = [
   { name: 'Three of a Kind', value: Categories.ThreeOfAKind, text: '3X' },
   { name: 'Four of a Kind', value: Categories.FourOfAKind, text: '4X' },
   { name: 'Full House', value: Categories.FullHouse, icon: 'fas fa-home' },
@@ -313,13 +401,102 @@ const multipleCategories = [
   { name: 'Chance', value: Categories.Chance, text: '?' }
 ]
 
-const colorCategories = [
+const ALL_COLOR_CATEGORIES = [
   { name: 'Yahtzee', value: Categories.Yahtzee, text: 'Y!', color: '' },
   { name: 'Blue', value: Categories.Blues, text: 'B', color: 'blue' },
   { name: 'Red', value: Categories.Reds, text: 'R', color: 'red' },
   { name: 'Green', value: Categories.Greens, text: 'G', color: 'green' },
   { name: 'Color Full House', value: Categories.ColorFullHouse, icon: 'fas fa-home', color: 'purple' },
 ]
+
+const allowedCategories = computed(() => {
+  const variant = currentGame.value?.variant ?? GameVariant.Rainbow
+  return new Set(getScorecardTemplate(variant).map(entry => entry.category))
+})
+
+const singleCategories = computed(() => ALL_SINGLE_CATEGORIES.filter(c => allowedCategories.value.has(c.value)))
+const multipleCategories = computed(() => ALL_MULTIPLE_CATEGORIES.filter(c => allowedCategories.value.has(c.value)))
+const colorCategories = computed(() => ALL_COLOR_CATEGORIES.filter(c => allowedCategories.value.has(c.value)))
+
+// Puzzle Mode helpers. PuzzleEngine state (modifiers, pending bonus) is
+// mutated outside Vue's reactivity, so derived values must be re-read on
+// every render — using computed() would cache the initial `null` forever.
+// The scorecard mutations that happen alongside engine changes drive the
+// re-renders.
+const isPuzzleVariant = computed(() => currentGame.value?.variant === GameVariant.Puzzle)
+const puzzleEngine = computed(() => currentGame.value?.getPuzzleEngine() ?? null)
+
+const pendingBonusCategory = (): Categories | null => puzzleEngine.value?.getPendingBonusCategory() ?? null
+const getCategoryModifier = (category: Categories) => puzzleEngine.value?.getModifierAt(category) ?? null
+const isPendingBonus = (category: Categories): boolean => pendingBonusCategory() === category
+const isCategoryLocked = (category: Categories): boolean => {
+  const pe = puzzleEngine.value
+  if (!pe) return false
+  if (!pe.canScore(category)) return true
+  // During a bonus turn only the bonus category is interactable.
+  const pending = pendingBonusCategory()
+  if (pending && pending !== category) return true
+  return false
+}
+
+const CATEGORY_NAMES: Partial<Record<Categories, string>> = Object.fromEntries(
+  [...ALL_SINGLE_CATEGORIES, ...ALL_MULTIPLE_CATEGORIES, ...ALL_COLOR_CATEGORIES].map(c => [c.value, c.name])
+) as Partial<Record<Categories, string>>
+
+const pendingBonusName = (): string | null => {
+  const pending = pendingBonusCategory()
+  if (!pending) return null
+  return CATEGORY_NAMES[pending] ?? pending
+}
+
+// Live goals panel — re-reads engine state on each render (raw mutations
+// aren't tracked by Vue reactivity; the scorecard write that fires along
+// with every engine change drives the re-render).
+type GoalsView = {
+  label: string;
+  currentScore: number;
+  targetScore: number;
+  scoreMet: boolean;
+  requiredEngagementCount: number;
+  engagedCount: number;
+  presentKinds: string[];
+  engagedKinds: string[];
+  engagementMet: boolean;
+}
+const puzzleGoals = (): GoalsView | null => {
+  const game = currentGame.value
+  const pe = game?.getPuzzleEngine()
+  const config = game?.puzzleConfig
+  if (!pe || !config) return null
+  const currentScore = game!.getTotalScore()
+  const targetScore = pe.getTargetScore()
+  const requiredEngagementCount = pe.getRequiredEngagementCount()
+  const presentKinds = pe.getPresentKinds()
+  const engagedKinds = pe.getEngagedKinds()
+  return {
+    label: config.label,
+    currentScore,
+    targetScore,
+    scoreMet: currentScore >= targetScore,
+    requiredEngagementCount,
+    engagedCount: engagedKinds.length,
+    presentKinds,
+    engagedKinds,
+    engagementMet: engagedKinds.length >= requiredEngagementCount,
+  }
+}
+
+const kindLabel = (kind: string): string => {
+  switch (kind) {
+    case 'iceBlock': return 'Ice Block — clear by scoring an adjacent slot'
+    case 'flyingMultiplier': return 'Flying Multiplier — score the boosted slot'
+    case 'doubleCategory': return 'Double Category — complete the bonus turn'
+    case 'hotPotato': return 'Hot Potato — defuse before the fuse expires'
+    case 'multiplierBubble': return 'Multiplier Bubble — score to scatter chips'
+    case 'loopingMultiplier': return 'Looping Multiplier — score while value is high'
+    default: return kind
+  }
+}
 
 
 const endGame = () => {

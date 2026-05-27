@@ -26,14 +26,23 @@
       </div>
     </div>
 
-    <div id="players-container" 
+    <div id="players-container"
           class="text-center grid gap-2"
         :class="[`grid-cols-${playerCount}`]">
-      <div v-for="(_, index) in playerCount" :key="index" 
+      <div v-for="(_, index) in playerCount" :key="index"
            :class="['player-data', { active: currentPlayer === index }]">
-        <h2 class="text-sm md:text-xl font-bold text-center mb-1">Player {{ index + 1 }}</h2>
+        <h2 class="text-sm md:text-xl font-bold text-center mb-1 flex items-center justify-center gap-1">
+          <i v-if="isPlayerAI(index)" class="fas fa-robot text-orange-400"></i>
+          {{ getPlayerName(index) }}
+        </h2>
         <span class="player-score font-bold text-center">{{ getPlayerScore(index) }}</span>
       </div>
+    </div>
+
+    <div v-if="aiTurnInProgress" class="ai-thinking-banner">
+      <i class="fas fa-robot text-orange-400"></i>
+      <span>{{ getPlayerName(currentPlayer) }} is thinking</span>
+      <span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>
     </div>
 
     <div id="dice-container" class="flex justify-center gap-4 my-8">
@@ -45,8 +54,8 @@
       </div>
     </div>
 
-    <button @click="rollDice" id="roll-button" 
-            :disabled="!canRoll || isRolling"
+    <button @click="rollDice" id="roll-button"
+            :disabled="!canRoll || isRolling || aiTurnInProgress"
             class="w-full max-w-md mx-auto bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-colors duration-200"
             v-html="rollDiceText">
     </button>
@@ -173,6 +182,14 @@ const rollsLeft = computed(() => {
 const newRoll = computed(() => currentGame.value?.newRoll || false);
 const canRoll = computed(() => currentGame.value && currentGame.value.rollsLeft > 0);
 const totalTopScore = computed(() => currentGame.value?.getTotalTopScore() || 0);
+
+const isPlayerAI = (index: number): boolean => {
+  return currentGame.value?.players[index]?.controller.kind === 'ai'
+}
+const getPlayerName = (index: number): string => {
+  return currentGame.value?.players[index]?.name || `Player ${index + 1}`
+}
+const aiTurnInProgress = computed(() => isPlayerAI(currentPlayer.value))
 
 // Online game state
 const isOnlineGame = computed(() => gameStore.currentGameMode === GameMode.OnlineMultiPlayer)
@@ -331,5 +348,35 @@ position:fixed;
   opacity: 0.98;
   width:100%;
 
+}
+
+.ai-thinking-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background-color: rgba(31, 41, 55, 0.95);
+  color: white;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  pointer-events: none;
+  border-top: 2px solid rgba(251, 146, 60, 0.5);
+}
+
+.ai-thinking-banner .thinking-dots span {
+  display: inline-block;
+  animation: thinking-dot 1.4s infinite;
+}
+.ai-thinking-banner .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.ai-thinking-banner .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes thinking-dot {
+  0%, 60%, 100% { opacity: 0.3; }
+  30% { opacity: 1; }
 }
 </style> 

@@ -26,18 +26,19 @@
       </div>
     </div>
 
-    <div id="players-container"
-          class="text-center grid gap-2"
-        :class="[`grid-cols-${playerCount}`]">
+    <header id="players-container" class="players-header">
       <div v-for="(_, index) in playerCount" :key="index"
-           :class="['player-data', { active: currentPlayer === index }]">
-        <h2 class="text-sm md:text-xl font-bold text-center mb-1 flex items-center justify-center gap-1">
-          <i v-if="isPlayerAI(index)" class="fas fa-robot text-orange-400"></i>
-          {{ getPlayerName(index) }}
-        </h2>
-        <span class="player-score font-bold text-center">{{ getPlayerScore(index) }}</span>
+           :class="['player-chip', { active: currentPlayer === index }]">
+        <div class="player-avatar">
+          <i v-if="isPlayerAI(index)" class="fas fa-robot"></i>
+          <template v-else>{{ getPlayerName(index).charAt(0).toUpperCase() }}</template>
+        </div>
+        <div class="player-meta">
+          <div class="player-name">{{ getPlayerName(index) }}</div>
+          <div class="player-score">{{ getPlayerScore(index) }}</div>
+        </div>
       </div>
-    </div>
+    </header>
 
     <div v-if="aiTurnInProgress" class="ai-thinking-banner">
       <i class="fas fa-robot text-orange-400"></i>
@@ -45,24 +46,7 @@
       <span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>
     </div>
 
-    <div id="dice-container" class="flex justify-center gap-4 my-8">
-      <div v-for="(die, index) in dice" :key="index"
-           class="die"
-           :class="[
-             { 'opacity-90 held': die.held, 'roll': die.isRolling },
-             die.color ? die.color : ''
-           ]"
-           @click="toggleHold(index)">
-        <i :class="['fas', `${getDieIcon(die.value)}`, 'text-white']"></i>
-      </div>
-    </div>
-
-    <button @click="rollDice" id="roll-button"
-            :disabled="!canRoll || isRolling || aiTurnInProgress"
-            class="w-full max-w-md mx-auto bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg transition-colors duration-200"
-            v-html="rollDiceText">
-    </button>
-
+    <main class="game-main">
     <div v-if="puzzleGoals()" class="puzzle-goals">
       <div class="puzzle-goals-title">
         <i class="fas fa-bullseye"></i>
@@ -91,6 +75,41 @@
           </span>
         </span>
       </div>
+      <!-- Modifier help legend lives inside the goals panel so the whole
+           puzzle context (target, engagement progress, mechanic key)
+           stays in one container. -->
+      <button type="button" class="puzzle-legend-toggle" @click="showLegend = !showLegend"
+              :aria-expanded="showLegend" aria-controls="puzzle-legend-panel">
+        <i class="fas fa-circle-question"></i>
+        <span>{{ showLegend ? 'Hide modifier help' : 'Modifier help' }}</span>
+        <i class="fas" :class="showLegend ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+      </button>
+      <div v-show="showLegend" id="puzzle-legend-panel" class="puzzle-legend">
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-iceBlock"><i class="fas fa-snowflake"></i></span>
+          <span class="puzzle-legend-text"><strong>Ice Block</strong> — locked. Score &gt;0 in the slot directly above or below to melt it.</span>
+        </div>
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-flyingMultiplier">×2</span>
+          <span class="puzzle-legend-text"><strong>Flying Multiplier</strong> — doubles the score in this slot. Moves at end of every turn.</span>
+        </div>
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-doubleCategory"><i class="fas fa-clone"></i></span>
+          <span class="puzzle-legend-text"><strong>Double Category</strong> — score here and you get a bonus turn to score it again.</span>
+        </div>
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-hotPotato"><i class="fas fa-bomb"></i></span>
+          <span class="puzzle-legend-text"><strong>Hot Potato</strong> — arms after your first non-zero score. Defuse before the fuse runs out.</span>
+        </div>
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-multiplierBubble"><i class="fas fa-circle-dot"></i></span>
+          <span class="puzzle-legend-text"><strong>Multiplier Bubble</strong> — score here to scatter three ×2 chips to random cells.</span>
+        </div>
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-loopingMultiplier">×2</span>
+          <span class="puzzle-legend-text"><strong>Looping Multiplier</strong> — value oscillates each turn. Wait for the high end.</span>
+        </div>
+      </div>
     </div>
 
     <div v-if="pendingBonusName()" class="puzzle-bonus-banner">
@@ -103,7 +122,9 @@
 
         <!-- singles -->
         <div v-for="(category, index) in singleCategories" :key="index"
-             class="score-item grid-singles" :data-category="category.name"
+             class="score-item grid-singles"
+             :data-category="category.name"
+             :data-modifier-kind="getCategoryModifier(category.value)?.kind || ''"
              :class="{ 'selected': isCategorySelected(category.value) && !isPendingBonus(category.value), 'puzzle-locked': isCategoryLocked(category.value), 'puzzle-bonus-eligible': isPendingBonus(category.value) }"
              @click="handleSelectCategory(category.value)">
           <div class="category-icon">
@@ -126,7 +147,9 @@
 
         <!-- multiples -->
         <div v-for="(category, index) in multipleCategories" :key="index"
-            class="score-item grid-multiples" :data-category="category.name"
+            class="score-item grid-multiples"
+            :data-category="category.name"
+            :data-modifier-kind="getCategoryModifier(category.value)?.kind || ''"
             :class="{ 'selected': isCategorySelected(category.value) && !isPendingBonus(category.value), 'puzzle-locked': isCategoryLocked(category.value), 'puzzle-bonus-eligible': isPendingBonus(category.value) }"
             @click="handleSelectCategory(category.value)">
           <div class="category-icon">
@@ -145,7 +168,9 @@
 
         <!-- colors -->
         <div v-for="(category, index) in colorCategories" :key="index"
-            class="score-item grid-colors" :data-category="category.name"
+            class="score-item grid-colors"
+            :data-category="category.name"
+            :data-modifier-kind="getCategoryModifier(category.value)?.kind || ''"
             :class="[
               { 'selected': isCategorySelected(category.value) && !isPendingBonus(category.value), 'puzzle-locked': isCategoryLocked(category.value), 'puzzle-bonus-eligible': isPendingBonus(category.value) },
               category.color ? category.color : ''
@@ -178,41 +203,43 @@
 
       </div>
     </div>
+    </main>
 
-    <div v-if="isPuzzleVariant" class="puzzle-legend-wrap">
-      <button type="button" class="puzzle-legend-toggle" @click="showLegend = !showLegend"
-              :aria-expanded="showLegend" aria-controls="puzzle-legend-panel">
-        <i class="fas fa-circle-question"></i>
-        <span>{{ showLegend ? 'Hide modifier help' : 'Modifier help' }}</span>
-        <i class="fas" :class="showLegend ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-      </button>
-      <div v-show="showLegend" id="puzzle-legend-panel" class="puzzle-legend">
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-iceBlock"><i class="fas fa-snowflake"></i></span>
-          <span class="puzzle-legend-text"><strong>Ice Block</strong> — locked. Score &gt;0 in the slot directly above or below to melt it.</span>
-        </div>
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-flyingMultiplier">×2</span>
-          <span class="puzzle-legend-text"><strong>Flying Multiplier</strong> — doubles the score in this slot. Moves to a new slot at the end of every turn.</span>
-        </div>
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-doubleCategory"><i class="fas fa-clone"></i></span>
-          <span class="puzzle-legend-text"><strong>Double Category</strong> — score here and you get a bonus turn to score it again. Both scores are added.</span>
-        </div>
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-hotPotato"><i class="fas fa-bomb"></i></span>
-          <span class="puzzle-legend-text"><strong>Hot Potato</strong> — arms after your first non-zero score. Defuse by scoring this cell before the fuse runs out, or it burns the slot at 0.</span>
-        </div>
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-multiplierBubble"><i class="fas fa-circle-dot"></i></span>
-          <span class="puzzle-legend-text"><strong>Multiplier Bubble</strong> — score here to pop it and scatter three ×2 chips to random unscored cells.</span>
-        </div>
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-loopingMultiplier">×2</span>
-          <span class="puzzle-legend-text"><strong>Looping Multiplier</strong> — value oscillates each turn between min and max. Wait for the high end before scoring.</span>
+    <!-- Fixed bottom group: dice tray + action zone pinned to viewport
+         bottom; horizontally centered to the 430px column on desktop. -->
+    <footer class="bottom-stack">
+      <div id="dice-container">
+        <div v-for="(die, index) in dice" :key="index"
+             class="die"
+             :class="[
+               { held: die.held, roll: die.isRolling },
+               die.color ? die.color : ''
+             ]"
+             :data-pips="die.value"
+             @click="toggleHold(index)">
+          <div class="die-cube">
+            <div v-for="face in 6" :key="face" class="face" :data-face="face">
+              <span v-for="n in 9" :key="n" class="pip" :data-slot="n"></span>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+      <div class="action-zone">
+        <div class="action-chip held-chip" :class="{ active: heldCount > 0 }">
+          <i class="fas fa-thumbtack"></i>
+          <span>{{ heldCount }}</span>
+        </div>
+        <button @click="rollDice" id="roll-button"
+                :disabled="!canRoll || isRolling || aiTurnInProgress">
+          <span class="roll-label">{{ newRoll ? 'START ROLL' : 'ROLL' }}</span>
+        </button>
+        <div class="rolls-left" :aria-label="`${rollsLeft} rolls remaining`">
+          <span class="dot" :class="{ used: newRoll || rollsLeft < 3 }"></span>
+          <span class="dot" :class="{ used: newRoll || rollsLeft < 2 }"></span>
+          <span class="dot" :class="{ used: newRoll || rollsLeft < 1 }"></span>
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -225,6 +252,20 @@ import { GameMode } from '../enums/GameMode'
 import { GameVariant } from '../enums/GameVariant'
 import { getScorecardTemplate } from '../config/scorecardTemplates'
 import ModifierBadge from './ModifierBadge.vue'
+import type { EngineEvent } from '../puzzle/types'
+import { playModifierSfx } from '../utils/synthSfx'
+import {
+  showIceMelt,
+  showFlyingRelocate,
+  showHotPotatoArmed,
+  showHotPotatoDefuse,
+  showHotPotatoExpire,
+  showBubblePop,
+  showLoopingChange,
+  showBonusTurnGlow,
+  showScoreBreakdown,
+  showGoalMet,
+} from '../utils/cellAnimations'
 
 const emit = defineEmits<{
   (e: 'end-game'): void
@@ -297,32 +338,22 @@ const rollDice = () => {
   setTimeout(() => { isRolling.value = false; }, 1000);
 }
 
-const rollDiceText = computed(() => {
+const heldCount = computed(() => dice.value.filter(d => d.held).length)
 
-  let text = `<div class="flex gap-2">`;
-    if(newRoll.value){
-        text += `<div class="text-center flex-1">START ROLL</div>`;
-    }else{
-        text += `<div class="flex-1">ROLL</div>`
-        if(rollsLeft.value === 0){
-            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
-            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
-            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
-        }
-        if(rollsLeft.value === 1){
-            text += `<div class="w-12 rounded text-blue-300"><span class="fa fa-solid fa-circle"></span></div>`;
-            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
-            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
-        }
-        if(rollsLeft.value === 2){
-            text += `<div class="w-12 rounded text-blue-300"><span class="fa fa-solid fa-circle"></span></div>`;
-            text += `<div class="w-12 rounded text-blue-300"><span class="fa fa-solid fa-circle"></span></div>`;
-            text += `<div class="w-12 rounded text-slate-600"><span class="fa fa-solid fa-circle"></span></div>`;
-        } 
-    }
-
-    return text + `</div>`;
-})
+// Used to render category icons (Ones..Sixes) in the scorecard — the
+// dice themselves use CSS pips now, but the FontAwesome dice glyph still
+// reads well at the small icon size in a scorecard cell.
+const getDieIcon = (die: number): string => {
+  switch (die) {
+    case 1: return 'fa-dice-one'
+    case 2: return 'fa-dice-two'
+    case 3: return 'fa-dice-three'
+    case 4: return 'fa-dice-four'
+    case 5: return 'fa-dice-five'
+    case 6: return 'fa-dice-six'
+    default: return 'fa-dice'
+  }
+}
 
 const toggleHold = (index: number) => {
   gameStore.toggleHold(index);
@@ -362,25 +393,6 @@ const selectCategory = (category: Categories) => {
 const handleSelectCategory = (category: Categories) => {
   if (isCategoryLocked(category)) return;
   selectCategory(category);
-}
-
-const getDieIcon = (die: number): string => {
-  switch (die) {
-    case 1:
-      return 'fa-dice-one'
-    case 2:
-      return 'fa-dice-two'
-    case 3:
-      return 'fa-dice-three'
-    case 4:
-      return 'fa-dice-four'
-    case 5:
-      return 'fa-dice-five'
-    case 6:
-      return 'fa-dice-six'
-    default:
-      return 'fa-dice'
-  } 
 }
 
 const ALL_SINGLE_CATEGORIES = [
@@ -506,6 +518,79 @@ const endGame = () => {
 const startGame = () => {
   gameStore.startOnlineGame();
 };
+
+// ---- Puzzle event bus subscription ----
+// Each PuzzleEngine emits lifecycle events (ice melt, flying relocate,
+// hot potato fuse, etc.). Subscribe per active engine and route to
+// cell-anchored animation helpers + synthesized SFX. SFX gated by the
+// shared sfxEnabled toggle (same as the existing audio system).
+const unsubscribers: Array<() => void> = []
+
+function handleEngineEvent(event: EngineEvent) {
+  const sfx = gameStore.sfxEnabled
+  switch (event.type) {
+    case 'iceBlock:melt':
+      showIceMelt(event.category)
+      if (sfx) playModifierSfx('iceMelt')
+      break
+    case 'flyingMultiplier:relocate':
+      showFlyingRelocate(event.from, event.to, event.multiplier)
+      if (sfx) playModifierSfx('flyingWhoosh')
+      break
+    case 'flyingMultiplier:applied':
+    case 'loopingMultiplier:applied':
+      showScoreBreakdown(event.category, event.raw, event.multiplier, event.final)
+      break
+    case 'hotPotato:armed':
+      showHotPotatoArmed(event.category)
+      if (sfx) playModifierSfx('bombArm')
+      break
+    case 'hotPotato:tick':
+      if (sfx) playModifierSfx('bombTick')
+      break
+    case 'hotPotato:defuse':
+      showHotPotatoDefuse(event.category)
+      if (sfx) playModifierSfx('bombDefuse')
+      break
+    case 'hotPotato:expire':
+      showHotPotatoExpire(event.category)
+      if (sfx) playModifierSfx('bombExpire')
+      break
+    case 'multiplierBubble:pop':
+      showBubblePop(event.from, event.targets)
+      if (sfx) playModifierSfx('bubblePop')
+      break
+    case 'loopingMultiplier:change':
+      showLoopingChange(event.category, event.atPeak)
+      if (sfx) playModifierSfx(event.atPeak ? 'loopPeak' : 'loopChange')
+      break
+    case 'engine:bonusTurn':
+      showBonusTurnGlow(event.category)
+      if (sfx) playModifierSfx('bonusTurn')
+      break
+    case 'engine:goalMet':
+      showGoalMet()
+      if (sfx) playModifierSfx('goalChime')
+      break
+  }
+}
+
+function subscribeToEngines() {
+  // Tear down any previous subscriptions (resubscribe on game restart).
+  unsubscribers.forEach(u => u())
+  unsubscribers.length = 0
+  const game = currentGame.value
+  if (!game || game.variant !== GameVariant.Puzzle) return
+  for (let i = 0; i < game.players.length; i++) {
+    const engine = game.getPuzzleEngine(i)
+    if (engine) unsubscribers.push(engine.on(handleEngineEvent))
+  }
+}
+
+onMounted(() => { subscribeToEngines() })
+onUnmounted(() => { unsubscribers.forEach(u => u()); unsubscribers.length = 0 })
+// Re-subscribe whenever the game instance changes (restart, new game).
+watch(currentGame, () => { subscribeToEngines() })
 </script>
 
 <style scoped>

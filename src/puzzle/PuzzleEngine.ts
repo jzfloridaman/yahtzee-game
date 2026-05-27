@@ -1,6 +1,8 @@
 import { Categories } from '../enums/Categories';
 import type { ScorecardTemplateEntry } from '../config/scorecardTemplates';
 import type {
+    EngineEvent,
+    EngineEventListener,
     ModifierKind,
     PuzzleConfig,
     PuzzleEngineCtx,
@@ -28,6 +30,10 @@ export class PuzzleEngine {
     private engagedKinds: Set<ModifierKind> = new Set();
     private pendingBonusCategory: Categories | null = null;
     private readonly ctx: PuzzleEngineCtx;
+    private listeners: Set<EngineEventListener> = new Set();
+    // Track which goals have already fired `engine:goalMet` so the chime
+    // only plays on the transition turn, not every subsequent score.
+    private goalMetEmitted = { score: false, engagement: false };
 
     constructor(readScorecard: ScorecardReader, writeScore: ScoreWriter | null = null) {
         this.readScorecard = readScorecard;
@@ -48,6 +54,35 @@ export class PuzzleEngine {
         this.presentKinds = [...new Set(this.modifiers.map(m => m.kind))];
         this.engagedKinds = new Set();
         this.pendingBonusCategory = null;
+        this.goalMetEmitted = { score: false, engagement: false };
+        // Subscribers persist across initFromConfig (a restart): the UI
+        // re-subscribes in onMounted only.
+    }
+
+    // Subscribe to engine lifecycle events. Returns an unsubscriber.
+    on(listener: EngineEventListener): () => void {
+        this.listeners.add(listener);
+        return () => { this.listeners.delete(listener); };
+    }
+
+    emit(event: EngineEvent): void {
+        // Snapshot to tolerate listeners that unsubscribe from inside their
+        // own handler.
+        for (const l of [...this.listeners]) l(event);
+    }
+
+    // Called by the store after each score is applied + afterScore done.
+    // Emits engine:goalMet at most once per goal kind, the turn it crosses.
+    checkGoalMet(totalScore: number): void {
+        const required = this.getRequiredEngagementCount();
+        if (!this.goalMetEmitted.score && totalScore >= this.targetScore && this.targetScore > 0) {
+            this.goalMetEmitted.score = true;
+            this.emit({ type: 'engine:goalMet', kind: 'score' });
+        }
+        if (!this.goalMetEmitted.engagement && required > 0 && this.engagedKinds.size >= required) {
+            this.goalMetEmitted.engagement = true;
+            this.emit({ type: 'engine:goalMet', kind: 'engagement' });
+        }
     }
 
     getPresentKinds(): ModifierKind[] {
@@ -89,10 +124,12 @@ export class PuzzleEngine {
     }
 
     // Apply modifier score transforms to a raw score (e.g., Flying Multiplier
-    // doubles when on-target). Called once per scoring attempt.
+    // doubles when on-target). Called once per scoring attempt. Passes ctx
+    // so modifiers can emit "applied" events with the raw/final breakdown
+    // for cell-anchored score animations.
     applyScore(category: Categories, rawScore: number): number {
         return this.modifiers.reduce(
-            (score, m) => (m.transformScore ? m.transformScore(category, score) : score),
+            (score, m) => (m.transformScore ? m.transformScore(category, score, this.ctx) : score),
             rawScore
         );
     }
@@ -199,6 +236,7 @@ export class PuzzleEngine {
             },
             requestBonusTurn: (category) => {
                 engine.pendingBonusCategory = category;
+                engine.emit({ type: 'engine:bonusTurn', category });
             },
             markEngaged: (kind) => {
                 engine.engagedKinds.add(kind);
@@ -217,6 +255,9 @@ export class PuzzleEngine {
                         engine.presentKinds = [...engine.presentKinds, m.kind];
                     }
                 }
+            },
+            emit: (event) => {
+                engine.emit(event);
             },
         };
     }

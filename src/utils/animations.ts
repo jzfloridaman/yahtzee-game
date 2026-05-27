@@ -1,4 +1,12 @@
+function reducedMotion(): boolean {
+  if (typeof window === 'undefined' || !window.matchMedia) return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 export const createConfetti = () => {
+  // Skip the 150-particle blast under reduced motion. Caller animations
+  // (score popup, Yahtzee banner) still render, just without confetti.
+  if (reducedMotion()) return;
   const confettiCount = 150;
   const container = document.createElement('div');
   container.style.position = 'fixed';

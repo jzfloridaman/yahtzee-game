@@ -26,7 +26,7 @@
         </h2>
         <div v-if="isAdventure && earnedStars > 0" class="puzzle-result-stars">
           <i v-for="n in 3" :key="n" class="fas fa-star"
-             :class="{ filled: n <= earnedStars }"></i>
+             :class="{ filled: n <= earnedStars, revealed: n <= revealedStars }"></i>
         </div>
         <div class="puzzle-result-rows mt-3">
           <div class="puzzle-result-row" :class="{ 'goal-met': puzzleResult.scoreMet }">
@@ -61,8 +61,8 @@
           {{ player.name }}
         </button>
       </div>
-      <div id="final-scorecard" class="w-full max-w-4xl mx-auto bg-gray-800 p-4 rounded-lg mb-4">
-        <h2 class="text-2xl font-bold mb-4">Final Scorecard</h2>
+      <div id="final-scorecard" class="w-full bg-gray-800/60 p-3 rounded-lg mb-4">
+        <h2 class="text-lg font-bold mb-3">Final Scorecard</h2>
         <div v-if="players[selectedTab]" class="player-final-scorecard">
           <h3 class="text-lg font-bold mb-2 text-center">{{ players[selectedTab].name }} <span class="text-green-400">({{ players[selectedTab].score }})</span></h3>
           <div class="grid grid-cols-6 gap-2">
@@ -125,21 +125,19 @@
           </div>
         </div>
       </div>
-      <div class="flex flex-col gap-2 max-w-md mx-auto">
-        <button v-if="isAdventure && canAdvance"
-                @click="nextLevel"
-                class="game-mode-button w-full !bg-green-600 hover:!bg-green-700">
-          <i class="fas fa-arrow-right mr-2"></i>Next Level
+      <div class="flex flex-col gap-2 w-full">
+        <button v-if="isAdventure && canAdvance" @click="nextLevel" class="go-action-btn primary">
+          <i class="fas fa-arrow-right"></i>Next Level
         </button>
-        <button v-if="puzzleResult || puzzleVsAiResult"
-                @click="retryPuzzle"
-                class="game-mode-button w-full !bg-amber-500 hover:!bg-amber-600">
-          <i class="fas fa-rotate-right mr-2"></i>Retry — {{ retryLabel }}
+        <button v-if="puzzleResult || puzzleVsAiResult" @click="retryPuzzle" class="go-action-btn warning">
+          <i class="fas fa-rotate-right"></i>Retry — {{ retryLabel }}
         </button>
-        <button v-if="isAdventure" @click="backToLevels" class="game-mode-button w-full">
-          <i class="fas fa-list mr-2"></i>Level Select
+        <button v-if="isAdventure" @click="backToLevels" class="go-action-btn">
+          <i class="fas fa-list"></i>Level Select
         </button>
-        <button @click="playAgain" class="game-mode-button w-full">{{ (puzzleResult || puzzleVsAiResult) ? 'Main Menu' : 'Play Again' }}</button>
+        <button @click="playAgain" class="go-action-btn">
+          {{ (puzzleResult || puzzleVsAiResult) ? 'Main Menu' : 'Play Again' }}
+        </button>
       </div>
     </div>
   </div>
@@ -152,6 +150,7 @@ import { useGameStore } from '../stores/gameStore'
 import { getLastLevelNumber } from '../puzzle/levels/definitions'
 import { computeStars } from '../puzzle/levels/progression'
 import { GameVariant } from '../enums/GameVariant'
+import { playModifierSfx } from '../utils/synthSfx'
 
 const gameStore = useGameStore()
 const game = computed(() => gameStore.currentGame)
@@ -258,7 +257,24 @@ onMounted(() => {
   if (levelId && levelNumber != null) {
     gameStore.recordAdventureWin(levelId, levelNumber, result.totalScore, result.targetScore)
   }
+  // Stagger a synth "ding" per earned star.
+  if (!gameStore.sfxEnabled) return
+  const stars = computeStars(result.totalScore, result.targetScore)
+  for (let i = 0; i < stars; i++) {
+    setTimeout(() => playModifierSfx('starWin'), 220 + i * 280)
+  }
 })
+
+// Show "revealed" stars one at a time so they animate in on screen.
+const revealedStars = ref(0)
+watch(() => puzzleResult.value, (r) => {
+  revealedStars.value = 0
+  if (!isAdventure.value || r?.status !== 'win') return
+  const target = computeStars(r.totalScore, r.targetScore)
+  for (let i = 1; i <= target; i++) {
+    setTimeout(() => { revealedStars.value = i }, 200 + i * 280)
+  }
+}, { immediate: true })
 
 const earnedStars = computed(() => {
   const result = puzzleResult.value
@@ -466,15 +482,36 @@ const getDieIcon = (die: number): string => {
 
 .puzzle-result-stars {
   display: flex;
-  gap: 0.4rem;
+  gap: 0.5rem;
   justify-content: center;
   margin: 0.5rem 0;
-  font-size: 1.6rem;
-  color: rgba(252, 211, 77, 0.25);
+  font-size: 2rem;
+  color: rgba(252, 211, 77, 0.2);
 }
 .puzzle-result-stars .filled {
   color: #fbbf24;
-  text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.65);
+  opacity: 0;
+  transform: scale(0.5) rotate(-45deg);
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+}
+.puzzle-result-stars .filled.revealed {
+  opacity: 1;
+  transform: scale(1) rotate(0);
+  animation: gameOverStarPop 0.8s ease-out;
+}
+@keyframes gameOverStarPop {
+  0%   { filter: drop-shadow(0 0 0 transparent); }
+  50%  { filter: drop-shadow(0 0 18px rgba(251,191,36,0.85)); }
+  100% { filter: drop-shadow(0 0 5px rgba(251,191,36,0.4)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .puzzle-result-stars .filled {
+    transition: opacity 0.2s ease;
+    transform: none;
+    animation: none;
+  }
+  .puzzle-result-stars .filled.revealed { transform: none; }
 }
 .puzzle-result-rows {
   display: inline-flex;
@@ -540,17 +577,39 @@ const getDieIcon = (die: number): string => {
   color: #222;
 }
 .score-item {
-  background: #6f7a87;
-  border-radius: 0.25rem;
-  padding: 0.5rem;
+  background: rgba(51,65,85,0.65);
+  color: #fff;
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.2rem;
   text-align: center;
+  border: 1px solid rgba(255,255,255,0.06);
 }
 .score-cell {
-  font-weight: bold;
-  font-size: 1.1rem;
-  @apply text-white;
+  font-weight: 800;
+  font-size: 0.95rem;
 }
 .category-icon {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.15rem;
+  font-size: 0.95rem;
 }
+
+.go-action-btn {
+  padding: 0.7rem 0.85rem;
+  border-radius: 12px;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  transition: transform 0.12s ease, background 0.18s ease;
+  font-size: 0.95rem;
+}
+.go-action-btn:hover  { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
+.go-action-btn:active { transform: translateY(1px); }
+.go-action-btn.primary { background: linear-gradient(135deg, #4ade80, #15803d); }
+.go-action-btn.warning { background: linear-gradient(135deg, #fbbf24, #c2410c); color: #1f2937; }
 </style> 

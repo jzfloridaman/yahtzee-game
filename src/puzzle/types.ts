@@ -9,6 +9,24 @@ export type ModifierKind =
     | 'multiplierBubble'
     | 'loopingMultiplier';
 
+// Lightweight, typed event bus surface. The engine emits these so the UI
+// can play cell-anchored animations + sounds without diffing reactive state.
+export type EngineEvent =
+    | { type: 'iceBlock:melt'; category: Categories }
+    | { type: 'flyingMultiplier:relocate'; from: Categories; to: Categories; multiplier: number }
+    | { type: 'flyingMultiplier:applied'; category: Categories; raw: number; final: number; multiplier: number }
+    | { type: 'hotPotato:armed'; category: Categories; fuse: number }
+    | { type: 'hotPotato:tick'; category: Categories; fuseRemaining: number }
+    | { type: 'hotPotato:defuse'; category: Categories; scored: boolean }
+    | { type: 'hotPotato:expire'; category: Categories }
+    | { type: 'multiplierBubble:pop'; from: Categories; targets: Categories[] }
+    | { type: 'loopingMultiplier:change'; category: Categories; value: number; min: number; max: number; atPeak: boolean }
+    | { type: 'loopingMultiplier:applied'; category: Categories; raw: number; final: number; multiplier: number }
+    | { type: 'engine:bonusTurn'; category: Categories }
+    | { type: 'engine:goalMet'; kind: 'score' | 'engagement' };
+
+export type EngineEventListener = (event: EngineEvent) => void;
+
 // Hooks are optional — a modifier only implements the ones it cares about.
 // Engine fans events out to every modifier in order; modifiers can mutate
 // themselves and/or call ctx methods to ask the engine to relocate/remove
@@ -22,8 +40,9 @@ export interface PuzzleModifier {
     canScore?(category: Categories): boolean;
 
     // Mutate the raw category score before it's banked. Flying Multiplier
-    // multiplies its target category's score.
-    transformScore?(category: Categories, rawScore: number): number;
+    // multiplies its target category's score. ctx is optional so existing
+    // pure transforms keep their old signature.
+    transformScore?(category: Categories, rawScore: number, ctx?: PuzzleEngineCtx): number;
 
     // Fired after a score has been banked (the score passed here is the
     // final value written to the scorecard). Used by Ice Blocks to clear
@@ -64,6 +83,10 @@ export interface PuzzleEngineCtx {
     // Insert additional modifiers mid-game (Multiplier Bubbles scatters
     // fresh chips when triggered).
     addModifiers(modifiers: PuzzleModifier[]): void;
+    // Emit a lifecycle event for the UI (animations + sound). Engine fans
+    // out to subscribers registered via PuzzleEngine.on(). Safe to call
+    // even with no subscribers — it's a no-op then.
+    emit(event: EngineEvent): void;
 }
 
 export interface PuzzleConfig {

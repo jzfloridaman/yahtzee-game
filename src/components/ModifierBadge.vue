@@ -63,21 +63,24 @@ const title = computed(() => {
 .modifier-badge {
   position: absolute;
   top: 2px;
-  right: 2px;
-  min-width: 1.4rem;
-  height: 1.4rem;
-  padding: 0 0.3rem;
+  left: 2px;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: bold;
+  font-size: 0.66rem;
+  font-weight: 800;
   color: #fff;
   pointer-events: none;
   z-index: 5;
-  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45), 0 0 0 1.5px rgba(255,255,255,0.25) inset;
   animation: modifier-hover 2.4s ease-in-out infinite;
+}
+.modifier-badge i {
+  font-size: 0.62rem;
 }
 .modifier-flyingMultiplier { animation-delay: 0.4s; }
 .modifier-doubleCategory  { animation-delay: 0.8s; }
@@ -89,13 +92,13 @@ const title = computed(() => {
 @media (prefers-reduced-motion: reduce) {
   .modifier-badge { animation: none; }
 }
-.modifier-iceBlock           { background: #38bdf8; }
-.modifier-flyingMultiplier   { background: #f59e0b; color: #111; }
-.modifier-doubleCategory     { background: #a855f7; }
-.modifier-hotPotato          { background: #4b5563; color: #fef2f2; }
-.modifier-hotPotato.armed    { background: #dc2626; animation: hot-potato-pulse 0.9s ease-in-out infinite; }
-.modifier-multiplierBubble   { background: #14b8a6; }
-.modifier-loopingMultiplier  { background: #ec4899; color: #fff; }
+.modifier-iceBlock           { background: linear-gradient(135deg, #7dd3fc, #0284c7); }
+.modifier-flyingMultiplier   { background: linear-gradient(135deg, #fcd34d, #d97706); color: #111; }
+.modifier-doubleCategory     { background: linear-gradient(135deg, #c084fc, #7e22ce); }
+.modifier-hotPotato          { background: linear-gradient(135deg, #6b7280, #1f2937); color: #fef2f2; }
+.modifier-hotPotato.armed    { background: linear-gradient(135deg, #f87171, #b91c1c); animation: hot-potato-pulse 0.9s ease-in-out infinite; }
+.modifier-multiplierBubble   { background: linear-gradient(135deg, #5eead4, #0d9488); }
+.modifier-loopingMultiplier  { background: linear-gradient(135deg, #f9a8d4, #be185d); color: #fff; }
 .modifier-label {
   margin-left: 0.15rem;
   font-size: 0.7rem;

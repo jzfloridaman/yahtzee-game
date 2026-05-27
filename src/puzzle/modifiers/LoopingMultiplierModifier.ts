@@ -21,8 +21,19 @@ export class LoopingMultiplierModifier implements PuzzleModifier {
         this.direction = 1;
     }
 
-    transformScore(category: Categories, rawScore: number): number {
-        return category === this.category ? rawScore * this.value : rawScore;
+    transformScore(category: Categories, rawScore: number, ctx?: PuzzleEngineCtx): number {
+        if (category !== this.category) return rawScore;
+        const final = rawScore * this.value;
+        if (ctx && rawScore > 0 && this.value > 1) {
+            ctx.emit({
+                type: 'loopingMultiplier:applied',
+                category: this.category,
+                raw: rawScore,
+                final,
+                multiplier: this.value,
+            });
+        }
+        return final;
     }
 
     onAfterScore(scored: Categories, value: number, ctx: PuzzleEngineCtx): void {
@@ -33,10 +44,18 @@ export class LoopingMultiplierModifier implements PuzzleModifier {
         }
     }
 
-    onTurnEnd(_ctx: PuzzleEngineCtx): void {
+    onTurnEnd(ctx: PuzzleEngineCtx): void {
         // Bounce at the rails.
         if (this.value >= this.maxValue) this.direction = -1;
         else if (this.value <= this.minValue) this.direction = 1;
         this.value += this.direction;
+        ctx.emit({
+            type: 'loopingMultiplier:change',
+            category: this.category,
+            value: this.value,
+            min: this.minValue,
+            max: this.maxValue,
+            atPeak: this.value === this.maxValue,
+        });
     }
 }

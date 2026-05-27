@@ -21,7 +21,11 @@ export default defineConfig({
   },
   server: {
     open: true, // Automatically open the browser
-    port: 3000
+    port: 3000,
+    // Allow access from inside the docker network (the playwright sidecar
+    // hits http://web:5173). 'localhost' + '127.0.0.1' are allowed by
+    // default; add the dev-network service hostnames here.
+    allowedHosts: ['web', 'yahtzee-game-web', 'yahtzee.localhost'],
   },
   css: {
     postcss: './postcss.config.js', // Ensure PostCSS is configured

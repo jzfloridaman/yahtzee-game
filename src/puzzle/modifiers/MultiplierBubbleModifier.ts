@@ -37,6 +37,11 @@ export class MultiplierBubbleModifier implements PuzzleModifier {
 
         if (placed.length > 0) {
             ctx.markEngaged(this.kind);
+            ctx.emit({
+                type: 'multiplierBubble:pop',
+                from: this.category,
+                targets: placed.map(p => p.category),
+            });
         }
         ctx.removeModifier(this);
     }

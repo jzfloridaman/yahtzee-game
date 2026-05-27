@@ -242,6 +242,7 @@ export const useGameStore = defineStore('game', {
         this.game.players[this.game.currentPlayer].scoreManager.addScoreToCategory(category, transformedScore);
         puzzleEngine!.consumePendingBonusCategory();
         puzzleEngine!.afterScore(category, transformedScore);
+        puzzleEngine!.checkGoalMet(this.game.getTotalScore());
 
         if (transformedScore > 0) {
           showScoreAnimation(transformedScore, category);
@@ -277,6 +278,7 @@ export const useGameStore = defineStore('game', {
 
       this.game.updateSelectedScore(category, transformedScore, false);
       puzzleEngine?.afterScore(category, transformedScore);
+      puzzleEngine?.checkGoalMet(this.game.getTotalScore());
 
       // Modifiers (e.g., Double Category) can request a bonus turn from
       // inside afterScore. The flag stays pending until the bonus second

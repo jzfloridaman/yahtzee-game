@@ -1,12 +1,12 @@
 <template>
-  <div id="level-select-container" class="flex flex-col items-center gap-4 max-w-4xl mx-auto p-4">
-    <div class="w-full flex items-center justify-between">
-      <button @click="back" class="back-button">
-        <i class="fas fa-arrow-left mr-2"></i>Back
+  <div id="level-select-container" class="flex flex-col items-center gap-3 w-full p-3">
+    <div class="ls-header">
+      <button @click="back" class="back-button" aria-label="Back">
+        <i class="fas fa-arrow-left"></i>
       </button>
-      <h2 class="text-xl md:text-2xl font-bold">Puzzle Adventure</h2>
-      <div class="text-sm text-gray-400">
-        <i class="fas fa-star text-yellow-400 mr-1"></i>{{ totalStars }} / {{ maxStars }}
+      <h2 class="ls-title">Adventure</h2>
+      <div class="ls-stars">
+        <i class="fas fa-star"></i>{{ totalStars }} / {{ maxStars }}
       </div>
     </div>
 
@@ -136,178 +136,250 @@ const modifierCounts = (level: LevelDefinition): ModSummary[] => {
 </script>
 
 <style scoped>
-.back-button {
-  @apply bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-colors duration-200;
+/* Header bar */
+.ls-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+  /* Reserve space on the right so the star-progress chip doesn't slide
+     under the floating hamburger (absolute top-right of #app, ~38px wide). */
+  padding-right: 3.25rem;
 }
+.ls-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  flex: 1;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.ls-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #fde68a;
+}
+.ls-stars i { color: #fbbf24; }
 
+.back-button {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.06);
+  color: var(--text, #fff);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+.back-button:hover { background: rgba(255,255,255,0.12); }
+
+/* Per-world chapter cards. Each world has its own accent gradient. */
 .world-section {
-  border-radius: 0.75rem;
-  border: 2px solid rgba(99, 102, 241, 0.3);
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(51, 65, 85, 0.5) 100%);
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: linear-gradient(160deg, var(--w-from, #1e293b) 0%, var(--w-to, #0f172a) 100%);
   overflow: hidden;
+  box-shadow: 0 6px 22px -8px rgba(0,0,0,0.55);
 }
-.world-section.world-locked {
-  opacity: 0.65;
+.world-section.world-locked { opacity: 0.6; }
+
+/* World accent palettes — match the in-game body.world-<id> themes. */
+.world-beginnings   { --w-from: #312e81; --w-to: #1e1b4b; --w-accent: #c4b5fd; }
+.world-frostlands   { --w-from: #1e3a5f; --w-to: #0c1a2e; --w-accent: #67e8f9; }
+.world-echo-chamber { --w-from: #0e7490; --w-to: #134e4a; --w-accent: #5eead4; }
+.world-storm-front  { --w-from: #475569; --w-to: #1e293b; --w-accent: #facc15; }
+.world-storm-surge  { --w-from: #7c2d12; --w-to: #450a0a; --w-accent: #fb923c; }
+.world-finale       { --w-from: #3a1212; --w-to: #050505; --w-accent: #f43f5e; }
+
+/* Accent bar on the left edge of each card. */
+.world-section::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 4px;
+  background: var(--w-accent);
+  box-shadow: 0 0 12px var(--w-accent);
 }
-.world-beginnings    { border-color: rgba(56, 189, 248, 0.4); }
-.world-frostlands    { border-color: rgba(125, 211, 252, 0.5); }
-.world-echo-chamber  { border-color: rgba(168, 85, 247, 0.5); }
-.world-storm-front   { border-color: rgba(220, 38, 38, 0.5); }
-.world-storm-surge   { border-color: rgba(20, 184, 166, 0.5); }
-.world-finale        { border-color: rgba(251, 191, 36, 0.5); }
 
 .world-header {
-  padding: 0.75rem 1rem;
+  padding: 0.7rem 0.9rem 0.7rem 1.1rem;
   cursor: pointer;
   user-select: none;
-  background: rgba(15, 23, 42, 0.4);
-  transition: background 0.2s;
+  transition: background 0.18s ease;
 }
-.world-header:hover {
-  background: rgba(15, 23, 42, 0.6);
-}
+.world-header:hover { background: rgba(255,255,255,0.04); }
 .world-header-main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.6rem;
 }
 .world-header-title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #f3f4f6;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
 }
 .world-header-meta {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  font-size: 0.85rem;
-  color: #cbd5e1;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--text-soft, #cbd5e1);
+}
+.world-progress {
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.3);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 .world-stars {
-  color: #fbbf24;
+  color: #fde68a;
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.2rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.3);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
+.world-stars i { color: #fbbf24; font-size: 0.7rem; }
 .world-toggle-icon {
-  color: #94a3b8;
-  margin-left: 0.25rem;
+  color: var(--w-accent, #94a3b8);
+  margin-left: 0.15rem;
 }
 .world-header-desc {
-  color: #cbd5e1;
-  font-size: 0.85rem;
-  margin-top: 0.25rem;
+  color: var(--text-soft, #cbd5e1);
+  font-size: 0.72rem;
+  margin-top: 0.3rem;
+  line-height: 1.35;
 }
 
+/* Level grid — 2 per row on the 430px column. */
 .level-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.6rem;
-  padding: 0.75rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  padding: 0 0.7rem 0.8rem;
 }
 .level-tile {
   position: relative;
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  border: 2px solid rgba(99, 102, 241, 0.4);
-  border-radius: 0.6rem;
-  padding: 0.65rem;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 0.55rem 0.6rem 0.45rem;
   text-align: left;
   color: #f3f4f6;
   cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
-  min-height: 130px;
+  transition: transform 0.12s ease, border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  min-height: 110px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .level-tile:hover:not(:disabled) {
-  transform: translateY(-2px);
-  border-color: #818cf8;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+  border-color: var(--w-accent);
+  box-shadow: 0 4px 16px -4px rgba(0,0,0,0.5);
 }
+.level-tile:active:not(:disabled) { transform: scale(0.97); }
 .level-tile.locked {
-  background: rgba(31, 41, 55, 0.6);
-  border-color: rgba(75, 85, 99, 0.5);
+  background:
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.05) 0 4px, transparent 4px 8px),
+    rgba(31, 41, 55, 0.5);
+  border-color: rgba(255,255,255,0.06);
   color: #9ca3af;
   cursor: not-allowed;
   opacity: 0.55;
 }
 .level-tile.cleared {
-  border-color: #34d399;
+  border-color: var(--w-accent);
+  box-shadow: 0 0 0 1px var(--w-accent) inset;
 }
 .level-tile-number {
-  font-size: 0.7rem;
-  color: #a5b4fc;
+  font-size: 0.62rem;
+  color: var(--w-accent);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.level-tile.locked .level-tile-number {
-  color: #6b7280;
-}
+.level-tile.locked .level-tile-number { color: #6b7280; }
 .level-tile-label {
-  font-size: 1.05rem;
-  font-weight: 700;
-  margin-bottom: 0.3rem;
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin: 0.05rem 0 0.35rem;
+  line-height: 1.1;
 }
 .level-tile-meta {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  font-size: 0.8rem;
+  gap: 0.1rem;
+  font-size: 0.72rem;
   flex: 1;
 }
-.level-tile-target {
-  color: #cbd5e1;
-}
-.level-tile-best {
-  color: #fcd34d;
-  font-weight: 600;
-}
+.level-tile-target { color: var(--text-soft, #cbd5e1); }
+.level-tile-best { color: #fde68a; font-weight: 700; }
 .level-tile-stars {
   display: flex;
-  gap: 0.2rem;
+  gap: 0.18rem;
   margin-top: 0.2rem;
-  font-size: 0.85rem;
-  color: rgba(251, 191, 36, 0.25);
+  font-size: 0.72rem;
+  color: rgba(251, 191, 36, 0.22);
 }
 .level-tile-stars .filled {
   color: #fbbf24;
-  text-shadow: 0 0 4px rgba(251, 191, 36, 0.5);
+  text-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
 }
 .level-tile-locked {
   color: #6b7280;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  font-size: 0.78rem;
 }
 .level-tile-mods {
   display: flex;
-  gap: 0.3rem;
-  margin-top: 0.4rem;
+  gap: 0.2rem;
+  margin-top: 0.3rem;
   flex-wrap: wrap;
 }
 .level-tile-mod {
   display: inline-flex;
   align-items: center;
-  gap: 0.15rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  padding: 0.12rem 0.35rem;
-  border-radius: 9999px;
+  gap: 0.1rem;
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 0.1rem 0.3rem;
+  border-radius: 999px;
   color: #fff;
+  box-shadow: 0 0 0 1.5px rgba(255,255,255,0.18) inset;
 }
-.level-tile-mod.modifier-iceBlock          { background: #38bdf8; }
-.level-tile-mod.modifier-flyingMultiplier  { background: #f59e0b; color: #111; }
-.level-tile-mod.modifier-doubleCategory    { background: #a855f7; }
-.level-tile-mod.modifier-hotPotato         { background: #dc2626; }
-.level-tile-mod.modifier-multiplierBubble  { background: #14b8a6; }
-.level-tile-mod.modifier-loopingMultiplier { background: #ec4899; }
+.level-tile-mod.modifier-iceBlock          { background: linear-gradient(135deg, #7dd3fc, #0284c7); }
+.level-tile-mod.modifier-flyingMultiplier  { background: linear-gradient(135deg, #fcd34d, #d97706); color: #111; }
+.level-tile-mod.modifier-doubleCategory    { background: linear-gradient(135deg, #c084fc, #7e22ce); }
+.level-tile-mod.modifier-hotPotato         { background: linear-gradient(135deg, #f87171, #b91c1c); }
+.level-tile-mod.modifier-multiplierBubble  { background: linear-gradient(135deg, #5eead4, #0d9488); }
+.level-tile-mod.modifier-loopingMultiplier { background: linear-gradient(135deg, #f9a8d4, #be185d); }
 .level-tile-mod-count {
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   opacity: 0.9;
 }
 </style>

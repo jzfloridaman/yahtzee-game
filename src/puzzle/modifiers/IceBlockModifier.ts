@@ -24,6 +24,7 @@ export class IceBlockModifier implements PuzzleModifier {
         const below = selfIndex < order.length - 1 ? order[selfIndex + 1] : null;
         if (scored === above || scored === below) {
             ctx.markEngaged(this.kind);
+            ctx.emit({ type: 'iceBlock:melt', category: this.category });
             ctx.removeModifier(this);
         }
     }

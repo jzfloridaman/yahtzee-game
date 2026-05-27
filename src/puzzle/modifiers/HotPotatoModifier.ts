@@ -25,17 +25,20 @@ export class HotPotatoModifier implements PuzzleModifier {
             if (scored === this.category) {
                 // Scored the bomb pre-activation — clears it but no engagement,
                 // and no first-strike to arm the others.
+                ctx.emit({ type: 'hotPotato:defuse', category: this.category, scored: value > 0 });
                 ctx.removeModifier(this);
                 return;
             }
             if (value > 0) {
                 this.activated = true;
                 this.fuseRemaining = this.initialFuse;
+                ctx.emit({ type: 'hotPotato:armed', category: this.category, fuse: this.fuseRemaining });
             }
             return;
         }
         if (scored === this.category) {
             if (value > 0) ctx.markEngaged(this.kind);
+            ctx.emit({ type: 'hotPotato:defuse', category: this.category, scored: value > 0 });
             ctx.removeModifier(this);
         }
     }
@@ -45,8 +48,11 @@ export class HotPotatoModifier implements PuzzleModifier {
         this.fuseRemaining--;
         if (this.fuseRemaining <= 0) {
             // Fuse expired — burn the slot at 0 and remove the modifier.
+            ctx.emit({ type: 'hotPotato:expire', category: this.category });
             ctx.forceScore(this.category, 0);
             ctx.removeModifier(this);
+        } else {
+            ctx.emit({ type: 'hotPotato:tick', category: this.category, fuseRemaining: this.fuseRemaining });
         }
     }
 }

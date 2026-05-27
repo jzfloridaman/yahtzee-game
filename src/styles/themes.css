@@ -1,0 +1,544 @@
+/* ============================================================
+   Mode + World theme tokens
+   ------------------------------------------------------------
+   Body gets one of:   .mode-rainbow / .mode-puzzle
+   Adventure adds:     .world-<id>   on top of .mode-puzzle
+   Components read:    var(--accent), var(--accent-soft),
+                       var(--bg-from), var(--bg-via), var(--bg-to),
+                       var(--surface), var(--surface-strong),
+                       var(--text), var(--text-soft)
+   ============================================================ */
+
+:root {
+    /* Defaults — overridden by mode classes. */
+    --accent: #22d3ee;
+    --accent-soft: rgba(34, 211, 238, 0.25);
+    --bg-from: #1e1b4b;
+    --bg-via:  #312e81;
+    --bg-to:   #4c1d95;
+    --surface: rgba(15, 23, 42, 0.72);
+    --surface-strong: rgba(15, 23, 42, 0.92);
+    --text: #f8fafc;
+    --text-soft: #cbd5e1;
+    --frame-radius: 22px;
+    --frame-max-width: 430px;
+    /* Safe area helpers — env() falls back to 0 on browsers without notch */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+}
+
+/* ---------- Mode: Rainbow ----------
+   Keep the playful animated rainbow gradient the project shipped with. */
+body.mode-rainbow {
+    --accent: #22d3ee;
+    --accent-soft: rgba(34, 211, 238, 0.28);
+    --bg-from: #4a00e0;
+    --bg-via:  #8e2de2;
+    --bg-to:   #ff6b6b;
+    --bg-extra: #ff8e53;
+    --surface: rgba(17, 24, 39, 0.78);
+    --surface-strong: rgba(17, 24, 39, 0.92);
+}
+
+/* ---------- Mode: Puzzle ----------
+   Deep indigo + magenta accent. Subtle starfield via radial dots. */
+body.mode-puzzle {
+    --accent: #e879f9;
+    --accent-soft: rgba(232, 121, 249, 0.28);
+    --bg-from: #0f0a2e;
+    --bg-via:  #1e1b4b;
+    --bg-to:   #312e81;
+    --surface: rgba(15, 23, 42, 0.78);
+    --surface-strong: rgba(15, 23, 42, 0.94);
+}
+
+/* ---------- Adventure worlds (layered on .mode-puzzle) ---------- */
+
+/* Beginnings — cosmos: deep purple / violet, starfield */
+body.world-beginnings {
+    --accent: #c4b5fd;
+    --accent-soft: rgba(196, 181, 253, 0.28);
+    --bg-from: #1e1b4b;
+    --bg-via:  #312e81;
+    --bg-to:   #581c87;
+}
+
+/* Frostlands — tundra: slate cyan, snow */
+body.world-frostlands {
+    --accent: #67e8f9;
+    --accent-soft: rgba(103, 232, 249, 0.28);
+    --bg-from: #0c1a2e;
+    --bg-via:  #1e3a5f;
+    --bg-to:   #2563eb;
+}
+
+/* Echo Chamber — ocean: teal navy, bubbles */
+body.world-echo-chamber {
+    --accent: #5eead4;
+    --accent-soft: rgba(94, 234, 212, 0.28);
+    --bg-from: #042f3e;
+    --bg-via:  #0e7490;
+    --bg-to:   #134e4a;
+}
+
+/* Storm Front — slate electric, lightning */
+body.world-storm-front {
+    --accent: #facc15;
+    --accent-soft: rgba(250, 204, 21, 0.28);
+    --bg-from: #1e293b;
+    --bg-via:  #334155;
+    --bg-to:   #475569;
+}
+
+/* Storm Surge — volcano: crimson amber, embers */
+body.world-storm-surge {
+    --accent: #fb923c;
+    --accent-soft: rgba(251, 146, 60, 0.32);
+    --bg-from: #450a0a;
+    --bg-via:  #7c2d12;
+    --bg-to:   #b45309;
+}
+
+/* Finale — obsidian: near-black + neon red/gold */
+body.world-finale {
+    --accent: #f43f5e;
+    --accent-soft: rgba(244, 63, 94, 0.32);
+    --bg-from: #050505;
+    --bg-via:  #1f1d1d;
+    --bg-to:   #3a1212;
+}
+
+/* ============================================================
+   Mobile-locked viewport shell
+   ============================================================ */
+
+html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100dvh;
+}
+
+body {
+    /* Background: animated gradient driven by mode/world tokens. */
+    background:
+        radial-gradient(circle at 20% 10%, var(--bg-via) 0%, transparent 55%),
+        radial-gradient(circle at 80% 90%, var(--bg-to)  0%, transparent 55%),
+        linear-gradient(135deg, var(--bg-from) 0%, var(--bg-via) 50%, var(--bg-to) 100%);
+    background-attachment: fixed;
+    color: var(--text);
+    /* Honor safe-area on small screens */
+    padding-left: var(--safe-left);
+    padding-right: var(--safe-right);
+}
+
+/* Rainbow gets the original animated multi-stop sweep. */
+body.mode-rainbow {
+    background:
+        linear-gradient(135deg,
+            var(--bg-from)  0%,
+            var(--bg-via)  33%,
+            var(--bg-to)   66%,
+            var(--bg-extra, var(--bg-to)) 100%);
+    background-size: 400% 400%;
+    animation: themeGradientShift 18s ease-in-out infinite;
+    background-attachment: fixed;
+}
+
+@keyframes themeGradientShift {
+    0%   { background-position:   0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position:   0% 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body.mode-rainbow { animation: none; }
+}
+
+/* Mobile-locked column. The Vue app mounts into #app; we lock it to a
+   430px column with rounded corners and a soft outer glow. The body's
+   ambient gradient shows around it on wider viewports.
+
+   NOTE: uses `overflow: clip` (not hidden) so #app does NOT become a
+   scrolling ancestor. That lets `position: sticky` on the action zone /
+   player header pin to the viewport, while the column's rounded corners
+   still clip the world-fx atmosphere layer. */
+#app {
+    display: block;
+    width: 100%;
+    max-width: var(--frame-max-width);
+    margin: 0 auto;
+    min-height: 100dvh;
+    background: rgba(8, 8, 24, 0.32);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.06),
+        0 30px 90px -30px rgba(0, 0, 0, 0.6),
+        0 10px 30px -10px rgba(0, 0, 0, 0.4);
+    position: relative;
+    overflow: clip;
+    /* Round the column on viewports wider than the column itself. */
+    border-radius: 0;
+}
+
+@media (min-width: 480px) {
+    #app {
+        margin-top: 16px;
+        margin-bottom: 16px;
+        min-height: calc(100dvh - 32px);
+        border-radius: var(--frame-radius);
+    }
+}
+
+/* ============================================================
+   World-fx atmosphere layer (particle drift, lightning, etc.)
+   Lives inside #app via a .world-fx pseudo-element so it sits
+   behind the game UI without intercepting taps.
+   ============================================================ */
+
+.world-fx {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+.world-fx > * { position: absolute; }
+
+@media (prefers-reduced-motion: reduce) {
+    .world-fx { display: none; }
+}
+
+/* Frostlands snow */
+body.world-frostlands .world-fx::before,
+body.world-frostlands .world-fx::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        radial-gradient(2px 2px at 20% 30%, rgba(255,255,255,0.85), transparent 60%),
+        radial-gradient(1.5px 1.5px at 70% 60%, rgba(255,255,255,0.7),  transparent 60%),
+        radial-gradient(2px 2px at 40% 80%, rgba(255,255,255,0.6), transparent 60%),
+        radial-gradient(1.5px 1.5px at 85% 20%, rgba(255,255,255,0.8), transparent 60%),
+        radial-gradient(2px 2px at 10% 70%, rgba(255,255,255,0.7), transparent 60%);
+    background-size: 200px 200px;
+    animation: fxSnow 18s linear infinite;
+}
+body.world-frostlands .world-fx::after {
+    background-size: 320px 320px;
+    animation-duration: 28s;
+    opacity: 0.6;
+}
+@keyframes fxSnow {
+    0%   { transform: translateY(-10%); }
+    100% { transform: translateY(110%); }
+}
+
+/* Cosmos starlight */
+body.world-beginnings .world-fx::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,0.9), transparent 60%),
+        radial-gradient(1px 1px at 45% 70%, rgba(255,255,255,0.7), transparent 60%),
+        radial-gradient(1px 1px at 80% 35%, rgba(255,255,255,0.8), transparent 60%),
+        radial-gradient(1px 1px at 65% 85%, rgba(255,255,255,0.65), transparent 60%),
+        radial-gradient(1px 1px at 25% 55%, rgba(255,255,255,0.75), transparent 60%);
+    background-size: 240px 240px;
+    animation: fxTwinkle 6s ease-in-out infinite;
+}
+@keyframes fxTwinkle {
+    0%, 100% { opacity: 0.45; }
+    50%      { opacity: 1; }
+}
+
+/* Echo Chamber bubbles */
+body.world-echo-chamber .world-fx::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        radial-gradient(circle 6px at 20% 100%, rgba(94,234,212,0.4), transparent 70%),
+        radial-gradient(circle 4px at 60% 100%, rgba(94,234,212,0.3), transparent 70%),
+        radial-gradient(circle 8px at 80% 100%, rgba(94,234,212,0.35), transparent 70%),
+        radial-gradient(circle 5px at 35% 100%, rgba(94,234,212,0.3), transparent 70%);
+    background-size: 300px 600px;
+    animation: fxRise 14s linear infinite;
+}
+@keyframes fxRise {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(-100%); }
+}
+
+/* Storm Front lightning */
+body.world-storm-front .world-fx::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(250,204,21,0) 0%, rgba(250,204,21,0.18) 50%, rgba(250,204,21,0) 100%);
+    opacity: 0;
+    animation: fxLightning 9s ease-in-out infinite;
+}
+@keyframes fxLightning {
+    0%, 92%, 100% { opacity: 0; }
+    93%           { opacity: 0.7; }
+    94%           { opacity: 0; }
+    95%           { opacity: 0.4; }
+    96%           { opacity: 0; }
+}
+
+/* Storm Surge embers (rising warm dots) */
+body.world-storm-surge .world-fx::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        radial-gradient(2px 2px at 20% 100%, rgba(251,146,60,0.7), transparent 60%),
+        radial-gradient(2px 2px at 45% 100%, rgba(252,165,30,0.6), transparent 60%),
+        radial-gradient(1px 1px at 70% 100%, rgba(251,113,133,0.6), transparent 60%),
+        radial-gradient(2px 2px at 85% 100%, rgba(251,191,36,0.5), transparent 60%);
+    background-size: 220px 440px;
+    animation: fxRise 11s linear infinite;
+}
+
+/* Finale obsidian — slow vignette pulse */
+body.world-finale .world-fx::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(244,63,94,0.15) 100%);
+    animation: fxPulse 6s ease-in-out infinite;
+}
+@keyframes fxPulse {
+    0%, 100% { opacity: 0.5; }
+    50%      { opacity: 1; }
+}
+
+/* ============================================================
+   Cell-anchored modifier animations (created by cellAnimations.ts)
+   ============================================================ */
+
+#cell-fx-layer { pointer-events: none; }
+
+/* Generic cell flash overlay (positioned absolutely over the cell rect) */
+.cell-fx-flash {
+    position: fixed;
+    border-radius: 10px;
+    pointer-events: none;
+    opacity: 0;
+}
+.cell-fx-flash-ice {
+    background: radial-gradient(ellipse, rgba(186,230,253,0.95) 0%, rgba(56,189,248,0.55) 60%, transparent 100%);
+    animation: cellFxFlash 0.7s ease-out forwards;
+    box-shadow: 0 0 18px 4px rgba(56,189,248,0.55);
+}
+.cell-fx-flash-bomb-arm {
+    background: radial-gradient(ellipse, rgba(248,113,113,0.6) 0%, rgba(220,38,38,0.4) 60%, transparent 100%);
+    animation: cellFxFlash 0.8s ease-out forwards;
+    box-shadow: 0 0 22px 6px rgba(220,38,38,0.6);
+}
+.cell-fx-flash-defuse {
+    background: radial-gradient(ellipse, rgba(74,222,128,0.7) 0%, rgba(34,197,94,0.5) 60%, transparent 100%);
+    animation: cellFxFlash 0.6s ease-out forwards;
+    box-shadow: 0 0 18px 4px rgba(34,197,94,0.6);
+}
+.cell-fx-flash-expire {
+    background: radial-gradient(ellipse, rgba(251,191,36,0.85) 0%, rgba(220,38,38,0.65) 50%, transparent 100%);
+    animation: cellFxFlash 0.8s ease-out forwards;
+    box-shadow: 0 0 30px 10px rgba(251,113,133,0.6);
+}
+.cell-fx-flash-loop-peak {
+    background: radial-gradient(ellipse, rgba(236,72,153,0.5) 0%, transparent 70%);
+    animation: cellFxFlash 0.6s ease-out forwards;
+    box-shadow: 0 0 16px 4px rgba(236,72,153,0.6);
+}
+.cell-fx-flash-bonus {
+    background: linear-gradient(120deg, rgba(253,224,71,0) 0%, rgba(253,224,71,0.6) 50%, rgba(253,224,71,0) 100%);
+    animation: cellFxShimmer 0.9s ease-out forwards;
+    background-size: 200% 100%;
+}
+@keyframes cellFxFlash {
+    0%   { opacity: 0;   transform: scale(0.9); }
+    35%  { opacity: 0.9; transform: scale(1.04); }
+    100% { opacity: 0;   transform: scale(1); }
+}
+@keyframes cellFxShimmer {
+    0%   { opacity: 0; background-position: 200% 50%; }
+    50%  { opacity: 1; }
+    100% { opacity: 0; background-position: -50% 50%; }
+}
+
+/* Ice fragment confetti */
+.cell-fx-ice-fragment {
+    position: fixed;
+    width: 7px;
+    height: 7px;
+    background: linear-gradient(135deg, #e0f2fe, #7dd3fc);
+    border-radius: 2px;
+    box-shadow: 0 0 4px rgba(125,211,252,0.7);
+    animation: cellFxFragment 0.9s cubic-bezier(0.55,0.085,0.68,0.53) forwards;
+}
+@keyframes cellFxFragment {
+    0%   { opacity: 1; transform: translate(-50%, -50%) rotate(0); }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--ice-dx)), calc(-50% + var(--ice-dy))) rotate(var(--ice-rot)); }
+}
+
+/* Flying chip in transit */
+.cell-fx-flying-chip {
+    position: fixed;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    padding: 0 0.45rem;
+    background: linear-gradient(135deg, #fde68a, #f59e0b);
+    color: #111;
+    font-weight: 800;
+    font-size: 0.85rem;
+    border-radius: 9999px;
+    box-shadow: 0 6px 20px -4px rgba(245,158,11,0.85), 0 0 14px rgba(245,158,11,0.5);
+    transform: translate(-50%, -50%);
+    animation: cellFxFly 0.55s cubic-bezier(0.4, 1.4, 0.55, 1) forwards;
+}
+@keyframes cellFxFly {
+    0%   { transform: translate(-50%, -50%) scale(0.9); opacity: 1; }
+    60%  { transform: translate(calc(-50% + var(--fx-tx) * 0.95), calc(-50% + var(--fx-ty) * 0.95)) scale(1.05); opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--fx-tx)), calc(-50% + var(--fx-ty))) scale(0.85); opacity: 0; }
+}
+
+/* Bomb particle explosion */
+.cell-fx-bomb-particle {
+    position: fixed;
+    width: 6px;
+    height: 6px;
+    background: linear-gradient(135deg, #fb923c, #ef4444);
+    border-radius: 50%;
+    box-shadow: 0 0 8px #ef4444, 0 0 12px #fb923c;
+    transform: translate(-50%, -50%);
+    animation: cellFxParticle 0.7s cubic-bezier(0.3,0.7,0.55,1) forwards;
+}
+@keyframes cellFxParticle {
+    0%   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--fx-tx)), calc(-50% + var(--fx-ty))) scale(0.4); }
+}
+
+/* Screen vignette pulse (when bomb arms) */
+.cell-fx-vignette {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(220,38,38,0.45) 100%);
+    pointer-events: none;
+    animation: cellFxVignette 0.7s ease-out forwards;
+}
+@keyframes cellFxVignette {
+    0%, 100% { opacity: 0; }
+    40%      { opacity: 1; }
+}
+
+/* Bubble pop ring */
+.cell-fx-bubble-ring {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 3px solid #2dd4bf;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 12px rgba(45,212,191,0.6);
+    animation: cellFxRing 0.6s ease-out forwards;
+}
+@keyframes cellFxRing {
+    0%   { opacity: 1; width: 8px;  height: 8px;  border-width: 3px; }
+    100% { opacity: 0; width: 90px; height: 90px; border-width: 1px; }
+}
+
+/* Scatter chip from bubble */
+.cell-fx-bubble-chip {
+    position: fixed;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.4rem;
+    height: 1.4rem;
+    padding: 0 0.35rem;
+    background: linear-gradient(135deg, #fde68a, #f59e0b);
+    color: #111;
+    font-weight: 800;
+    font-size: 0.78rem;
+    border-radius: 9999px;
+    box-shadow: 0 4px 14px -2px rgba(245,158,11,0.7);
+    transform: translate(-50%, -50%);
+    animation: cellFxScatter 0.8s cubic-bezier(0.35, 1.25, 0.55, 1) forwards;
+}
+@keyframes cellFxScatter {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--fx-tx)), calc(-50% + var(--fx-ty))) scale(0.9); }
+}
+
+/* Score breakdown popup (anchored above cell) */
+.cell-fx-score-breakdown {
+    position: fixed;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transform: translate(-50%, -110%);
+    pointer-events: none;
+    background: rgba(15, 23, 42, 0.92);
+    color: #fff;
+    padding: 0.35rem 0.6rem;
+    border-radius: 10px;
+    border: 1px solid var(--accent, #e879f9);
+    font-weight: 700;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    box-shadow: 0 6px 22px -6px rgba(0,0,0,0.6);
+    animation: cellFxBreakdown 1.2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+.cell-fx-score-breakdown .cell-fx-raw   { color: #f1f5f9; }
+.cell-fx-score-breakdown .cell-fx-mult  { color: #fde047; font-weight: 800; }
+.cell-fx-score-breakdown .cell-fx-final {
+    color: #4ade80;
+    font-size: 1.1rem;
+    margin-left: 0.15rem;
+    font-weight: 900;
+}
+@keyframes cellFxBreakdown {
+    0%   { opacity: 0; transform: translate(-50%, -90%)  scale(0.85); }
+    15%  { opacity: 1; transform: translate(-50%, -110%) scale(1.05); }
+    70%  { opacity: 1; transform: translate(-50%, -125%) scale(1.05); }
+    100% { opacity: 0; transform: translate(-50%, -160%) scale(1.2); }
+}
+
+/* Goals panel goal-met flash */
+.cell-fx-goal-met {
+    animation: cellFxGoalMet 1.2s ease-out;
+}
+@keyframes cellFxGoalMet {
+    0%   { box-shadow: 0 0 0 0 rgba(74,222,128,0.0); }
+    25%  { box-shadow: 0 0 0 8px rgba(74,222,128,0.55); }
+    100% { box-shadow: 0 0 0 0 rgba(74,222,128,0.0); }
+}
+
+/* Subtle screen shake (for bomb expire) */
+.cell-fx-shake {
+    animation: cellFxShake 0.3s ease-in-out;
+}
+@keyframes cellFxShake {
+    0%, 100% { transform: translateX(0); }
+    25%      { transform: translateX(-4px); }
+    50%      { transform: translateX(4px); }
+    75%      { transform: translateX(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cell-fx-flash, .cell-fx-ice-fragment, .cell-fx-flying-chip,
+    .cell-fx-bomb-particle, .cell-fx-vignette, .cell-fx-bubble-ring,
+    .cell-fx-bubble-chip, .cell-fx-goal-met, .cell-fx-shake {
+        animation: none !important;
+    }
+    .cell-fx-score-breakdown {
+        animation: cellFxBreakdownReduced 0.5s ease-out forwards;
+    }
+    @keyframes cellFxBreakdownReduced {
+        0%   { opacity: 0; }
+        20%  { opacity: 1; }
+        80%  { opacity: 1; }
+        100% { opacity: 0; }
+    }
+}

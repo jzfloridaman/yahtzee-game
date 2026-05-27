@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
+import './styles/themes.css'
 import './styles.css'
 import { Capacitor } from '@capacitor/core'
 

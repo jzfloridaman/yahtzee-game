@@ -14,8 +14,21 @@ export class FlyingMultiplierModifier implements PuzzleModifier {
         this.multiplier = multiplier;
     }
 
-    transformScore(category: Categories, rawScore: number): number {
-        return category === this.category ? rawScore * this.multiplier : rawScore;
+    transformScore(category: Categories, rawScore: number, ctx?: PuzzleEngineCtx): number {
+        if (category !== this.category) return rawScore;
+        const final = rawScore * this.multiplier;
+        // Only emit when the multiplier actually changed the score — zero
+        // raws still report 0 → 0 which isn't worth animating.
+        if (ctx && rawScore > 0 && this.multiplier > 1) {
+            ctx.emit({
+                type: 'flyingMultiplier:applied',
+                category: this.category,
+                raw: rawScore,
+                final,
+                multiplier: this.multiplier,
+            });
+        }
+        return final;
     }
 
     onAfterScore(scored: Categories, value: number, ctx: PuzzleEngineCtx): void {
@@ -27,9 +40,16 @@ export class FlyingMultiplierModifier implements PuzzleModifier {
     }
 
     onTurnEnd(ctx: PuzzleEngineCtx): void {
+        const from = this.category;
         const next = ctx.pickRandomUnscored(this.kind, this.category);
         if (next) {
             ctx.relocateModifier(this, next);
+            ctx.emit({
+                type: 'flyingMultiplier:relocate',
+                from,
+                to: next,
+                multiplier: this.multiplier,
+            });
         }
     }
 }

@@ -11,6 +11,35 @@ services:
     networks:
       - dev-network
 
+  # Playwright runner — image ships chromium + every system lib we need
+  # (no sudo / libnspr4 hassle). Lives on the same dev-network so it can
+  # reach the dev server at http://web:5173.
+  #
+  # Usage:
+  #   docker compose run --rm playwright                            # all e2e tests
+  #   docker compose run --rm playwright npm run e2e:screenshots    # capture screenshots
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.60.0-noble
+    working_dir: /app
+    volumes:
+      - ./:/app
+      # Use a named volume for node_modules — host's modules were installed
+      # against the alpine `web` container, which has different native ABI
+      # than this debian-based playwright image.
+      - playwright-modules:/app/node_modules
+    environment:
+      BASE_URL: http://web:5173
+    entrypoint: ["/app/scripts/playwright-entry.sh"]
+    command: ["npx", "playwright", "test"]
+    depends_on:
+      - web
+    networks:
+      - dev-network
+    tty: true
+
 networks:
   dev-network:
     external: true
+
+volumes:
+  playwright-modules:

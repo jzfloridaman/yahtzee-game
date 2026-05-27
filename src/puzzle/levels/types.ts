@@ -27,3 +27,10 @@ export interface World {
     description?: string;
 }
 
+// Maps World.id -> the CSS theme class applied to <body>.
+// Adventure level select / GameBoard look up the right token set via
+// `body.world-<id>` selectors in `src/styles/themes.css`.
+export function worldThemeClass(worldId: string): string {
+    return `world-${worldId}`;
+}
+

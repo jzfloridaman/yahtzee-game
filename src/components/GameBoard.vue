@@ -133,10 +133,7 @@ import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { usePeerStore } from '../stores/peerStore'
 import { Categories } from '../enums/Categories'
-import { GameState } from '../enums/GameState'
 import { GameMode } from '../enums/GameMode'
-import { SoundEffects } from '../enums/SoundEffects';
-import { showYahtzeeAnimation, showScoreAnimation } from '../utils/animations'
 
 const emit = defineEmits<{
   (e: 'end-game'): void
@@ -192,44 +189,12 @@ const totalTopScorePercent = computed(() => {
   return (totalTopScore.value / 63) * 100;
 })
 
-// Game actions
+// Game actions — all branching (host / client / local) lives inside the
+// current player's controller now; these handlers are thin dispatchers.
 const rollDice = () => {
-  // this really needs to be refactored to keep it DRY
-  if (isOnlineGame.value) {
-    if (peerStore.isHost) {
-      isRolling.value = true;
-      gameStore.rollDice();
-      dice.value.forEach((die) => {
-        if (!die.held) {
-          die.isRolling = true;
-          setTimeout(() => {
-            die.isRolling = false;
-          }, 1000);
-        }
-      });
-      setTimeout(() => {
-        isRolling.value = false;
-      }, 1000);
-    } else {
-      peerStore.sendData({ type: 'rollDice' });
-      // animate dice
-      gameStore.playRollDiceAnimation();
-    }
-  } else {
-    isRolling.value = true;
-    gameStore.rollDice();
-    dice.value.forEach((die) => {
-      if (!die.held) {
-        die.isRolling = true;
-        setTimeout(() => {
-          die.isRolling = false;
-        }, 1000);
-      }
-    });
-    setTimeout(() => {
-      isRolling.value = false;
-    }, 1000);
-  }
+  isRolling.value = true;
+  gameStore.rollDice();
+  setTimeout(() => { isRolling.value = false; }, 1000);
 }
 
 const rollDiceText = computed(() => {
@@ -260,34 +225,7 @@ const rollDiceText = computed(() => {
 })
 
 const toggleHold = (index: number) => {
-
-  // this needs to be refactored to keep it DRY
-
-  if (isOnlineGame.value) {
-
-    if(newRoll.value){
-      return;
-    }
-
-    if (peerStore.isHost) {
-      peerStore.sendData({ type: 'holdDice', index });
-      currentGame.value?.toggleHold(index);
-      gameStore.playSoundEffect?.(SoundEffects.DiceHold);
-    } else {
-      peerStore.sendData({ type: 'holdDice', index });
-      gameStore.playSoundEffect?.(SoundEffects.DiceHold);
-      //gameStore.toggleHold(index);
-      currentGame.value?.toggleHold(index);
-    }
-  } else {
-
-    if(newRoll.value){
-      return;
-    }
-
-    currentGame.value?.toggleHold(index);
-    gameStore.playSoundEffect?.(SoundEffects.DiceHold);
-  }
+  gameStore.toggleHold(index);
 }
 
 const getPlayerScore = (index: number): number => {
@@ -318,116 +256,7 @@ const isCategorySelected = (category: Categories): boolean => {
 }
 
 const selectCategory = (category: Categories) => {
-  if (!currentGame.value || currentGame.value.isCategorySelected(category)) return;
-
-    // this needs to be refactored to keep it DRY
-
-  if (isOnlineGame.value) {
-
-    // dont allow to select category if newroll
-    if(newRoll.value){
-      return;
-    }
-
-    const peerStore = usePeerStore()
-    if (peerStore.isHost) {
-      // Host calculates score and updates game state
-      const score = currentGame.value.calculateScore(category);
-      //currentGame.value.updateSelectedScore(category, score, false);
-      handleCategorySelection(category, score);
-      //console.log('sending select category to player 2 with score:', score);
-      peerStore.sendData({ type: 'selectCategory', category, score: score });
-      gameStore.sendGameState();
-      gameStore.nextPlayer();
-    } else {
-
-      const score = currentGame.value.calculateScore(category);
-      // check for bonus yahtzee scores.
-      if(currentGame.value.isCategorySelected(Categories.Yahtzee) && category !== Categories.Yahtzee){
-        if (currentGame.value.dice().every(die => die.value === currentGame.value?.dice()[0].value) && 
-            currentGame.value.dice()[0].value !== 0) {  
-          let currentYahtzeeScore = currentGame.value.getScoreByCategory(Categories.Yahtzee);
-          if(currentYahtzeeScore > 0 && score > 0){
-            let updateYahtzeeScore = currentYahtzeeScore + 100;
-            peerStore.sendData({ type: 'bonusYahtzee', category, score: updateYahtzeeScore });
-            gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
-            showYahtzeeAnimation();
-          }
-        }
-      }
-      // Client sends category selection to host
-      
-      peerStore.sendData({ type: 'selectCategory', category, score: score });
-      // showScoreAnimation(score);
-      scoringAudioAndAnimation(category,score);
-    }
-  } else {
-
-    // Single player or local multiplayer
-    if(newRoll.value){
-      return;
-    }
-
-    const score = currentGame.value.calculateScore(category);
-    handleCategorySelection(category, score);
-    //currentGame.value.updateSelectedScore(category, score, false);
-  }
-}
-
-const scoringAudioAndAnimation = (category: Categories, score: number) => {
-  if(score > 0){
-    if(category === Categories.Yahtzee){
-      showYahtzeeAnimation();
-      gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
-    }else{  
-      showScoreAnimation(score, category);
-      gameStore.playSoundEffect?.(SoundEffects.Score)
-    }
-  }else{
-    gameStore.playSoundEffect?.(SoundEffects.NoScore)
-  }
-}
-
-const handleCategorySelection = (category: Categories, score: number) => {
-  if (!currentGame.value) return;
-
-  // Check for additional Yahtzee
-  if(currentGame.value.isCategorySelected(Categories.Yahtzee) && category !== Categories.Yahtzee){
-    if (currentGame.value.dice().every(die => die.value === currentGame.value?.dice()[0].value) && 
-        currentGame.value.dice()[0].value !== 0) {  
-      let currentYahtzeeScore = currentGame.value.getScoreByCategory(Categories.Yahtzee);
-      if(currentYahtzeeScore > 0 && score > 0){
-        let updateYahtzeeScore = currentYahtzeeScore + 100;
-        currentGame.value.updateSelectedScore(Categories.Yahtzee, updateYahtzeeScore);
-        if(isOnlineGame.value && peerStore.isHost){
-          peerStore.sendData({ type: 'bonusYahtzee', category, score: updateYahtzeeScore });
-        }
-        gameStore.playSoundEffect?.(SoundEffects.Yahtzee)
-        showYahtzeeAnimation();
-      }
-    }
-  }
-
-  currentGame.value.updateSelectedScore(category, score, false);
-  scoringAudioAndAnimation(category,score);
-
-  setTimeout(() => {
-    if (currentGame.value) {
-      if (currentGame.value.isGameOver()){
-        if(currentGame.value.state === GameState.GameOver){
-          endGame();
-        }
-      }
-
-      if(!isOnlineGame.value){
-        currentGame.value.nextPlayer();
-        currentGame.value.newRoll = true;
-        currentGame.value.rollsLeft = 2;
-      }
-
-
-    }
-  }, 0);
+  gameStore.selectCategory(category);
 }
 
 const getDieIcon = (die: number): string => {

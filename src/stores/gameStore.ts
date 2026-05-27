@@ -4,8 +4,10 @@ import { GameMode } from '../enums/GameMode'
 import { SoundEffects } from '../enums/SoundEffects'
 import { usePeerStore } from './peerStore'
 import { Categories } from '../enums/Categories'
+import type { SeatSpec, ControllerKind } from '../controllers'
 
 import { showYahtzeeAnimation, showScoreAnimation, showEmojiAnimation } from '../utils/animations'
+
 interface PlayerScore {
   playerNumber: number;
   score: number;
@@ -50,158 +52,224 @@ export const useGameStore = defineStore('game', {
       bgmEnabled: state.bgmEnabled,
       sfxEnabled: state.sfxEnabled
     }),
+    isOnlineHost(): boolean {
+      return this.gameMode === GameMode.OnlineMultiPlayer && usePeerStore().isHost;
+    },
+    isOnlineClient(): boolean {
+      return this.gameMode === GameMode.OnlineMultiPlayer && !usePeerStore().isHost;
+    },
   },
 
   actions: {
+    // -- Initialization --
+
+    buildSeatSpecs(playerCount: number): SeatSpec[] {
+      if (this.gameMode === GameMode.OnlineMultiPlayer) {
+        // Host is always seat 0, client always seat 1. Each side sees its
+        // own seat as 'local' and the other side as 'remote'.
+        const isHost = usePeerStore().isHost;
+        return isHost
+          ? [{ name: 'Player 1', kind: 'local' }, { name: 'Player 2', kind: 'remote' }]
+          : [{ name: 'Player 1', kind: 'remote' }, { name: 'Player 2', kind: 'local' }];
+      }
+      return Array.from({ length: playerCount }, (_, i) => ({
+        name: `Player ${i + 1}`,
+        kind: 'local' as ControllerKind,
+      }));
+    },
+
     initializeGame(mode: GameMode, players: number = 1) {
       this.game = new YahtzeeGame()
       this.game.setGameMode(mode)
       this.gameMode = mode
       this.isGameActive = true
-      this.game.setPlayers(players)
-      this.game.startNewGame(players)
+      this.game.startNewGame(this.buildSeatSpecs(players))
 
-      // If this is an online game, set up the peer connection
-      if (mode === GameMode.OnlineMultiPlayer) {
-        const peerStore = usePeerStore()
-        if (peerStore.isHost) {
-          // Host sends initial game state
-          this.sendGameState()
-        }
+      if (mode === GameMode.OnlineMultiPlayer && usePeerStore().isHost) {
+        this.sendGameState()
       }
     },
 
     sendGameState() {
       const peerStore = usePeerStore();
       if (this.game && peerStore.isConnected) {
-        console.log('Sending game state');
-        const gameState = {
+        peerStore.sendData({
           type: 'gameState',
           data: this.game.getGameState()
-        };
-        peerStore.sendData(gameState);
-      } else {
-        console.log('Cannot send game state:', {
-          hasGame: !!this.game,
-          isConnected: peerStore.isConnected
         });
       }
     },
 
-    handleIncomingData(data: any) {
-      if (this.gameMode !== GameMode.OnlineMultiPlayer) {
-        console.log('Not in online mode');
-        return;
+    // -- Low-level primitives. No peer messaging — the controller orchestrates
+    //    broadcasts. These are the single chokepoint for state mutation, so
+    //    host-vs-client divergence on apply paths can no longer drift.
+
+    applyRoll() {
+      if (!this.game) return;
+      if (this.game.rollsLeft === 0 && !this.game.newRoll) return;
+
+      if (this.game.newRoll) {
+        this.game.newRoll = false;
+        this.game.startNewRoll();
+        this.playSoundEffect?.(SoundEffects.DiceRoll);
+        this.game.rollDice();
+        this.game.rollsLeft = 2;
+      } else {
+        this.playSoundEffect?.(SoundEffects.DiceRoll);
+        this.game.rollDice();
+      }
+      this.playRollDiceAnimation();
+    },
+
+    applyHold(index: number) {
+      if (this.game && !this.game.newRoll) {
+        this.game.toggleHold(index);
+        this.playSoundEffect?.(SoundEffects.DiceHold);
+      }
+    },
+
+    // Applies a category selection: writes the score, handles bonus Yahtzee,
+    // plays local sound/animation. Does NOT advance to the next player — the
+    // controller decides whether to call nextPlayer or end the game.
+    applySelectCategory(category: Categories): { score: number; bonusYahtzee: number } {
+      const result = { score: 0, bonusYahtzee: 0 };
+      if (!this.game || this.game.isCategorySelected(category)) return result;
+
+      const dice = this.game.dice();
+      const score = this.game.calculateScore(category);
+      result.score = score;
+
+      // Bonus Yahtzee: +100 on the existing Yahtzee score when all dice match
+      // (and aren't zero) and we're scoring a non-Yahtzee category whose
+      // Yahtzee slot is already filled with a positive score.
+      if (
+        category !== Categories.Yahtzee &&
+        this.game.isCategorySelected(Categories.Yahtzee) &&
+        dice.length > 0 && dice[0].value !== 0 &&
+        dice.every(d => d.value === dice[0].value)
+      ) {
+        const currentYahtzee = this.game.getScoreByCategory(Categories.Yahtzee) || 0;
+        if (currentYahtzee > 0 && score > 0) {
+          result.bonusYahtzee = currentYahtzee + 100;
+          this.game.updateSelectedScore(Categories.Yahtzee, result.bonusYahtzee, false);
+          showYahtzeeAnimation();
+          this.playSoundEffect?.(SoundEffects.Yahtzee);
+        }
       }
 
-      //console.log('Received data:', data);
+      this.game.updateSelectedScore(category, score, false);
+
+      if (score > 0) {
+        if (category === Categories.Yahtzee) {
+          showYahtzeeAnimation();
+          this.playSoundEffect?.(SoundEffects.Yahtzee);
+        } else {
+          showScoreAnimation(score, category);
+          this.playSoundEffect?.(SoundEffects.Score);
+        }
+      } else {
+        this.playSoundEffect?.(SoundEffects.NoScore);
+      }
+
+      return result;
+    },
+
+    // -- Public actions: dispatch through the current player's controller.
+    //    The branching that used to live here (host/client/local) now lives
+    //    inside the controller for the seat that owns the action.
+
+    rollDice() {
+      if (!this.game) return;
+      this.game.players[this.game.currentPlayer].controller.requestRoll();
+    },
+
+    toggleHold(index: number) {
+      if (!this.game || this.game.newRoll) return;
+      this.game.players[this.game.currentPlayer].controller.requestHold(index);
+    },
+
+    selectCategory(category: Categories) {
+      if (!this.game || this.game.newRoll) return;
+      if (this.game.isCategorySelected(category)) return;
+      this.game.players[this.game.currentPlayer].controller.requestCategory(category);
+    },
+
+    // -- Incoming peer data --
+
+    handleIncomingData(data: any) {
+      if (this.gameMode !== GameMode.OnlineMultiPlayer) return;
+
+      const peer = usePeerStore();
+      const remoteSeat = () => this.game?.players.find(p => p.controller.kind === 'remote');
 
       switch (data.type) {
         case 'gameStarted':
-          console.log('Game started message received');
-          if (!usePeerStore().isHost) {
+          if (!peer.isHost) {
             this.initializeGame(GameMode.OnlineMultiPlayer, 2);
           }
           break;
 
         case 'gameOver':
-          console.log('Game over message received');
           this.endGame();
           break;
 
         case 'gameState':
-          console.log('Updating game state');
-          if (!usePeerStore().isHost && this.game) {
-
+          if (!peer.isHost && this.game) {
             this.game.updateFromState(data.data);
-
-            if(!data.data.newRoll){
+            if (!data.data.newRoll) {
               this.playRollDiceAnimation();
             }
-            
-            
             if (data.data.isGameOver) {
               this.gameIsOver = true;
             }
           }
           break;
+
         case 'rollDice':
-          //console.log('Rolling dice');
-          if (usePeerStore().isHost) {
-            this.rollDice();
-            // Send updated game state after rolling
-            this.sendGameState();
-            this.playRollDiceAnimation();
-          }else{
-            // animate dice on client
+          if (peer.isHost) {
+            // Client is requesting a roll — route to its (remote) controller
+            remoteSeat()?.controller.requestRoll();
+          } else {
+            // Host's animation hint — the dice values arrive separately in gameState
             this.playRollDiceAnimation();
           }
           break;
+
         case 'holdDice':
-          //console.log('Holding dice at index:', data.index);
-          if (usePeerStore().isHost) {
-            this.game?.toggleHold(data.index);
-            //this.sendGameState();
+          if (peer.isHost) {
+            remoteSeat()?.controller.requestHold(data.index);
+          }
+          // Client: no action; the new held state arrives in gameState
+          break;
+
+        case 'selectCategory':
+          if (peer.isHost) {
+            remoteSeat()?.controller.requestCategory(data.category);
           } else {
-            // Client should update its held state
-            this.game?.toggleHold(data.index);
+            // Animate using the score the host calculated
+            if (data.category === Categories.Yahtzee && data.score > 0) {
+              showYahtzeeAnimation();
+              this.playSoundEffect?.(SoundEffects.Yahtzee);
+            } else if (data.score > 0) {
+              showScoreAnimation(data.score, data.category);
+              this.playSoundEffect?.(SoundEffects.Score);
+            } else {
+              this.playSoundEffect?.(SoundEffects.NoScore);
+            }
           }
           break;
 
         case 'bonusYahtzee':
-          //console.log('Bonus yahtzee message received');
-          if(usePeerStore().isHost){
-            this.game?.updateSelectedScore(Categories.Yahtzee, data.score, false);
-          }
-
-          if(data.score > 0){
+          // Animation-only on the client side; the actual yahtzee-score
+          // update arrives via gameState.
+          if (data.score > 0) {
             showYahtzeeAnimation();
-            //showScoreAnimation(data.score);
-          }
-          
-
-          break;
-
-        case 'selectCategory':
-          //console.log('Selecting category:', data.category);
-          if (usePeerStore().isHost) {
-
-            if(this.game?.isGameOver()){
-              console.log('Game is over, cannot select category');
-              usePeerStore().sendData({ type: 'gameOver' });
-              this.endGame();
-              return;
-            }
-
-            // Host calculates score and updates game state
-            // needs to check for bonus yahtzee scores.
-            const score = this.game?.calculateScore(data.category as Categories) || 0;
-            this.game?.updateSelectedScore(data.category as Categories, score, false);
-
-            if(data.category === Categories.Yahtzee && score > 0){
-              showYahtzeeAnimation();
-            }
-
-            showScoreAnimation(score, data.category);
-            
-            this.sendGameState();
-            this.nextPlayer();
-
-          } else {
-            if(data.category === Categories.Yahtzee && data.score > 0){
-              showYahtzeeAnimation();
-            }
-            showScoreAnimation(data.score, data.category);
-
+            this.playSoundEffect?.(SoundEffects.Yahtzee);
           }
           break;
 
         case 'emoji':
-          if(data.emoji){
-            showEmojiAnimation(data.emoji);
-          }else{
-            console.log('Unknown emoji:', data.emoji);
-          }
+          if (data.emoji) showEmojiAnimation(data.emoji);
           break;
 
         case 'chatMessage':
@@ -209,10 +277,9 @@ export const useGameStore = defineStore('game', {
           break;
 
         case 'resyncRequest':
-          if (usePeerStore().isHost) {
-            this.sendGameState();
-          }
+          if (peer.isHost) this.sendGameState();
           break;
+
         default:
           console.log('Unknown data type:', data.type);
       }
@@ -224,16 +291,14 @@ export const useGameStore = defineStore('game', {
 
     endGame() {
       if (this.game) {
-        // Create scores array with player numbers
         const scores: PlayerScore[] = Array.from(
-          { length: this.game.getPlayerCount() }, 
+          { length: this.game.getPlayerCount() },
           (_, i) => ({
             playerNumber: i + 1,
             score: this.game!.getPlayerScore(i)
           })
         );
 
-        // Add new game to history
         this.gameHistory.unshift({
           date: new Date().toISOString(),
           mode: this.gameMode!,
@@ -241,37 +306,27 @@ export const useGameStore = defineStore('game', {
           scores
         })
 
-        // Keep only the last 10 games
         this.gameHistory = this.gameHistory.slice(0, MAX_HISTORY_ITEMS)
-        
-        // Save to localStorage
         this.saveGameHistory()
 
-        // Disconnect from peer if in online mode
         if (this.gameMode === GameMode.OnlineMultiPlayer) {
           usePeerStore().disconnect();
           localStorage.removeItem('online session');
         }
       }
 
-      // enable the game over screen
       this.gameIsOver = true;
     },
 
+    // Advances to the next player and resets per-turn state. The controller
+    // decides when to call this; broadcasting is the controller's job.
     nextPlayer() {
-      if (this.game) {
-        this.game.nextPlayer()
-        // Reset rolls and newRoll state for the next player
-        this.game.rollsLeft = 2
-        this.game.newRoll = true
-        if (this.gameMode === GameMode.OnlineMultiPlayer) {
-          if(this.game.isGameOver()){
-            this.endGame();
-            return;
-          }
-          this.game.forceDiceReset();
-          this.sendGameState()
-        }
+      if (!this.game) return;
+      this.game.nextPlayer();
+      this.game.rollsLeft = 2;
+      this.game.newRoll = true;
+      if (this.gameMode === GameMode.OnlineMultiPlayer) {
+        this.game.forceDiceReset();
       }
     },
 
@@ -298,12 +353,11 @@ export const useGameStore = defineStore('game', {
       localStorage.setItem('sfxEnabled', enabled.toString())
     },
 
-    // Game actions
     restartGame() {
       if (this.game) {
         const playerCount = this.game.getPlayerCount()
-        this.game.startNewGame(playerCount)
-        if (this.gameMode === GameMode.OnlineMultiPlayer) {
+        this.game.startNewGame(this.buildSeatSpecs(playerCount))
+        if (this.gameMode === GameMode.OnlineMultiPlayer && usePeerStore().isHost) {
           this.sendGameState()
         }
       }
@@ -319,61 +373,7 @@ export const useGameStore = defineStore('game', {
       this.gameIsOver = false
     },
 
-    rollDice() {
-      if(!this.game){
-        console.log('no game');
-        return;
-      }
-
-      if(this.game.rollsLeft === 0 && !this.game.newRoll){
-        return;
-      }
-    
-      if(this.game.newRoll){   
-          this.game.newRoll = false;
-          this.game.startNewRoll();
-          this.playSoundEffect?.(SoundEffects.DiceRoll);
-          this.game.rollDice();
-          this.game.rollsLeft = 2;
-      }else{
-          this.playSoundEffect?.(SoundEffects.DiceRoll);
-          this.game.rollDice();
-      }
-
-      if (this.gameMode === GameMode.OnlineMultiPlayer) {
-        const peerStore = usePeerStore()
-
-        if (peerStore.isHost) {
-
-          // Host sends updated game state after rolling
-          this.sendGameState()
-          peerStore.sendData({ type: 'rollDice' });
-        } else {
-          // Client sends roll request to host
-          peerStore.sendData({ type: 'rollDice' });
-        }
-      }
-    },
-
-    toggleHold(index: number) {
-      if (this.game) {
-        if (this.gameMode === GameMode.OnlineMultiPlayer) {
-          const peerStore = usePeerStore()
-          if (peerStore.isHost) {
-            this.game.toggleHold(index)
-            this.sendGameState()
-            peerStore.sendData({ type: 'holdDice', index })
-          } else {
-            peerStore.sendData({ type: 'holdDice', index })
-          }
-        } else {
-          this.game.toggleHold(index)
-        }
-      }
-    },
-
     playRollDiceAnimation() {
-
       if (this.game) {
         const dice = this.game.dice();
         dice.forEach((die) => {
@@ -389,41 +389,15 @@ export const useGameStore = defineStore('game', {
       }
     },
 
-    // i dont think this is needed
-    selectCategory(category: Categories) {
-      if (this.game) {
-        if (this.gameMode === GameMode.OnlineMultiPlayer) {
-          const peerStore = usePeerStore()
-          if (peerStore.isHost) {
-            this.game.selectCategory(category)
-            // Send the category selection to the client
-            peerStore.sendData({ type: 'selectCategory', category, score: 1000 })
-            this.sendGameState()
-            // After selecting a category, move to next player
-            this.nextPlayer()
-          } else {
-            //console.log('selecting category on client, sending to host');
-            peerStore.sendData({ type: 'selectCategory', category })
-            this.game.selectCategory(category)
-          }
-        } else {
-          this.game.selectCategory(category)
-        }
-      }
-    },
-
     startOnlineGame() {
       if (this.gameMode === GameMode.OnlineMultiPlayer) {
         const peerStore = usePeerStore();
         if (peerStore.isHost) {
-          // Host initializes game
           this.initializeGame(GameMode.OnlineMultiPlayer, 2);
-          // Send game started message to client
           peerStore.sendData({ type: 'gameStarted' });
-          // Send initial game state
           this.sendGameState();
         }
       }
     },
   },
-}) 
+})

@@ -19,125 +19,118 @@
         <button @click="handleNewGame" class="bg-white text-red-700 font-bold px-4 py-2 rounded hover:bg-gray-200 transition">New Game</button>
       </div>
     </div>
-    <!-- Overlay & Menus-->
-    <div class="overlay" :class="{ active: isAnyMenuOpen }" @click="closeAllMenus()"></div>
-    <div class="fixed top-4 right-4 z-50 flex gap-2">
-
-      <!-- Audio Settings Button -->
-      <button @click="toggleAudioSettings" 
-              class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
-        <i class="fas fa-volume-up text-white text-xl"></i>
+    <!-- Sticky top bar — owns the hamburger so player rows + section
+         headers below get the full column width back. -->
+    <header class="app-top-bar">
+      <button class="hamburger-btn" @click="toggleSheet"
+              :aria-expanded="showSheet" aria-label="Open menu">
+        <i class="fas fa-bars"></i>
+        <span v-if="unreadChatCount > 0 && peerStore.isConnected" class="chat-counter-bubble">{{ unreadChatCount }}</span>
       </button>
-      <div v-show="gameStore.showAudioSettings" 
-            class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-96">
-        <h3 class="text-lg font-bold mb-2">Audio Settings</h3>
-        <div class="flex flex-col gap-2">
-          <label class="flex items-center gap-2">
-            <input type="checkbox" v-model="gameStore.bgmEnabled" 
-                    @change="(e: Event) => gameStore.setBgmEnabled((e.target as HTMLInputElement).checked)"
-                    class="w-4 h-4">
-            <span>Background Music</span>
-          </label>
-          <label class="flex items-center gap-2">
-            <input type="checkbox" v-model="gameStore.sfxEnabled" 
-                    @change="(e: Event) => gameStore.setSfxEnabled((e.target as HTMLInputElement).checked)"
-                    class="w-4 h-4">
-            <span>Sound Effects</span>
-          </label>
-        </div>
-      </div>
+    </header>
 
-      <!-- History Button -->
-      <button @click="toggleGameHistory" 
-              class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
-        <i class="fas fa-history text-white text-xl"></i>
-      </button>
-      <div v-show="gameStore.showGameHistory" 
-           class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-96">
-        <h3 class="text-lg font-bold mb-2">Recent Games</h3>
-        <div class="flex flex-col gap-2 overflow-y-auto max-h-96">
-          <div v-for="(game, index) in gameStore.gameHistory" :key="index" 
-               class="p-3 bg-gray-700 rounded">
-            <div class="text-sm mb-1">{{ new Date(game.date).toLocaleString() }}</div>
-            <div class="text-sm mb-1">{{ game.mode === GameModeEnum.SinglePlayer ? 'Single Player' : 'Multi Player' }}</div>
-            <div class="grid gap-1">
-              <div v-for="playerScore in game.scores" :key="playerScore.playerNumber"
-                   class="text-sm grid grid-cols-2 items-center bg-gray-600/50 p-1 rounded">
-                <span>Player {{ playerScore.playerNumber }}</span>
-                <span class="text-right font-bold">{{ playerScore.score }}</span>
+    <!-- Bottom-sheet drawer -->
+    <transition name="sheet">
+      <div v-if="showSheet" class="sheet-backdrop" @click="closeSheet">
+        <div class="sheet" @click.stop>
+          <div class="sheet-handle"></div>
+
+          <div class="sheet-tabs" role="tablist">
+            <button role="tab" :class="['sheet-tab', { active: activeTab === 'audio' }]"
+                    @click="activeTab = 'audio'">
+              <i class="fas fa-volume-up"></i><span>Audio</span>
+            </button>
+            <button role="tab" :class="['sheet-tab', { active: activeTab === 'history' }]"
+                    @click="activeTab = 'history'">
+              <i class="fas fa-history"></i><span>History</span>
+            </button>
+            <button v-if="gameStore.isGameActive && peerStore.isConnected"
+                    role="tab" :class="['sheet-tab', { active: activeTab === 'chat' }]"
+                    @click="activeTab = 'chat'">
+              <i class="fas fa-comment-dots"></i><span>Chat</span>
+              <span v-if="unreadChatCount > 0" class="chat-counter-bubble">{{ unreadChatCount }}</span>
+            </button>
+            <button v-if="gameStore.isGameActive"
+                    role="tab" :class="['sheet-tab', { active: activeTab === 'options' }]"
+                    @click="activeTab = 'options'">
+              <i class="fas fa-cog"></i><span>Options</span>
+            </button>
+          </div>
+
+          <div class="sheet-panel" v-show="activeTab === 'audio'">
+            <h3 class="sheet-h3">Audio Settings</h3>
+            <label class="sheet-checkbox">
+              <input type="checkbox" v-model="gameStore.bgmEnabled"
+                     @change="(e: Event) => gameStore.setBgmEnabled((e.target as HTMLInputElement).checked)">
+              <span>Background Music</span>
+            </label>
+            <label class="sheet-checkbox">
+              <input type="checkbox" v-model="gameStore.sfxEnabled"
+                     @change="(e: Event) => gameStore.setSfxEnabled((e.target as HTMLInputElement).checked)">
+              <span>Sound Effects</span>
+            </label>
+          </div>
+
+          <div class="sheet-panel" v-show="activeTab === 'history'">
+            <h3 class="sheet-h3">Recent Games</h3>
+            <div v-if="gameStore.gameHistory.length === 0" class="sheet-empty">No games played yet.</div>
+            <div class="sheet-scroll">
+              <div v-for="(game, index) in gameStore.gameHistory" :key="index" class="history-card">
+                <div class="history-meta">
+                  <span>{{ new Date(game.date).toLocaleString() }}</span>
+                  <span class="history-mode">{{ formatHistoryMode(game) }}</span>
+                </div>
+                <div class="history-scores">
+                  <div v-for="playerScore in game.scores" :key="playerScore.playerNumber" class="history-score-row">
+                    <span>Player {{ playerScore.playerNumber }}</span>
+                    <span class="history-score-val">{{ playerScore.score }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
+          <div class="sheet-panel" v-show="activeTab === 'chat'">
+            <h3 class="sheet-h3">Chat</h3>
+            <div class="emoji-row">
+              <span v-for="emoji in chatEmojis" :key="emoji" class="emoji-pick"
+                    @click="sendEmojiAnimation(emoji)">{{ emoji }}</span>
+            </div>
+            <div class="chat-input-row">
+              <input v-model="chatInput" @keyup.enter="sendChatMessage" placeholder="Type a message..." />
+              <button @click="sendChatMessage" class="chat-send-btn">Send</button>
+            </div>
+            <div ref="chatHistoryEl" class="chat-history sheet-scroll">
+              <div v-for="(msg, idx) in chatHistory" :key="idx" class="chat-msg">
+                <span class="chat-history-sender">{{ msg.sender }}:</span> {{ msg.message }}
+              </div>
+            </div>
+          </div>
 
-      <!-- Chat Menu Button -->
-      <button @click="toggleChatMenu" v-if="gameStore.isGameActive && peerStore.isConnected"
-              class="bg-gray-800 p-3 relative rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
-        <i class="fas fa-comment-dots text-white text-xl"></i>
-        <span v-if="unreadChatCount > 0" class="chat-counter-bubble">{{ unreadChatCount }}</span>
-      </button>
-      <div v-show="showChatMenu" 
-            class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-96">
-        <h3 class="text-lg font-bold mb-2">Chat</h3>
-
-        <div class="flex flex-wrap gap-2">
-          <span v-for="emoji in chatEmojis" :key="emoji" class="text-2xl cursor-pointer select-none hover:scale-125 transition-transform" @click="sendEmojiAnimation(emoji)">{{ emoji }}</span>
-        </div>
-
-        <div class="flex gap-1 mb-2 mt-2">
-          <input v-model="chatInput" @keyup.enter="sendChatMessage" class="flex-1 rounded p-1 bg-gray-700 text-white" placeholder="Type a message..." />
-          <button @click="sendChatMessage" class="bg-blue-600 hover:bg-blue-700 text-white px-2 rounded">Send</button>
-        </div>
-
-        <div ref="chatHistoryEl" class="chat-history flex flex-col gap-1 mb-2 max-h-32 overflow-y-auto">
-          <div v-for="(msg, idx) in chatHistory" :key="idx" class="text-sm">
-            <span class="font-bold chat-history-sender">{{ msg.sender }}:</span> {{ msg.message }}
+          <div class="sheet-panel" v-show="activeTab === 'options'">
+            <h3 class="sheet-h3">Game Options</h3>
+            <button v-if="peerStore.isHost" class="sheet-action-btn danger" @click="endHostGame">End Game</button>
+            <button v-if="peerStore.isHost || !peerStore.isConnected" class="sheet-action-btn primary" @click="restartGame">Restart Game</button>
+            <button v-if="peerStore.isHost || !peerStore.isConnected" class="sheet-action-btn success" @click="newGame">Select Game</button>
+            <button v-if="peerStore.isConnected" class="sheet-action-btn warning" @click="requestResync">Request Resync</button>
           </div>
         </div>
-
-
       </div>
+    </transition>
 
-      <!-- Game Options Button -->
-      <button @click="toggleGameOptions" v-if="gameStore.isGameActive"
-              class="bg-gray-800 p-3 rounded-lg shadow-lg hover:bg-gray-700 transition-colors duration-200">
-        <i class="fas fa-bars text-white text-xl"></i>
-      </button>
-      <div v-show="gameStore.showGameOptions" 
-            class="bg-gray-800 p-4 rounded-lg shadow-lg mt-2 absolute right-0 top-12 w-96">
-        <h3 class="text-lg font-bold mb-2">Game Options</h3>
-        <div class="flex flex-col gap-2">
-          <button @click="endHostGame" 
-                  v-if="peerStore.isHost"
-                  class="bg-red-800 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-            End Game
-          </button>
-          <button @click="restartGame" 
-                  v-if="peerStore.isHost || !peerStore.isConnected"
-                  class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-            Restart Game
-          </button>
-          <button @click="newGame" 
-                  v-if="peerStore.isHost || !peerStore.isConnected"
-                  class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-            Select Game
-          </button>
+    <!-- Atmosphere layer (snow, embers, lightning, etc.) driven by .world-* on body -->
+    <div class="world-fx" aria-hidden="true"></div>
 
-          <button @click="requestResync"
-                  v-if="peerStore.isConnected"
-                  class="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
-            Request Resync
-          </button>
-        </div>
-      </div>
-
-    </div>
-
-    <GameMode v-if="!gameStore.gameIsActive" @start-game="startGame" />
+    <LevelSelect v-if="!gameStore.gameIsActive && gameStore.showAdventureMenu"
+                 @start-level="startAdventureLevel"
+                 @back="closeAdventure" />
+    <GameMode v-else-if="!gameStore.gameIsActive" @start-game="startGame" />
     <GameBoard v-else-if="!gameStore.gameIsOver" @end-game="endGame" />
-    <GameOver v-if="gameStore.gameIsOver" @restart-game="newGame" />
+    <GameOver v-if="gameStore.gameIsOver"
+              @restart-game="newGame"
+              @retry-puzzle="retryPuzzle"
+              @next-level="nextLevel"
+              @back-to-levels="backToLevels" />
 
     <div class="hidden grid-cols-3 grid-cols-4">Tailwind forced classes</div>
   </div>
@@ -148,19 +141,20 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import GameMode from './components/GameMode.vue'
 import GameBoard from './components/GameBoard.vue'
 import GameOver from './components/GameOver.vue'
+import LevelSelect from './components/LevelSelect.vue'
 import { useGameStore } from './stores/gameStore'
 import { GameMode as GameModeEnum } from './enums/GameMode'
+import { GameVariant } from './enums/GameVariant'
 import { SoundEffects, SoundVolumes } from './enums/SoundEffects'
 import { usePeerStore } from './stores/peerStore'
 import type { SeatSpec } from './controllers'
 import { showEmojiAnimation } from './utils/animations'
+import { getLevelByNumber } from './puzzle/levels/definitions'
 
 const gameStore = useGameStore()
 const peerStore = usePeerStore()
 
-// Chat menu state and emojis
-const showChatMenu = ref(false);
-const chatMessage = ref('');
+// Chat emojis (state for chat panel visibility now lives in showSheet + activeTab)
 const chatEmojis = [
   '💩','😀', '😂', '😎', '😍', '😡', '😭', '👍', '👎', '🎲', '🔥', '👏', '🤔', '🥳', '😱', '😴', '💯', '🍀', '🍻', '🏆', '🤝' 
 ];
@@ -235,6 +229,57 @@ watch(() => gameStore.bgmEnabled, (newValue) => {
   }
 })
 
+// Body theme class controller. Watches the active variant + adventure
+// level and toggles `mode-rainbow` / `mode-puzzle` / `world-<id>` on
+// <body>. CSS variables in src/styles/themes.css read off these classes.
+const THEME_MODE_CLASSES = ['mode-rainbow', 'mode-puzzle']
+const THEME_WORLD_CLASSES = [
+  'world-beginnings', 'world-frostlands', 'world-echo-chamber',
+  'world-storm-front', 'world-storm-surge', 'world-finale',
+]
+const THEME_COLORS: Record<string, string> = {
+  'mode-rainbow': '#8e2de2',
+  'mode-puzzle':  '#0f0a2e',
+  'world-beginnings':  '#312e81',
+  'world-frostlands':  '#1e3a5f',
+  'world-echo-chamber':'#0e7490',
+  'world-storm-front': '#334155',
+  'world-storm-surge': '#7c2d12',
+  'world-finale':      '#1f1d1d',
+}
+
+const activeThemeClasses = computed<string[]>(() => {
+  const variant = gameStore.gameVariant
+  const adventureN = gameStore.currentAdventureLevel
+  // Adventure: layer world theme over mode-puzzle
+  if (variant === GameVariant.Puzzle && adventureN != null) {
+    const level = getLevelByNumber(adventureN)
+    if (level) return ['mode-puzzle', `world-${level.worldId}`]
+  }
+  if (variant === GameVariant.Puzzle) return ['mode-puzzle']
+  return ['mode-rainbow']
+})
+
+function applyThemeClasses(classes: string[]) {
+  const body = document.body
+  body.classList.remove(...THEME_MODE_CLASSES, ...THEME_WORLD_CLASSES)
+  classes.forEach(c => body.classList.add(c))
+  // Update <meta name="theme-color"> so the OS status bar matches the
+  // active theme (PWA + Capacitor benefit).
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
+  const last = classes[classes.length - 1]
+  const color = THEME_COLORS[last] || THEME_COLORS['mode-puzzle']
+  if (meta) meta.content = color
+  else {
+    const m = document.createElement('meta')
+    m.name = 'theme-color'
+    m.content = color
+    document.head.appendChild(m)
+  }
+}
+
+watch(activeThemeClasses, applyThemeClasses, { immediate: true })
+
 // Rejoin session modal state
 const showRejoinModal = ref(false)
 const pendingSessionData = ref<any>(null)
@@ -278,11 +323,17 @@ onMounted(() => {
   }
 })
 
-const startGame = (mode: GameModeEnum, players?: number, seats?: SeatSpec[]) => {
+const formatHistoryMode = (game: { mode: GameModeEnum; variant?: GameVariant }): string => {
+  const base = game.mode === GameModeEnum.SinglePlayer ? 'Single Player' : 'Multi Player'
+  if (game.variant === GameVariant.Puzzle) return `${base} — Puzzle`
+  return base
+}
+
+const startGame = (mode: GameModeEnum, players?: number, seats?: SeatSpec[], variant?: GameVariant) => {
   if (seats) {
-    gameStore.initializeGame(mode, seats);
+    gameStore.initializeGame(mode, seats, variant);
   } else {
-    gameStore.initializeGame(mode, players);
+    gameStore.initializeGame(mode, players, variant);
   }
 }
 
@@ -319,44 +370,49 @@ const newGame = () => {
   peerStore.connectionLost = false;
 }
 
-const closeAllMenus = (menu?: string) => {
-  if(menu !== 'audio'){
-    gameStore.showAudioSettings = false;
+// Puzzle Mode: restart the same variant after game-over. restartGame reuses
+// game.puzzleConfig (set in initializeGame) so the same level replays.
+const retryPuzzle = () => {
+  closeAllMenus();
+  gameStore.gameIsOver = false;
+  gameStore.restartGame();
+}
+
+// Adventure Mode UI plumbing.
+const startAdventureLevel = (n: number) => {
+  closeAllMenus();
+  gameStore.startAdventureLevel(n);
+}
+
+const closeAdventure = () => {
+  gameStore.closeAdventureMenu();
+}
+
+const nextLevel = () => {
+  closeAllMenus();
+  gameStore.gameIsOver = false;
+  gameStore.nextAdventureLevel();
+}
+
+const backToLevels = () => {
+  closeAllMenus();
+  gameStore.returnToAdventureMenu();
+}
+
+// Bottom-sheet drawer state.
+const showSheet = ref(false)
+type SheetTab = 'audio' | 'history' | 'chat' | 'options'
+const activeTab = ref<SheetTab>('audio')
+
+const toggleSheet = () => {
+  showSheet.value = !showSheet.value
+  // Default to chat when opening if there are unread messages.
+  if (showSheet.value && unreadChatCount.value > 0 && peerStore.isConnected && gameStore.isGameActive) {
+    activeTab.value = 'chat'
   }
-  if(menu !== 'history'){
-    gameStore.showGameHistory = false;
-  }
-  if(menu !== 'options'){
-    gameStore.showGameOptions = false;
-  }
-  if(menu !== 'chat'){
-    showChatMenu.value = false;
-  }
 }
-
-const toggleAudioSettings = () => {
-  closeAllMenus('audio');
-  gameStore.showAudioSettings = !gameStore.showAudioSettings;
-}
-
-const toggleGameHistory = () => {
-  closeAllMenus('history');
-  gameStore.showGameHistory = !gameStore.showGameHistory;
-}
-
-const toggleGameOptions = () => {
-  closeAllMenus('options');
-  gameStore.showGameOptions = !gameStore.showGameOptions;
-}
-
-const toggleChatMenu = () => {
-  closeAllMenus('chat');
-  showChatMenu.value = !showChatMenu.value;
-}
-
-const isAnyMenuOpen = computed(() => {
-  return gameStore.showAudioSettings || gameStore.showGameHistory || gameStore.showGameOptions || showChatMenu.value;
-});
+const closeSheet = () => { showSheet.value = false }
+const closeAllMenus = () => { showSheet.value = false }
 
 const sendEmojiAnimation = (emoji: string) => {
   // send emoji to peer
@@ -382,7 +438,8 @@ gameStore.handleIncomingData = function (data: any) {
       sender: peerStore.isHost ? 'Client' : 'Host', // invert for local display
       message: data.message
     })
-    if (!showChatMenu.value) {
+    const chatOpen = showSheet.value && activeTab.value === 'chat'
+    if (!chatOpen) {
       unreadChatCount.value++
     }
     nextTick(() => {
@@ -394,9 +451,9 @@ gameStore.handleIncomingData = function (data: any) {
   return originalHandleIncomingData.call(this, data)
 }
 
-// Reset unread count when chat menu is opened
-watch(showChatMenu, (open) => {
-  if (open) unreadChatCount.value = 0
+// Reset unread count when the chat tab becomes active in the sheet.
+watch([showSheet, activeTab], () => {
+  if (showSheet.value && activeTab.value === 'chat') unreadChatCount.value = 0
 })
 
 const sendChatMessage = () => {
@@ -441,25 +498,269 @@ function handleRejoinYes() {
 </script>
 
 <style scoped>
-.chat-history {
-  background: #23272f;
-  border-radius: 0.5rem;
-  padding: 0.5rem;
+/* ============================================================
+   Sticky top bar — owns the hamburger trigger in normal flow above
+   the active section. Sits at the top of the column on every screen
+   so child headers (player chips, level-select header) can use the
+   full column width.
+   ============================================================ */
+.app-top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  width: 100%;
+  padding: calc(0.4rem + var(--safe-top, 0px)) 0.55rem 0.4rem;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  pointer-events: none; /* let clicks fall through the empty space */
 }
+.app-top-bar > * { pointer-events: auto; }
+
+.hamburger-btn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text, #fff);
+  cursor: pointer;
+  font-size: 1.05rem;
+  position: relative;
+  transition: background 0.2s ease, transform 0.12s ease;
+}
+.hamburger-btn:hover { background: rgba(15, 23, 42, 0.92); }
+.hamburger-btn:active { transform: scale(0.95); }
+
 .chat-counter-bubble {
   position: absolute;
-  top: 0.2rem;
-  right: 0.2rem;
-  background: #ef4444;
+  top: -4px;
+  right: -4px;
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
   color: #fff;
-  font-size: 0.75rem;
-  font-weight: bold;
+  font-size: 0.62rem;
+  font-weight: 800;
   border-radius: 9999px;
-  padding: 0.1rem 0.5rem;
-  min-width: 1.2rem;
+  padding: 0 0.32rem;
+  min-width: 1rem;
+  height: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   z-index: 10;
-  box-shadow: 0 0 2px #0008;
   pointer-events: none;
+  box-shadow: 0 0 0 1.5px rgba(15,23,42,0.95);
 }
-</style> 
+
+/* ============================================================
+   Bottom sheet
+   ============================================================ */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet {
+  width: 100%;
+  max-width: var(--frame-max-width, 430px);
+  max-height: 75dvh;
+  background: linear-gradient(180deg, var(--bg-via, #1e1b4b) 0%, var(--bg-from, #0f0a2e) 100%);
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  box-shadow: 0 -10px 40px -5px rgba(0,0,0,0.55);
+  padding: 0.6rem 1rem calc(1rem + var(--safe-bottom, 0px));
+  color: var(--text, #fff);
+  display: flex;
+  flex-direction: column;
+}
+.sheet-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.3);
+  margin: 0 auto 0.6rem;
+}
+.sheet-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+.sheet-tab {
+  position: relative;
+  flex: 1;
+  padding: 0.45rem 0.3rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--text-soft, #cbd5e1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.sheet-tab i { font-size: 0.95rem; }
+.sheet-tab.active {
+  background: var(--accent-soft, rgba(232,121,249,0.25));
+  color: #fff;
+  border-color: var(--accent, #e879f9);
+  box-shadow: 0 0 0 1px var(--accent, #e879f9);
+}
+.sheet-panel {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.sheet-h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.2rem;
+  color: var(--text);
+}
+.sheet-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.sheet-checkbox input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; }
+.sheet-empty {
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 1rem 0;
+}
+.sheet-scroll {
+  max-height: 55dvh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.history-card {
+  padding: 0.55rem 0.7rem;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.history-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-soft);
+  margin-bottom: 0.3rem;
+}
+.history-mode { font-weight: 700; }
+.history-scores { display: flex; flex-direction: column; gap: 2px; }
+.history-score-row {
+  display: flex;
+  justify-content: space-between;
+  background: rgba(255,255,255,0.04);
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+}
+.history-score-val { font-weight: 800; font-variant-numeric: tabular-nums; }
+.emoji-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+.emoji-pick {
+  font-size: 1.65rem;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.15s ease;
+}
+.emoji-pick:hover { transform: scale(1.2); }
+.chat-input-row {
+  display: flex;
+  gap: 0.4rem;
+}
+.chat-input-row input {
+  flex: 1;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  background: rgba(15, 23, 42, 0.6);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.chat-input-row input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.chat-send-btn {
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #0f0a2e;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+}
+.chat-history {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 8px;
+  padding: 0.5rem;
+  margin-top: 0.4rem;
+}
+.chat-msg { font-size: 0.85rem; line-height: 1.35; }
+.chat-history-sender {
+  color: var(--accent);
+  font-weight: 700;
+  margin-right: 0.25rem;
+}
+.sheet-action-btn {
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  text-align: left;
+}
+.sheet-action-btn.primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+.sheet-action-btn.success { background: linear-gradient(135deg, #16a34a, #166534); }
+.sheet-action-btn.warning { background: linear-gradient(135deg, #d97706, #b45309); }
+.sheet-action-btn.danger  { background: linear-gradient(135deg, #dc2626, #7f1d1d); }
+.sheet-action-btn:hover { transform: translateY(-1px); }
+.sheet-action-btn:active { transform: translateY(1px); }
+
+/* Slide-in transition for the sheet */
+.sheet-enter-active, .sheet-leave-active {
+  transition: opacity 0.25s ease;
+}
+.sheet-enter-active .sheet, .sheet-leave-active .sheet {
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0.36, 1.0);
+}
+.sheet-enter-from, .sheet-leave-to { opacity: 0; }
+.sheet-enter-from .sheet, .sheet-leave-to .sheet { transform: translateY(100%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-enter-active, .sheet-leave-active,
+  .sheet-enter-active .sheet, .sheet-leave-active .sheet {
+    transition: none;
+  }
+}
+</style>

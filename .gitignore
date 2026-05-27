@@ -19,3 +19,12 @@ resources/ios/**/*
 # Editor swap files
 *.swp
 *.swo
+
+# Playwright
+test-results/
+playwright-report/
+tests/e2e/screenshots/
+
+# OS / runtime droppings
+core
+core.*

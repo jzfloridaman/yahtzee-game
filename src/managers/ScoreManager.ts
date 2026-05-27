@@ -3,9 +3,13 @@ import { Categories } from '../enums/Categories';
 import { useCalculateScore } from '../utils/CalculateScore';
 import { Die } from '../types/Die';
 import { CategoryGroup } from '../enums/CategoryGroup';
+import { RAINBOW_TEMPLATE, ScorecardTemplateEntry } from '../config/scorecardTemplates';
+
+type ScorecardEntry = { value: number | null; selected: boolean; group: CategoryGroup };
+type Scorecard = Partial<Record<Categories, ScorecardEntry>>;
 
 export class ScoreManager implements IScoreManager {
-    private scorecard: { [key in Categories]: { value: number | null, selected: boolean, group: CategoryGroup } } = {} as any;
+    private scorecard: Scorecard = {};
     public score: number;
     public lowerSectionScore: number;
     public upperSectionScore: number;
@@ -21,30 +25,12 @@ export class ScoreManager implements IScoreManager {
         this.isGameOver = false;
     }
 
-    initializeScorecard() {
-        this.scorecard = {
-            [Categories.Ones]: { value: null, selected: false, group: CategoryGroup.UpperSection },
-            [Categories.Twos]: { value: null, selected: false, group: CategoryGroup.UpperSection },
-            [Categories.Threes]: { value: null, selected: false, group: CategoryGroup.UpperSection },
-            [Categories.Fours]: { value: null, selected: false, group: CategoryGroup.UpperSection },
-            [Categories.Fives]: { value: null, selected: false, group: CategoryGroup.UpperSection },
-            [Categories.Sixes]: { value: null, selected: false, group: CategoryGroup.UpperSection },
-
-            [Categories.ThreeOfAKind]: { value: null, selected: false, group: CategoryGroup.LowerSection },
-            [Categories.FourOfAKind]: { value: null, selected: false, group: CategoryGroup.LowerSection },
-            [Categories.FullHouse]: { value: null, selected: false, group: CategoryGroup.LowerSection },
-            [Categories.SmallStraight]: { value: null, selected: false, group: CategoryGroup.LowerSection },
-            [Categories.LargeStraight]: { value: null, selected: false, group: CategoryGroup.LowerSection },
-            [Categories.Chance]: { value: null, selected: false, group: CategoryGroup.LowerSection },
-
-            [Categories.Yahtzee]: { value: null, selected: false, group: CategoryGroup.LowerSection },
-            [Categories.Blues]: { value: null, selected: false, group: CategoryGroup.LowerSection },
-            [Categories.Reds]: { value: null, selected: false, group: CategoryGroup.LowerSection },
-            [Categories.Greens]: { value: null, selected: false, group: CategoryGroup.LowerSection },
-            [Categories.ColorFullHouse]: { value: null, selected: false, group: CategoryGroup.LowerSection },
-        };
-
-        // this section should allow for other type of scorecards
+    initializeScorecard(template: ScorecardTemplateEntry[] = RAINBOW_TEMPLATE) {
+        const next: Scorecard = {};
+        for (const entry of template) {
+            next[entry.category] = { value: null, selected: false, group: entry.group };
+        }
+        this.scorecard = next;
     }
 
     // this needs to be renamed to calculateCategoryScore
@@ -53,46 +39,56 @@ export class ScoreManager implements IScoreManager {
     }
 
     updateScorecard(category: Categories, score: number, selected: boolean = false) {
-        if (!this.scorecard[category].selected) {
-            this.scorecard[category].value = score;
+        const slot = this.scorecard[category];
+        if (!slot) return;
+        if (!slot.selected) {
+            slot.value = score;
         }
-        if(selected){
-            this.scorecard[category].selected = selected;
-            if(category === Categories.Yahtzee){
-                this.scorecard[Categories.Yahtzee].value = score;
+        if (selected) {
+            slot.selected = selected;
+            if (category === Categories.Yahtzee) {
+                slot.value = score;
             }
-        }   
+        }
+    }
+
+    // Adds `delta` to the existing slot value, ignoring the "already selected"
+    // guard. Used for Puzzle Mode's Double Category bonus-turn second score,
+    // which sums onto a slot that's already been marked selected.
+    addScoreToCategory(category: Categories, delta: number): void {
+        const slot = this.scorecard[category];
+        if (!slot) return;
+        slot.value = (slot.value ?? 0) + delta;
     }
 
     isCategorySelected(category: Categories): boolean {
-        return this.scorecard[category].selected;
+        return this.scorecard[category]?.selected ?? false;
     }
 
-    getScorecard(): { [key in Categories]: { value: number | null, selected: boolean, group: CategoryGroup } } {
+    getScorecard(): Scorecard {
         return this.scorecard;
     }
 
-    setScorecard(scorecard: { [key in Categories]: { value: number | null; selected: boolean; group: CategoryGroup } }) {
+    setScorecard(scorecard: Scorecard) {
         this.scorecard = scorecard;
     }
 
     getScoreByCategory(category: Categories): number | null {
-        return this.scorecard[category].value;
+        return this.scorecard[category]?.value ?? null;
     }
 
     getTotalScore(): number {
         let total = Object.values(this.scorecard)
-            .filter(item => item.selected)
-            .reduce((total, item) => total + (item.value || 0), 0);
+            .filter((item): item is ScorecardEntry => !!item && item.selected)
+            .reduce((sum, item) => sum + (item.value || 0), 0);
         if (this.isUpperSectionBonusAchieved()) {
             total += 35;
         }
-        // maybe add this.score = total;
         return total;
     }
 
     getCompletedCategories(): number {
-        return Object.values(this.scorecard).filter(item => item.selected).length;
+        return Object.values(this.scorecard).filter((item) => item?.selected).length;
     }
 
     getRemainingCategories(): number {
@@ -104,7 +100,6 @@ export class ScoreManager implements IScoreManager {
     }
 
     isUpperSectionBonusAchieved(): boolean {
-        // TODO: have this check the scorecard for all upper section categories
         const upperSectionCategories = [
             Categories.Ones,
             Categories.Twos,
@@ -113,12 +108,10 @@ export class ScoreManager implements IScoreManager {
             Categories.Fives,
             Categories.Sixes
         ];
-        //const upperSectionCategories = Object.values(this.scorecard).filter(item => item.group === CategoryGroup.UpperSection);
-        // only sum the scores in scorecard with a group of upper section
 
         const totalScore = upperSectionCategories.reduce((sum, category) => {
             const entry = this.scorecard[category];
-            if(entry.selected && entry.value !== null && entry.group === CategoryGroup.UpperSection){
+            if (entry?.selected && entry.value !== null && entry.group === CategoryGroup.UpperSection) {
                 return sum + entry.value;
             }
             return sum;
@@ -126,7 +119,7 @@ export class ScoreManager implements IScoreManager {
         return totalScore >= 63;
     }
 
-    setGameOver(isGameOver: boolean){
+    setGameOver(isGameOver: boolean) {
         this.isGameOver = isGameOver;
     }
 
@@ -135,8 +128,9 @@ export class ScoreManager implements IScoreManager {
     }
 
     selectCategory(category: Categories): void {
-        if (this.scorecard[category]) {
-            this.scorecard[category].selected = true;
+        const slot = this.scorecard[category];
+        if (slot) {
+            slot.selected = true;
         }
     }
 }

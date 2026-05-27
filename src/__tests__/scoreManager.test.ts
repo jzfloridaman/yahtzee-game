@@ -13,8 +13,9 @@ describe('ScoreManager', () => {
   test('should initialize scorecard with all categories unselected', () => {
     const scorecard = scoreManager.getScorecard();
     for (const category in scorecard) {
-      expect(scorecard[category as Categories].selected).toBe(false);
-      expect(scorecard[category as Categories].value).toBeNull();
+      const entry = scorecard[category as Categories];
+      expect(entry?.selected).toBe(false);
+      expect(entry?.value).toBeNull();
     }
   });
 
@@ -33,8 +34,8 @@ describe('ScoreManager', () => {
   test('should update scorecard for a category', () => {
     scoreManager.updateScorecard(Categories.Ones, 10, true);
     const scorecard = scoreManager.getScorecard();
-    expect(scorecard[Categories.Ones].value).toBe(10);
-    expect(scorecard[Categories.Ones].selected).toBe(true);
+    expect(scorecard[Categories.Ones]?.value).toBe(10);
+    expect(scorecard[Categories.Ones]?.selected).toBe(true);
   });
 
   test('should calculate total score', () => {

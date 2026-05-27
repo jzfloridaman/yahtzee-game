@@ -2,46 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Body background + min-height live in src/styles/themes.css (mode/world tokens). */
 body {
-    @apply bg-gray-900 text-white flex flex-col items-center justify-center min-h-screen p-4;
-    background-image: url('/app-splash.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    min-height: 100vh;
-    width: 100vw;
-}
-
-body:has(#game-container) {
-    background-image: linear-gradient(135deg, 
-        #4a00e0,  /* Deep Purple */
-        #8e2de2,  /* Purple */
-        #ff6b6b,  /* Coral */
-        #ff8e53   /* Orange */
-    );
-    background-size: 400% 400%;
-    animation: gradientShift 15s ease infinite;
-}
-
-@keyframes gradientShift {
-    0% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0% 50%;
-    }
+    @apply text-white;
+    font-feature-settings: "tnum" 1;
 }
 
 #game-container, #game-mode-container, #game-over-container {
-    @apply bg-gray-800/85 p-4 md:p-6 rounded-lg shadow-lg flex flex-col items-center w-full max-w-6xl mx-auto;
+    @apply p-4 flex flex-col items-center w-full mx-auto;
+    background: var(--surface);
+    border-radius: 0;
+    box-shadow: none;
+    min-height: 100dvh;
+    /* Top padding intentionally small — the floating .app-top-bar
+       (rendered above in App.vue) already provides the safe-area top
+       padding for the hamburger. */
+    padding-top: 0.25rem;
+    padding-bottom: calc(1rem + var(--safe-bottom));
+    position: relative;
+    z-index: 1; /* sits above the absolutely-positioned .world-fx */
 }
 
-#game-mode-container, #game-over-container {
-    @apply max-w-2xl;
+/* GameBoard reserves heavy bottom space for the fixed .bottom-stack
+   (dice tray + roll button + held chip). ~11rem covers it + safe-area. */
+#game-container {
+    padding-bottom: calc(11rem + var(--safe-bottom));
+}
+
+/* Main menu is short — vertically center the whole stack so it sits in
+   the middle of the column rather than hugging the top. */
+#game-mode-container {
+    justify-content: center;
+}
+
+/* Middle region that holds the puzzle context box + bonus banner +
+   scorecard. flex:1 lets it fill remaining vertical space below the
+   sticky player header; justify-content:center vertically centers the
+   block so when there's room the scorecard sits with even top/bottom
+   padding instead of hugging the top. */
+.game-main {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.4rem;
 }
 
 #game-container {
@@ -51,104 +56,482 @@ body:has(#game-container) {
     -ms-user-select: none;
 }
 
+/* ============================================================
+   Bottom sticky stack — dice tray + action zone glued together
+   ============================================================ */
+
+.bottom-stack {
+    /* Fixed to viewport bottom, horizontally centered, capped at the
+       column's max-width so it lines up with the 430px column on desktop
+       and spans full width on mobile. */
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 25;
+    width: 100%;
+    max-width: var(--frame-max-width, 430px);
+    padding: 0.6rem 0.6rem calc(0.6rem + var(--safe-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: linear-gradient(0deg, var(--surface-strong) 0%, var(--surface-strong) 88%, rgba(15,23,42,0.6) 100%);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ============================================================
+   Dice tray — real 3D pip dice (six-face cube in preserve-3d)
+   ------------------------------------------------------------
+   Each .die is a wrapper; .die-cube is a six-face cube child rotated
+   to bring the value-matching face forward. The roll animation
+   replaces the cube's static transform with a multi-axis tumble that
+   ends back at identity, so the data-pips static rule resumes and the
+   cube settles on the rolled value showing all faces along the way.
+   ============================================================ */
+
 #dice-container {
-    @apply flex gap-4 my-4 mx-auto flex-nowrap justify-between ;
+    display: flex;
+    gap: clamp(6px, 2.2vw, 14px);
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+    perspective: 900px;
+    perspective-origin: 50% 35%;
+    width: 100%;
+    max-width: 100%;
 }
 
 .die {
-    @apply w-14 h-14 md:w-24 md:h-24 lg:w-48 lg:h-48 flex items-center justify-center text-4xl md:text-6xl rounded-lg cursor-pointer text-black font-mono shadow-lg drop-shadow-lg;
+    /* --d is the cube edge length; pip + face offsets scale off it.
+       Sized to fill roughly 90% of the column width across 5 dice. */
+    --d: 68px;
+    width: var(--d);
+    height: var(--d);
+    flex-shrink: 0;
+    cursor: pointer;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.18s ease, filter 0.18s ease;
 }
-    .die.blue {
-        @apply bg-blue-500;
-    }
-
-    .die.red{
-        @apply bg-red-500;
-    }
-    .die.green{
-        @apply bg-green-500;
-    }
-
-    .die.blank{
-        @apply bg-gray-500;
-    }
-
-    @keyframes roll {
-        0% { transform: rotate(0deg) scale(1); }
-        25% { transform: rotate(90deg) scale(1.2); }
-        50% { transform: rotate(180deg) scale(1); }
-        75% { transform: rotate(270deg) scale(1.2); }
-        100% { transform: rotate(360deg) scale(1); }
-    }
-    
-    @keyframes roll-b {
-        0% { transform: rotate(360deg) scale(1); }
-        20% { transform: rotate(270deg) scale(1.2); }
-        60% { transform: rotate(180deg) scale(1); }
-        80% { transform: rotate(90deg) scale(1.2); }
-        100% { transform: rotate(0deg) scale(1); }
-    }
-
-    @keyframes colorFade {
-        0% { background-color: red; }
-        33% { background-color: blue; }
-        66% { background-color: green; }
-        100% { background-color: red; }
-    }
-    @keyframes colorFade-b {
-        0% { background-color: green; }
-        33% { background-color: red; }
-        66% { background-color: blue; }
-        100% { background-color: green; }
-    }
-
-.die.roll:not(.held):nth-child(1) {
-    animation: roll-b 0.5s ease-in-out, colorFade 0.5s ease-in-out;
-    -webkit-animation: roll-b 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+@media (max-width: 380px) {
+    .die { --d: 58px; }
 }
-.die.roll:not(.held):nth-child(2) {
-    animation: roll 0.5s ease-in-out, colorFade-b 0.5s ease-in-out;
-    -webkit-animation: roll 0.5s ease-in-out, colorFade-b 0.5s ease-in-out;
-}
-.die.roll:not(.held):nth-child(3) {
-    animation: roll 0.5s ease-in-out, colorFade 0.5s ease-in-out;
-    -webkit-animation: roll 0.5s ease-in-out, colorFade 0.5s ease-in-out;
-}
-.die.roll:not(.held):nth-child(4) {
-    animation: roll-b 0.5s ease-in-out, colorFade-b 0.5s ease-in-out;
-    -webkit-animation: roll-b 0.5s ease-in-out, colorFade-b 0.5s ease-in-out;
-}
-.die.roll:not(.held):nth-child(5) {
-    animation: roll 0.5s ease-in-out, colorFade 0.5s ease-in-out;
-    -webkit-animation: roll 0.5s ease-in-out, colorFade 0.5s ease-in-out;
+@media (max-width: 340px) {
+    .die { --d: 52px; }
 }
 
-.held {
-    @apply ring-4 ring-yellow-500;
+/* Held: lift + accent glow on the wrapper (composes with cube spin). */
+.die.held {
+    transform: translateY(-6px) scale(1.05);
+    filter: drop-shadow(0 8px 14px var(--accent-soft, rgba(251,191,36,0.55)));
 }
+
+.die-cube {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    /* Static value-matched orientation. Short transition smooths value
+       changes when the user isn't actively rolling. */
+    transition: transform 0.45s cubic-bezier(0.34, 1.05, 0.55, 1);
+}
+.die[data-pips="1"] .die-cube { transform: rotateX(0deg)    rotateY(0deg);   }
+.die[data-pips="2"] .die-cube { transform: rotateX(0deg)    rotateY(-90deg); }
+.die[data-pips="3"] .die-cube { transform: rotateX(0deg)    rotateY(180deg); }
+.die[data-pips="4"] .die-cube { transform: rotateX(0deg)    rotateY(90deg);  }
+.die[data-pips="5"] .die-cube { transform: rotateX(-90deg)  rotateY(0deg);   }
+.die[data-pips="6"] .die-cube { transform: rotateX(90deg)   rotateY(0deg);   }
+/* Pre-roll: a neutral 3/4 angle so both face 1 and face 5 read as faceted. */
+.die[data-pips="0"] .die-cube { transform: rotateX(-18deg)  rotateY(28deg);  }
+
+/* The six faces. Each is positioned at half-edge along its axis normal,
+   forming the visible cube. */
+.face {
+    position: absolute;
+    inset: 0;
+    border-radius: 14%;
+    backface-visibility: hidden;
+    background: linear-gradient(145deg, #fafbfc 0%, #cbd5e1 100%);
+    box-shadow:
+        inset  0  0 0 1px rgba(255, 255, 255, 0.55),
+        inset  0 -4px 6px rgba(15, 23, 42, 0.18),
+        inset  0  4px 4px rgba(255, 255, 255, 0.45);
+}
+.die.red   .face { background: linear-gradient(145deg, #fca5a5 0%, #b91c1c 100%); }
+.die.blue  .face { background: linear-gradient(145deg, #93c5fd 0%, #1d4ed8 100%); }
+.die.green .face { background: linear-gradient(145deg, #86efac 0%, #15803d 100%); }
+.die.blank .face { background: linear-gradient(145deg, #cbd5e1 0%, #475569 100%); }
+
+.face[data-face="1"] { transform: rotateY(0deg)    translateZ(calc(var(--d) / 2)); }
+.face[data-face="2"] { transform: rotateY(90deg)   translateZ(calc(var(--d) / 2)); }
+.face[data-face="3"] { transform: rotateY(180deg)  translateZ(calc(var(--d) / 2)); }
+.face[data-face="4"] { transform: rotateY(-90deg)  translateZ(calc(var(--d) / 2)); }
+.face[data-face="5"] { transform: rotateX(90deg)   translateZ(calc(var(--d) / 2)); }
+.face[data-face="6"] { transform: rotateX(-90deg)  translateZ(calc(var(--d) / 2)); }
+
+/* Pre-roll state — hide all pip patterns and show a "?" on face 1
+   instead. Keeps the cube reading as "tap to roll" rather than showing
+   stale face values from before the game started. */
+.die[data-pips="0"] .pip { visibility: hidden !important; }
+.die[data-pips="0"] .face[data-face="1"]::before {
+    content: '?';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: calc(var(--d) * 0.55);
+    color: rgba(15, 23, 42, 0.45);
+    pointer-events: none;
+}
+
+/* Pips. Always absolute-positioned within each face. */
+.face .pip {
+    position: absolute;
+    width: 18%;
+    height: 18%;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #ffffff 0%, #475569 60%, #0f172a 100%);
+    box-shadow:
+        0  1px 2px rgba(0, 0, 0, 0.55) inset,
+        0 -1px 1px rgba(255, 255, 255, 0.25) inset;
+    visibility: hidden;
+}
+.die.red   .face .pip,
+.die.blue  .face .pip,
+.die.green .face .pip,
+.die.blank .face .pip {
+    background: radial-gradient(circle at 30% 30%, #ffffff 0%, #e2e8f0 60%, #94a3b8 100%);
+}
+
+.face .pip[data-slot="1"] { top: 22%; left: 22%; transform: translate(-50%, -50%); }
+.face .pip[data-slot="2"] { top: 22%; left: 50%; transform: translate(-50%, -50%); }
+.face .pip[data-slot="3"] { top: 22%; left: 78%; transform: translate(-50%, -50%); }
+.face .pip[data-slot="4"] { top: 50%; left: 22%; transform: translate(-50%, -50%); }
+.face .pip[data-slot="5"] { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.face .pip[data-slot="6"] { top: 50%; left: 78%; transform: translate(-50%, -50%); }
+.face .pip[data-slot="7"] { top: 78%; left: 22%; transform: translate(-50%, -50%); }
+.face .pip[data-slot="8"] { top: 78%; left: 50%; transform: translate(-50%, -50%); }
+.face .pip[data-slot="9"] { top: 78%; left: 78%; transform: translate(-50%, -50%); }
+
+/* Per-face pip patterns — standard western dice (opposite faces sum to 7). */
+.face[data-face="1"] .pip[data-slot="5"],
+.face[data-face="2"] .pip[data-slot="1"], .face[data-face="2"] .pip[data-slot="9"],
+.face[data-face="3"] .pip[data-slot="1"], .face[data-face="3"] .pip[data-slot="5"], .face[data-face="3"] .pip[data-slot="9"],
+.face[data-face="4"] .pip[data-slot="1"], .face[data-face="4"] .pip[data-slot="3"],
+.face[data-face="4"] .pip[data-slot="7"], .face[data-face="4"] .pip[data-slot="9"],
+.face[data-face="5"] .pip[data-slot="1"], .face[data-face="5"] .pip[data-slot="3"], .face[data-face="5"] .pip[data-slot="5"],
+.face[data-face="5"] .pip[data-slot="7"], .face[data-face="5"] .pip[data-slot="9"],
+.face[data-face="6"] .pip[data-slot="1"], .face[data-face="6"] .pip[data-slot="3"],
+.face[data-face="6"] .pip[data-slot="4"], .face[data-face="6"] .pip[data-slot="6"],
+.face[data-face="6"] .pip[data-slot="7"], .face[data-face="6"] .pip[data-slot="9"] {
+    visibility: visible;
+}
+
+/* Roll animation — replaces the cube's static transform with a tumble
+   over several axes. Because the value updates BEFORE .roll is added,
+   when the animation ends the data-pips rule resumes and the cube
+   settles on the rolled value. The multi-axis spin reads as actual
+   3D dice motion (all six faces flash past). */
+.die.roll:not(.held) .die-cube {
+    animation: dieRoll 0.7s cubic-bezier(0.22, 0.95, 0.36, 1);
+}
+@keyframes dieRoll {
+    0%   { transform: rotateX(-30deg)   rotateY(-45deg)  rotateZ(0deg);   }
+    25%  { transform: rotateX(360deg)   rotateY(180deg)  rotateZ(45deg);  }
+    50%  { transform: rotateX(540deg)   rotateY(360deg)  rotateZ(-45deg); }
+    75%  { transform: rotateX(810deg)   rotateY(720deg)  rotateZ(15deg);  }
+    100% { /* identity — static .die[data-pips=N] .die-cube rule takes over */ }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .die-cube, .die.roll:not(.held) .die-cube {
+        transition: none;
+        animation: none;
+    }
+}
+
+/* ============================================================
+   Roll button (lives inside .action-zone)
+   ============================================================ */
 
 #roll-button {
-    @apply bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded mb-4 w-full text-xl;
+    flex: 1;
+    padding: 0.8rem 1rem;
+    border-radius: 14px;
+    font-weight: 800;
+    font-size: clamp(0.95rem, 3.5vw, 1.1rem);
+    color: #fff;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--accent, #22d3ee) 0%, var(--bg-via, #312e81) 100%);
+    box-shadow:
+        0 4px 12px -2px var(--accent-soft, rgba(34,211,238,0.4)),
+        0 0 0 1px rgba(255,255,255,0.08) inset;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+#roll-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px -4px var(--accent-soft, rgba(34,211,238,0.55));
+}
+#roll-button:active:not(:disabled) {
+    transform: translateY(1px);
 }
 #roll-button:disabled {
-    @apply opacity-80 cursor-not-allowed bg-gray-500;
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, #475569 0%, #1f2937 100%);
+    box-shadow: none;
 }
 
 .score-item {
-    @apply text-center md:text-2xl rounded-lg border-white/50 border-2 bg-white text-black cursor-pointer p-1 md:p-2;
+    position: relative;
+    text-align: center;
+    border-radius: 10px;
+    border: 1.5px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.92);
+    color: #0f172a;
+    cursor: pointer;
+    padding: 0.25rem 0.15rem;
+    aspect-ratio: 1 / 1;
+    min-height: 44px; /* Apple HIG touch target */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
 }
-.score-cell{
-    @apply md:mt-2 text-xl;
-}
-.category-icon {
-    @apply text-xl md:text-4xl uppercase;
+.score-item:active:not(.puzzle-locked):not(.selected) {
+    transform: scale(0.96);
 }
 
-.score-item:hover{
-    @apply !bg-gray-100/[.80] text-black;
+/* Modifier kind-stripe along the bottom edge — full-width 3px bar. */
+.score-item[data-modifier-kind]:not([data-modifier-kind=""])::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 3px;
+    background: currentColor;
+    opacity: 0.85;
+    pointer-events: none;
 }
-.score-item:has(.selected), .score-item.selected, .score-item.disabled{
-    @apply text-center text-xl rounded-lg border-black/50 border-2 !bg-gray-100/[.40] text-black !cursor-not-allowed;
+.score-item[data-modifier-kind="iceBlock"]::after          { background: #38bdf8; }
+.score-item[data-modifier-kind="flyingMultiplier"]::after  { background: #f59e0b; }
+.score-item[data-modifier-kind="doubleCategory"]::after    { background: #a855f7; }
+.score-item[data-modifier-kind="hotPotato"]::after         { background: #dc2626; }
+.score-item[data-modifier-kind="multiplierBubble"]::after  { background: #14b8a6; }
+.score-item[data-modifier-kind="loopingMultiplier"]::after { background: #ec4899; }
+
+/* Frosted ice-locked cells. */
+.score-item.puzzle-locked {
+    cursor: not-allowed !important;
+    opacity: 0.78;
+    background:
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.18) 0 3px, transparent 3px 6px),
+        linear-gradient(135deg, #e0f2fe 0%, #7dd3fc 100%) !important;
+    border-color: #0ea5e9 !important;
+    color: #0c4a6e !important;
+}
+.score-item.puzzle-locked:hover {
+    background:
+        repeating-linear-gradient(45deg, rgba(255,255,255,0.18) 0 3px, transparent 3px 6px),
+        linear-gradient(135deg, #e0f2fe 0%, #7dd3fc 100%) !important;
+}
+
+/* Bonus-eligible (Double Category second score) — gold + shimmer. */
+.score-item.puzzle-bonus-eligible {
+    cursor: pointer !important;
+    background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%) !important;
+    border-color: #d97706 !important;
+    color: #111 !important;
+    animation: puzzle-bonus-pulse 1.4s ease-in-out infinite;
+}
+.score-item.puzzle-bonus-eligible:hover {
+    background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%) !important;
+}
+@keyframes puzzle-bonus-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.65); }
+    50%      { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .score-item.puzzle-bonus-eligible { animation: none; }
+}
+
+.puzzle-bonus-banner {
+    width: 100%;
+    margin: 0.5rem 0;
+    padding: 0.5rem 0.85rem;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+    color: #1f2937;
+    border: 2px solid #d97706;
+}
+
+.puzzle-goals {
+    /* Stretch full container width; this is the puzzle context box
+       (target + engagement + modifier help) for the active level. */
+    width: 100%;
+    margin: 0.5rem 0;
+    padding: 0.6rem 0.85rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    background:
+        linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(15, 23, 42, 0.75) 60%);
+    color: var(--text, #f3f4f6);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    box-shadow: 0 4px 14px -6px rgba(0, 0, 0, 0.55);
+}
+.puzzle-goals-title {
+    @apply font-bold mb-1 flex items-center gap-2 text-base;
+    color: #c7d2fe;
+}
+.puzzle-goals-row {
+    @apply flex items-center gap-2 mb-1;
+}
+.puzzle-goals-label {
+    @apply text-gray-300 w-20;
+}
+.puzzle-goals-value {
+    @apply font-bold text-white;
+}
+.puzzle-goal-met {
+    color: #4ade80 !important;
+}
+.puzzle-goals-engaged {
+    @apply flex items-center gap-1 ml-2;
+}
+.puzzle-goals-kind {
+    @apply inline-flex items-center justify-center text-xs font-bold rounded-full text-white;
+    width: 1.4rem;
+    height: 1.4rem;
+    opacity: 0.4;
+    filter: grayscale(80%);
+    transition: opacity 0.3s, filter 0.3s;
+}
+.puzzle-goals-kind.engaged {
+    opacity: 1;
+    filter: none;
+}
+.puzzle-goals-kind.modifier-iceBlock          { background: #38bdf8; }
+.puzzle-goals-kind.modifier-flyingMultiplier  { background: #f59e0b; color: #111; }
+.puzzle-goals-kind.modifier-doubleCategory    { background: #a855f7; }
+.puzzle-goals-kind.modifier-hotPotato         { background: #dc2626; }
+.puzzle-goals-kind.modifier-multiplierBubble  { background: #14b8a6; }
+.puzzle-goals-kind.modifier-loopingMultiplier { background: #ec4899; }
+
+/* Modifier-help toggle + panel live INSIDE .puzzle-goals now. */
+.puzzle-legend-toggle {
+    margin-top: 0.55rem;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background-color: rgba(15, 23, 42, 0.55);
+    color: #c7d2fe;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    cursor: pointer;
+    transition: background-color 0.18s ease;
+}
+.puzzle-legend-toggle:hover {
+    background-color: rgba(15, 23, 42, 0.78);
+    color: #e0e7ff;
+}
+.puzzle-legend {
+    margin-top: 0.4rem;
+    padding: 0.5rem 0.55rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    background-color: rgba(0, 0, 0, 0.28);
+    color: #f3f4f6;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.puzzle-legend-title {
+    @apply font-bold mb-2 text-base;
+}
+.puzzle-legend-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.35rem;
+    line-height: 1.25;
+}
+.puzzle-legend-row:last-child { margin-bottom: 0; }
+.puzzle-legend-text { flex: 1; font-size: 0.72rem; }
+.puzzle-legend-text strong { color: #fff; font-weight: 700; }
+.puzzle-legend-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    flex-shrink: 0;
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: #fff;
+    border-radius: 9999px;
+    box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.18) inset;
+}
+.puzzle-legend-badge.modifier-iceBlock          { background: linear-gradient(135deg, #7dd3fc, #0284c7); }
+.puzzle-legend-badge.modifier-flyingMultiplier  { background: linear-gradient(135deg, #fcd34d, #d97706); color: #111; }
+.puzzle-legend-badge.modifier-doubleCategory    { background: linear-gradient(135deg, #c084fc, #7e22ce); }
+.puzzle-legend-badge.modifier-hotPotato         { background: linear-gradient(135deg, #f87171, #b91c1c); }
+.puzzle-legend-badge.modifier-multiplierBubble  { background: linear-gradient(135deg, #5eead4, #0d9488); }
+.puzzle-legend-badge.modifier-loopingMultiplier { background: linear-gradient(135deg, #f9a8d4, #be185d); }
+.score-cell {
+    font-size: clamp(0.9rem, 3.2vw, 1.1rem);
+    font-weight: 700;
+    line-height: 1;
+    margin-top: 0.15rem;
+}
+.category-icon {
+    font-size: clamp(0.85rem, 4vw, 1.3rem);
+    line-height: 1;
+    color: rgba(15,23,42,0.85);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.score-item:hover {
+    background: rgba(255,255,255,0.78);
+}
+
+/* Already-banked cells: faded + check icon top-right. */
+.score-item:has(.selected),
+.score-item.selected,
+.score-item.disabled {
+    cursor: not-allowed !important;
+    background: rgba(255,255,255,0.32) !important;
+    color: rgba(15,23,42,0.55) !important;
+    border-color: rgba(15,23,42,0.25) !important;
+}
+.score-item.selected::before {
+    content: '\f00c'; /* fa-check */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 0.62rem;
+    color: rgba(34,197,94,0.85);
+    pointer-events: none;
 }
 .score-item.no-score{
     @apply bg-red-500;
@@ -203,25 +586,172 @@ body:has(#game-container) {
     visibility: hidden;
 }
 
-.player-data {
-    @apply gap-2 md:gap-4 p-2 md:p-4 rounded-lg text-xl;
+/* ============================================================
+   Player header — sticky top, avatar + name + score per chip
+   ============================================================ */
+
+.players-header {
+    position: sticky;
+    /* The .app-top-bar sits sticky at top:0 (z-index 30). Pin this row
+       directly below it so player chips remain visible while scrolling. */
+    top: calc(2.7rem + var(--safe-top, 0px));
+    z-index: 20;
+    width: calc(100% + 1rem);
+    margin: 0 -0.5rem 0.5rem;
+    padding: 0.45rem 0.45rem 0.5rem;
+    background: linear-gradient(180deg, var(--surface-strong) 0%, var(--surface-strong) 80%, rgba(15,23,42,0) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    gap: 0.4rem;
+    align-items: stretch;
+    justify-content: center;
 }
 
-.player-data.active {
-    @apply bg-gray-500 border-2 border-white; /* border-gray-800 */
+.player-chip {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.4rem;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+/* Tighter avatar + name when 3+ chips need to share the row. The
+   :nth-child counts the chip's siblings, so this triggers automatically. */
+.players-header:has(.player-chip:nth-child(3)) .player-avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 0.78rem;
+}
+.players-header:has(.player-chip:nth-child(3)) .player-name {
+    font-size: 0.62rem;
+}
+.players-header:has(.player-chip:nth-child(3)) .player-score {
+    font-size: 0.95rem;
+}
+.players-header:has(.player-chip:nth-child(3)) .player-chip {
+    padding: 0.28rem 0.32rem;
+    gap: 0.3rem;
+}
+.player-chip.active {
+    background: rgba(255,255,255,0.14);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), 0 0 18px -2px var(--accent-soft);
+    animation: playerChipPulse 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+    .player-chip.active { animation: none; }
+}
+@keyframes playerChipPulse {
+    0%, 100% { box-shadow: 0 0 0 1px var(--accent), 0 0 12px -4px var(--accent-soft); }
+    50%      { box-shadow: 0 0 0 1px var(--accent), 0 0 22px 2px var(--accent-soft); }
+}
+.player-avatar {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--bg-via) 100%);
+    color: #fff;
+    font-weight: 800;
+    font-size: 0.9rem;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.18) inset;
+}
+.player-meta {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.1;
+}
+.player-name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-soft, #cbd5e1);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.player-score {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
 }
 
-/* Responsive grid for scorecard */
+/* ============================================================
+   Scorecard grid (6 columns, mobile-tuned)
+   ============================================================ */
+
 #scorecard .grid {
-    @apply grid-cols-6 gap-2 md:gap-4;
-    /* grid-template-areas: "singles singles singles singles singles singles singles singles singles" */
-    /* grid-cols-2 md:grid-cols-3 lg:grid-cols-6 */ 
+    @apply grid-cols-6;
+    gap: 4px;
 }
 
-/* Responsive grid for players */
-#players-container {
-    @apply gap-2 md:gap-4 w-full mb-0 mx-auto bg-gray-700 rounded-lg;
-    /* max-w-4xl grid-cols-1 sm:grid-cols-2 md:grid-cols-4 */
+/* ============================================================
+   Sticky action zone (bottom)
+   ============================================================ */
+
+.action-zone {
+    /* No longer sticky — the parent .bottom-stack owns positioning so
+       the dice tray sits directly above this row. */
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.action-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.55rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-soft, #94a3b8);
+    border: 1px solid rgba(255,255,255,0.08);
+    min-width: 2.6rem;
+    justify-content: center;
+}
+.action-chip.active {
+    background: rgba(251,191,36,0.18);
+    color: #fde68a;
+    border-color: rgba(251,191,36,0.45);
+}
+.action-chip i {
+    font-size: 0.78rem;
+}
+
+.rolls-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.45rem 0.6rem;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+.rolls-left .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent-soft);
+}
+.rolls-left .dot.used {
+    background: rgba(255,255,255,0.18);
+    box-shadow: none;
 }
 
 /* Responsive text sizes */
@@ -375,15 +905,26 @@ h2 {
 .yahtzee-animation {
   position: fixed;
   top: 30%;
-  left: 0;
+  left: 50%;
   transform: translate(-50%, -50%);
   font-size: 5rem;
-  font-weight: bold;
+  font-weight: 900;
   color: #ffd700;
-  text-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+  -webkit-text-stroke: 3px #4a2c00;
+  text-shadow:
+    0 0 24px rgba(255, 215, 0, 0.95),
+    0 0 60px rgba(255, 215, 0, 0.5),
+    0 6px 18px rgba(0, 0, 0, 0.7);
   animation: yahtzeeAnimation 2s ease-out forwards;
   z-index: 1000;
   pointer-events: none;
+  letter-spacing: 0.02em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .yahtzee-animation { animation: none; opacity: 1; transform: scale(1) rotate(0); }
+  .score-popup-animation { animation: none; opacity: 1; }
+  .emoji-animation { animation: none; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .confetti { display: none; }
 }
 
 /* Confetti Animation */
@@ -475,37 +1016,60 @@ h2 {
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 4rem;
-  font-weight: bold;
+  font-weight: 900;
   text-align: center;
   pointer-events: none;
   z-index: 1000;
   animation: scorePopupAnimation 2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  /* Thick text stroke + drop shadow gives the popup real punch against
+     any background; the .score-fx-backdrop dims the page further. */
+  -webkit-text-stroke: 2px rgba(0, 0, 0, 0.85);
+  text-shadow:
+    0 0 18px rgba(0, 0, 0, 0.85),
+    0 4px 12px rgba(0, 0, 0, 0.65);
+  letter-spacing: 0.02em;
+  white-space: pre-line;
 }
 
 .score-popup-animation.high-score {
   color: #ffd700;
-  font-size: 5rem;
-  text-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+  font-size: 5.25rem;
+  -webkit-text-stroke: 3px #4a2c00;
+  text-shadow:
+    0 0 22px rgba(255, 215, 0, 0.85),
+    0 0 50px rgba(255, 215, 0, 0.4),
+    0 6px 16px rgba(0, 0, 0, 0.7);
 }
 
 .score-popup-animation.medium-score {
-  color: #3b82f6;
+  color: #60a5fa;
   font-size: 4.5rem;
-  text-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+  -webkit-text-stroke: 3px #0c1e3d;
+  text-shadow:
+    0 0 20px rgba(96, 165, 250, 0.85),
+    0 0 40px rgba(59, 130, 246, 0.45),
+    0 6px 16px rgba(0, 0, 0, 0.7);
 }
 
 .score-popup-animation.normal-score {
-  color: #22c55e;
+  color: #4ade80;
   font-size: 4rem;
-  text-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+  -webkit-text-stroke: 3px #0d2f17;
+  text-shadow:
+    0 0 18px rgba(74, 222, 128, 0.85),
+    0 0 36px rgba(34, 197, 94, 0.4),
+    0 6px 14px rgba(0, 0, 0, 0.7);
 }
 
 .score-popup-animation.no-score {
-    color: #c52222;
-    font-size: 4rem;
-    text-shadow: 0 0 10px rgba(127, 0, 0, 0.5);
-  }
+  color: #f87171;
+  font-size: 4rem;
+  -webkit-text-stroke: 3px #3a0e0e;
+  text-shadow:
+    0 0 18px rgba(248, 113, 113, 0.9),
+    0 0 36px rgba(220, 38, 38, 0.4),
+    0 6px 14px rgba(0, 0, 0, 0.7);
+}
 
 
 .overlay {

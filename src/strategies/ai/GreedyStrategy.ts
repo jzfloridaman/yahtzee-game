@@ -19,35 +19,41 @@ export class GreedyStrategy {
         const player = game.players[game.currentPlayer];
         const scorecard = player.getScorecard();
         const rollsLeft = game.rollsLeft;
+        // Puzzle mode: never pick a category the engine vetoes (ice blocks).
+        // canScoreFn is a permissive `() => true` outside Puzzle.
+        const engine = game.getPuzzleEngine?.(game.currentPlayer) ?? null;
+        const canScore = (cat: Categories) => engine ? engine.canScore(cat) : true;
 
-        const potentials = this.scorePotentials(scorecard, dice);
+        const potentials = this.scorePotentials(scorecard, dice, canScore);
 
         // Out of rolls — must pick a category.
         if (rollsLeft === 0) {
-            return { action: 'pickCategory', category: this.pickBestCategory(potentials, scorecard) };
+            return { action: 'pickCategory', category: this.pickBestCategory(potentials, scorecard, canScore) };
         }
 
         // Take a great roll immediately rather than risking another roll.
         const great = this.findGreatScore(potentials, scorecard);
-        if (great !== null) {
+        if (great !== null && canScore(great)) {
             return { action: 'pickCategory', category: great };
         }
 
         // Roll again with holds toward the best target.
-        const target = this.pickRollTarget(scorecard, dice);
+        const target = this.pickRollTarget(scorecard, dice, canScore);
         const holds = this.computeHolds(dice, target);
         return { action: 'rollAgain', holds };
     }
 
-    // Score every unselected category against the current dice.
+    // Score every unselected, scorable category against the current dice.
     private scorePotentials(
         scorecard: Record<string, { selected: boolean }>,
         dice: Die[],
+        canScore: (c: Categories) => boolean,
     ): Map<Categories, number> {
         const map = new Map<Categories, number>();
         for (const [category, entry] of Object.entries(scorecard)) {
             if (entry.selected) continue;
             const cat = category as Categories;
+            if (!canScore(cat)) continue;
             map.set(cat, useCalculateScore(cat, dice));
         }
         return map;
@@ -87,6 +93,7 @@ export class GreedyStrategy {
     private pickBestCategory(
         potentials: Map<Categories, number>,
         scorecard: Record<string, { selected: boolean }>,
+        canScore: (c: Categories) => boolean,
     ): Categories {
         let best: Categories | null = null;
         let bestScore = -1;
@@ -118,6 +125,12 @@ export class GreedyStrategy {
             Categories.Chance,
         ];
         for (const cat of dumpOrder) {
+            if (!scorecard[cat]?.selected && canScore(cat)) return cat;
+        }
+        // Every scorable category is selected or blocked — fall back to any
+        // unselected one (last resort; applySelectCategory will no-op on
+        // blocked picks, but at least we don't crash).
+        for (const cat of dumpOrder) {
             if (!scorecard[cat]?.selected) return cat;
         }
         return best ?? Categories.Chance;
@@ -128,6 +141,7 @@ export class GreedyStrategy {
     private pickRollTarget(
         scorecard: Record<string, { selected: boolean }>,
         dice: Die[],
+        canScore: (c: Categories) => boolean,
     ): Categories {
         const valueCounts = new Map<number, number>();
         for (const die of dice) {
@@ -142,23 +156,25 @@ export class GreedyStrategy {
             }
         }
 
+        const open = (cat: Categories) => !scorecard[cat]?.selected && canScore(cat);
+
         // 3+ of a kind → keep pursuing Yahtzee / FourOfAKind / ThreeOfAKind.
         if (maxCount >= 3) {
-            if (!scorecard[Categories.Yahtzee]?.selected) return Categories.Yahtzee;
-            if (!scorecard[Categories.FourOfAKind]?.selected) return Categories.FourOfAKind;
-            if (!scorecard[Categories.ThreeOfAKind]?.selected) return Categories.ThreeOfAKind;
+            if (open(Categories.Yahtzee)) return Categories.Yahtzee;
+            if (open(Categories.FourOfAKind)) return Categories.FourOfAKind;
+            if (open(Categories.ThreeOfAKind)) return Categories.ThreeOfAKind;
         }
 
         // 2 of a kind → upper section for that face value if available.
         if (maxCount >= 2) {
             const upper = upperCategoryForValue(dominantValue);
-            if (!scorecard[upper]?.selected) return upper;
+            if (open(upper)) return upper;
         }
 
         // Otherwise pursue the highest-value upper category that's still open.
         for (let value = 6; value >= 1; value--) {
             const upper = upperCategoryForValue(value);
-            if (!scorecard[upper]?.selected) return upper;
+            if (open(upper)) return upper;
         }
 
         return Categories.Chance;

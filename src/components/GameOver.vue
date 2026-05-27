@@ -1,7 +1,24 @@
 <template>
   <div id="game-over-container">
     <div class="text-center">
-      <div v-if="puzzleResult" class="puzzle-result-banner mb-4" :class="puzzleResult.status">
+      <div v-if="puzzleVsAiResult" class="puzzle-vs-ai-banner mb-4"
+           :class="puzzleVsAiResult.isTie ? 'tie' : (puzzleVsAiResult.humanWon ? 'win' : 'lose')">
+        <h2 class="text-2xl font-bold">
+          <i :class="['fas', puzzleVsAiResult.isTie ? 'fa-handshake' : (puzzleVsAiResult.humanWon ? 'fa-trophy' : 'fa-robot')]"></i>
+          {{ puzzleVsAiResult.headline }}
+          <span class="text-sm font-normal block opacity-80">{{ puzzleVariantLabel }}</span>
+        </h2>
+        <div class="puzzle-vs-ai-scores">
+          <div v-for="row in puzzleVsAiResult.rows" :key="row.index"
+               class="puzzle-vs-ai-row" :class="{ winner: row.isWinner }">
+            <i v-if="row.isAi" class="fas fa-robot text-orange-300"></i>
+            <i v-else class="fas fa-user text-blue-300"></i>
+            <span class="puzzle-vs-ai-name">{{ row.name }}</span>
+            <span class="puzzle-vs-ai-score">{{ row.score }}</span>
+          </div>
+        </div>
+      </div>
+      <div v-else-if="puzzleResult" class="puzzle-result-banner mb-4" :class="puzzleResult.status">
         <h2 class="text-2xl font-bold">
           <i :class="['fas', puzzleResult.status === 'win' ? 'fa-trophy' : 'fa-circle-xmark']"></i>
           {{ puzzleResult.status === 'win' ? 'Puzzle Cleared!' : 'Puzzle Failed' }}
@@ -34,7 +51,7 @@
           </div>
         </div>
       </div>
-      <div v-else-if="winner" class="winner-banner mb-4">
+      <div v-else-if="winner && !puzzleVsAiResult" class="winner-banner mb-4">
         <h2 class="text-2xl font-bold text-green-400">Winner: {{ winner.name }} ({{ winner.score }})</h2>
       </div>
       <div v-if="players.length > 1" class="player-tabs flex justify-center gap-2">
@@ -114,13 +131,15 @@
                 class="game-mode-button w-full !bg-green-600 hover:!bg-green-700">
           <i class="fas fa-arrow-right mr-2"></i>Next Level
         </button>
-        <button v-if="puzzleResult" @click="retryPuzzle" class="game-mode-button w-full !bg-amber-500 hover:!bg-amber-600">
-          <i class="fas fa-rotate-right mr-2"></i>Retry — {{ isAdventure ? 'Same Level' : 'Same Puzzle' }}
+        <button v-if="puzzleResult || puzzleVsAiResult"
+                @click="retryPuzzle"
+                class="game-mode-button w-full !bg-amber-500 hover:!bg-amber-600">
+          <i class="fas fa-rotate-right mr-2"></i>Retry — {{ retryLabel }}
         </button>
         <button v-if="isAdventure" @click="backToLevels" class="game-mode-button w-full">
           <i class="fas fa-list mr-2"></i>Level Select
         </button>
-        <button @click="playAgain" class="game-mode-button w-full">{{ puzzleResult ? 'Main Menu' : 'Play Again' }}</button>
+        <button @click="playAgain" class="game-mode-button w-full">{{ (puzzleResult || puzzleVsAiResult) ? 'Main Menu' : 'Play Again' }}</button>
       </div>
     </div>
   </div>
@@ -132,6 +151,7 @@ import { Categories } from '../enums/Categories'
 import { useGameStore } from '../stores/gameStore'
 import { getLastLevelNumber } from '../puzzle/levels/definitions'
 import { computeStars } from '../puzzle/levels/progression'
+import { GameVariant } from '../enums/GameVariant'
 
 const gameStore = useGameStore()
 const game = computed(() => gameStore.currentGame)
@@ -159,12 +179,51 @@ const backToLevels = () => {
   emit('back-to-levels');
 }
 
+// Vs-AI puzzle: 2+ players on the Puzzle variant. Suppress the solo
+// target/engagement banner in favor of a winner banner.
+const isPuzzleVsAi = computed(() => {
+  const g = game.value
+  if (!g || g.variant !== GameVariant.Puzzle) return false
+  return g.players.length >= 2
+})
+
+const puzzleVsAiResult = computed(() => {
+  if (!isPuzzleVsAi.value) return null
+  const g = game.value!
+  const rows = g.players.map((p, index) => ({
+    index,
+    name: p.name,
+    score: p.getTotalScore(),
+    isAi: p.controller.kind === 'ai',
+    isWinner: false,
+  }))
+  const sorted = [...rows].sort((a, b) => b.score - a.score)
+  const topScore = sorted[0].score
+  const winners = sorted.filter(r => r.score === topScore)
+  for (const w of winners) {
+    rows.find(r => r.index === w.index)!.isWinner = true
+  }
+  const isTie = winners.length > 1
+  const humanWon = !isTie && !winners[0].isAi
+  const headline = isTie
+    ? 'Tie Game'
+    : (humanWon ? 'You Beat the Dice Master!' : 'The Dice Master Wins')
+  return { rows, isTie, humanWon, headline }
+})
+
 const puzzleResult = computed(() => {
+  if (isPuzzleVsAi.value) return null
   const g = game.value
   const pe = g?.getPuzzleEngine()
   if (!g || !pe) return null
-  // Single player only in V1 — puzzle result is the lone player's score.
+  // Solo puzzle — single player's engine result.
   return pe.getResult(g.players[0]?.getTotalScore() ?? 0)
+})
+
+const retryLabel = computed(() => {
+  if (isPuzzleVsAi.value) return 'Same Puzzle'
+  if (isAdventure.value) return 'Same Level'
+  return 'Same Puzzle'
 })
 
 const puzzleVariantLabel = computed(() => {
@@ -349,6 +408,62 @@ const getDieIcon = (die: number): string => {
   border-color: #fca5a5;
   color: #fef2f2;
 }
+.puzzle-vs-ai-banner {
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-width: 2px;
+  border-style: solid;
+  text-align: center;
+}
+.puzzle-vs-ai-banner.win {
+  background: linear-gradient(135deg, #064e3b 0%, #047857 100%);
+  border-color: #34d399;
+  color: #ecfdf5;
+}
+.puzzle-vs-ai-banner.lose {
+  background: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 100%);
+  border-color: #fca5a5;
+  color: #fef2f2;
+}
+.puzzle-vs-ai-banner.tie {
+  background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+  border-color: #a5b4fc;
+  color: #eef2ff;
+}
+.puzzle-vs-ai-scores {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: stretch;
+  margin-top: 0.75rem;
+  min-width: 14rem;
+}
+.puzzle-vs-ai-row {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.4rem;
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 1rem;
+  opacity: 0.75;
+}
+.puzzle-vs-ai-row.winner {
+  opacity: 1;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.12);
+  outline: 1px solid rgba(255, 255, 255, 0.2);
+}
+.puzzle-vs-ai-name {
+  text-align: left;
+}
+.puzzle-vs-ai-score {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.1rem;
+}
+
 .puzzle-result-stars {
   display: flex;
   gap: 0.4rem;

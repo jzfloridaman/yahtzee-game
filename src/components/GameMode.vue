@@ -19,6 +19,10 @@
                 class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
           <i class="fas fa-map mr-2"></i>Puzzle — Adventure
         </button>
+        <button @click="startPuzzleVsAi"
+                class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+          <i class="fas fa-robot mr-2"></i>Puzzle vs. Dice Master
+        </button>
       </div>
 
       <button @click="toggleMultiplayerMenu"
@@ -209,6 +213,18 @@ const startSinglePlayer = (variant: GameVariant) => {
 const openAdventure = () => {
   showSinglePlayerMenu.value = false
   gameStore.openAdventureMenu()
+}
+
+const startPuzzleVsAi = () => {
+  const seats: SeatSpec[] = [
+    { name: 'Player 1', kind: 'local' },
+    { name: 'Dice Master', kind: 'ai' },
+  ]
+  // MultiPlayer + Puzzle variant — the guard in initializeGame allows
+  // Puzzle for local multiplayer (only OnlineMultiPlayer is forced back to
+  // Rainbow). Random variant config is picked inside the store.
+  emit('start-game', GameMode.MultiPlayer, undefined, seats, GameVariant.Puzzle)
+  showSinglePlayerMenu.value = false
 }
 
 const createRoom = () => {

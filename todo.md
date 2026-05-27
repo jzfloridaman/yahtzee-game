@@ -1,8 +1,10 @@
 # TODO
 
-The active engineering roadmap lives in [`docs/refactor-plan.md`](./docs/refactor-plan.md) — Player controller refactor → sync hardening → computer-player mode.
+Active engineering roadmaps:
+- [`docs/refactor-plan.md`](./docs/refactor-plan.md) — Player controller refactor → sync hardening → computer-player mode. **Shipped** (P1–P4).
+- [`docs/puzzle-mode-next.md`](./docs/puzzle-mode-next.md) — Menu of candidate next phases for Puzzle Mode (smarter AI, polish, looping cats + daily, online puzzle). Pick one to execute next.
 
-This file is the backlog of items *not* in that plan: bug reports, polish, future ideas.
+This file is the backlog of items *not* in those plans: bug reports, polish, future ideas.
 
 ## Bugs
 
@@ -22,10 +24,8 @@ This file is the backlog of items *not* in that plan: bug reports, polish, futur
 
 ## Future features
 
-- [ ] Stats tracking: high score, games played, total time played, wins / losses (per device, persist to `localStorage`).
-- [ ] Game-mode variants:
-  - Single-player: Classic / Rainbow / Puzzle
-  - Multi-player: Battle / Classic / Rainbow / Puzzle
+- [ ] Stats tracking: high score, games played, total time played, wins / losses (per device, persist to `localStorage`). (Puzzle Adventure already tracks best score + stars per level under `puzzleAdventureProgress`.)
+- [ ] Multi-player Puzzle Mode (4 humans on the same modifier board, pass-the-device) — currently Puzzle is single-player or vs-AI (1 local + 1 ai). The per-player-engine machinery exists; just need the menu surface.
 - [ ] Rebrand: pick a non-"Yahtzee" name and update artwork / icons / splash. (`capacitor.config.ts` `appName` is currently `Color Yahtzee`.)
 - [ ] PWA polish: refresh icons / splash screens / logos once the rebrand lands.
 
@@ -42,10 +42,12 @@ This file is the backlog of items *not* in that plan: bug reports, polish, futur
 - **P1**: `PlayerController` abstraction (`src/controllers/`) — local/remote/ai controllers per `Player`
 - **P2**: Online multiplayer routes through controllers. Score:1000 placeholder gone; client holds reflect immediately; divergent selectCategory paths collapsed.
 - **P3**: Auto-resync on tab visibility-change. Sequence numbers on `gameState` broadcasts (host increments, client logs gaps). `isGameOver` split into `checkGameOver()` (mutating) and `isGameOver` getter (pure read). Resync now mirrors all players' scorecards (previously commented-out code).
+- **P4**: Computer-player mode. `AIController` + `GreedyStrategy`. Per-seat Human/AI selector in `GameMode.vue` for Local Multi.
+- **P5 (puzzle phases)**: `GameVariant` (Rainbow/Puzzle) refactor + `PuzzleEngine` + 6 modifier kinds + 10 random variants + Adventure Mode (34 levels, 6 worlds, star ratings, localStorage progress) + vs-AI Dice Master (per-player engines + ice-aware Greedy). See `docs/puzzle-mode-next.md` for the followup menu.
 
 ## Obsolete (removed from old list)
 
 - ~~"add socket.io for online multiplayer"~~ — superseded by PeerJS / WebRTC.
 - ~~"abstract audio / music / sfx functionality"~~ — done in `App.vue` + `gameStore.playSoundEffect` injection.
 - ~~"abstract animations"~~ — done in `src/utils/animations.ts`.
-- ~~"create score card templates (rainbow, regular, etc)"~~ — covered by the strategy pattern; new variants are a future feature, not architecture work.
+- ~~"create score card templates (rainbow, regular, etc)"~~ — done as part of the Puzzle Mode work: `RAINBOW_TEMPLATE` + `PUZZLE_TEMPLATE` in `src/config/scorecardTemplates.ts`, consumed by `ScoreManager.initializeScorecard(template)`.

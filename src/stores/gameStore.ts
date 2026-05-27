@@ -136,10 +136,11 @@ export const useGameStore = defineStore('game', {
       variant: GameVariant = GameVariant.Rainbow,
       puzzleConfigOverride?: PuzzleConfig | null,
     ) {
-      // Puzzle variant is only valid in single-player flows for V1; coerce
-      // anything else back to Rainbow so we never end up in an unsupported
-      // Puzzle + multiplayer combo.
-      const effectiveVariant = mode === GameMode.SinglePlayer ? variant : GameVariant.Rainbow;
+      // Puzzle variant is supported in single-player and local multiplayer
+      // (the vs-AI Dice Master flow uses MultiPlayer + Puzzle). Online
+      // multiplayer is still Rainbow-only — Puzzle's per-player engine
+      // state would need a sync protocol we haven't built.
+      const effectiveVariant = mode === GameMode.OnlineMultiPlayer ? GameVariant.Rainbow : variant;
 
       this.game = new YahtzeeGame()
       this.game.setGameMode(mode)

@@ -41,7 +41,10 @@ export class YahtzeeGame {
     public gameType: GameMode = GameMode.SinglePlayer;
     public variant: GameVariant = GameVariant.Rainbow;
     public puzzleConfig: PuzzleConfig | null = null;
-    private puzzleEngine: PuzzleEngine | null = null;
+    // One engine per player. Each is seeded from the same PuzzleConfig but
+    // has independent state — clearing an ice block on player 0's board
+    // does not affect player 1's. Empty in Rainbow.
+    private puzzleEngines: PuzzleEngine[] = [];
 
     private _state: GameState = GameState.MainMenu;
     private stateChangeCallbacks: Array<(newState: GameState, oldState: GameState) => void> = [];
@@ -108,27 +111,36 @@ export class YahtzeeGame {
 
     private initializePuzzleEngine() {
         if (this.variant !== GameVariant.Puzzle) {
-            this.puzzleEngine = null;
+            this.puzzleEngines = [];
             return;
         }
         const template = getScorecardTemplate(this.variant);
         const config = this.puzzleConfig ?? pickRandomVariant();
-        // PuzzleEngine reads the active player's scorecard via this closure.
-        // Single-player only in V1, so currentPlayer is always 0.
-        // The write callback supports Hot Potato's fuse-expiry "force a 0"
-        // behaviour; it bypasses the normal applySelectCategory flow.
-        this.puzzleEngine = new PuzzleEngine(
-            () => this.players[this.currentPlayer].getScorecard(),
-            (category, value) => {
-                this.players[this.currentPlayer].scoreManager.updateScorecard(category, value, true);
-                this.checkGameOver();
-            },
-        );
-        this.puzzleEngine.initFromConfig(config, template);
+        // One engine per player. Each closure captures its own player index
+        // so that even when currentPlayer changes (Dice Master's turn), the
+        // engine still reads/writes its own player's scorecard.
+        this.puzzleEngines = this.players.map((_player, idx) => {
+            const engine = new PuzzleEngine(
+                () => this.players[idx].getScorecard(),
+                (category, value) => {
+                    this.players[idx].scoreManager.updateScorecard(category, value, true);
+                    this.checkGameOver();
+                },
+            );
+            engine.initFromConfig(config, template);
+            return engine;
+        });
     }
 
-    getPuzzleEngine(): PuzzleEngine | null {
-        return this.puzzleEngine;
+    // Defaults to the active player's engine — matches V1 single-player
+    // semantics. Pass an explicit index to inspect another player's board
+    // (e.g., for cross-player UI summaries).
+    getPuzzleEngine(playerIdx: number = this.currentPlayer): PuzzleEngine | null {
+        return this.puzzleEngines[playerIdx] ?? null;
+    }
+
+    getAllPuzzleEngines(): PuzzleEngine[] {
+        return this.puzzleEngines;
     }
 
     setPuzzleConfig(config: PuzzleConfig | null): void {

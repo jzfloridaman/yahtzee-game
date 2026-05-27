@@ -22,9 +22,11 @@ export class MultiplierBubbleModifier implements PuzzleModifier {
 
         const placed: FlyingMultiplierModifier[] = [];
         // Take a fresh pick each iteration so we don't collide with chips
-        // already placed in this same scatter.
+        // already placed in this same scatter. Exclude the bubble's own
+        // cell explicitly so we never scatter onto it, even if the
+        // scorecard hasn't been written-through to the engine's view yet.
         for (let i = 0; i < this.scatterCount; i++) {
-            const cell = ctx.pickRandomUnscored('flyingMultiplier');
+            const cell = ctx.pickRandomUnscored('flyingMultiplier', this.category);
             if (!cell) break;
             const chip = new FlyingMultiplierModifier(cell, this.scatterMultiplier);
             placed.push(chip);

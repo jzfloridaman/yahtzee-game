@@ -1,5 +1,5 @@
-import { Categories } from '../enums/Categories';
-import { PlayerController, ControllerKind } from './PlayerController';
+import type { Categories } from '../enums/Categories';
+import type { PlayerController, ControllerKind } from './PlayerController';
 
 // A seat driven by computer-player logic. Phase 4 fills in the strategy
 // (greedy: pick the highest-scoring available category, hold dice toward it,

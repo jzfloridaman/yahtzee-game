@@ -1,10 +1,9 @@
-import { PlayerController, ControllerKind } from './PlayerController';
+import type { PlayerController, ControllerKind } from './PlayerController';
 import { LocalHumanController } from './LocalHumanController';
 import { RemotePeerController } from './RemotePeerController';
 import { AIController } from './AIController';
 
-export { PlayerController, ControllerKind } from './PlayerController';
-export type { SeatSpec } from './PlayerController';
+export type { PlayerController, ControllerKind, SeatSpec } from './PlayerController';
 export { LocalHumanController } from './LocalHumanController';
 export { RemotePeerController } from './RemotePeerController';
 export { AIController } from './AIController';

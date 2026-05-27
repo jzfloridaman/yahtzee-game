@@ -1,7 +1,7 @@
 import { Categories } from "../enums/Categories";
 import { ScoreManager } from "../managers/ScoreManager";
 import { Die } from "../types/Die";
-import { PlayerController } from "../controllers/PlayerController";
+import type { PlayerController } from "../controllers/PlayerController";
 import { LocalHumanController } from "../controllers/LocalHumanController";
 
 export class Player {

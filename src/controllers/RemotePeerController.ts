@@ -1,5 +1,5 @@
-import { Categories } from '../enums/Categories';
-import { PlayerController, ControllerKind } from './PlayerController';
+import type { Categories } from '../enums/Categories';
+import type { PlayerController, ControllerKind } from './PlayerController';
 
 // A seat driven by a remote peer over the WebRTC data channel. Owned host-side
 // — one per remote client seat. In Phase 2, peerStore.handleIncomingData will

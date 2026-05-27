@@ -6,7 +6,7 @@ import { GameState } from './enums/GameState';
 import { GameMode } from './enums/GameMode';
 import { Player } from './models/Player';
 import { CategoryGroup } from './enums/CategoryGroup';
-import { SeatSpec, createController } from './controllers';
+import { createController, type SeatSpec } from './controllers';
 
 interface GameStateData {
   currentPlayer: number;

@@ -25,8 +25,10 @@ export class LocalHumanController implements PlayerController {
 
         game.applyRoll();
         if (game.isOnlineHost) {
-            game.sendGameState();
+            // Fire the animation hint before the new dice values so the
+            // client starts spinning before the values update underneath.
             peer.sendData({ type: 'rollDice' });
+            game.sendGameState();
         }
     }
 

@@ -216,9 +216,9 @@ export const useGameStore = defineStore('game', {
         case 'gameState':
           if (!peer.isHost && this.game) {
             this.game.updateFromState(data.data);
-            if (!data.data.newRoll) {
-              this.playRollDiceAnimation();
-            }
+            // Animation is driven by the dedicated 'rollDice' message; do
+            // not animate on every state update or hold-broadcasts would
+            // also spin the unheld dice.
             if (data.data.isGameOver) {
               this.gameIsOver = true;
             }

@@ -152,6 +152,7 @@ import { useGameStore } from './stores/gameStore'
 import { GameMode as GameModeEnum } from './enums/GameMode'
 import { SoundEffects, SoundVolumes } from './enums/SoundEffects'
 import { usePeerStore } from './stores/peerStore'
+import type { SeatSpec } from './controllers'
 import { showEmojiAnimation } from './utils/animations'
 
 const gameStore = useGameStore()
@@ -277,8 +278,12 @@ onMounted(() => {
   }
 })
 
-const startGame = (mode: GameModeEnum, players?: number) => {
-  gameStore.initializeGame(mode, players);
+const startGame = (mode: GameModeEnum, players?: number, seats?: SeatSpec[]) => {
+  if (seats) {
+    gameStore.initializeGame(mode, seats);
+  } else {
+    gameStore.initializeGame(mode, players);
+  }
 }
 
 const endGame = () => {

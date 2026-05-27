@@ -83,18 +83,26 @@ export const useGameStore = defineStore('game', {
       }));
     },
 
-    initializeGame(mode: GameMode, players: number = 1) {
+    initializeGame(mode: GameMode, playersOrSeats: number | SeatSpec[] = 1) {
       this.game = new YahtzeeGame()
       this.game.setGameMode(mode)
       this.gameMode = mode
       this.isGameActive = true
       this.broadcastSeq = 0
       this.lastReceivedSeq = -1
-      this.game.startNewGame(this.buildSeatSpecs(players))
+
+      const seats: SeatSpec[] = typeof playersOrSeats === 'number'
+        ? this.buildSeatSpecs(playersOrSeats)
+        : playersOrSeats;
+      this.game.startNewGame(seats)
 
       if (mode === GameMode.OnlineMultiPlayer && usePeerStore().isHost) {
         this.sendGameState()
       }
+
+      // Kick off the first player's turn. No-op for local human / remote
+      // peer; AIController uses this to start its decision loop.
+      this.game.players[this.game.currentPlayer]?.controller.onTurnStart()
     },
 
     sendGameState() {
@@ -343,6 +351,9 @@ export const useGameStore = defineStore('game', {
       if (this.gameMode === GameMode.OnlineMultiPlayer) {
         this.game.forceDiceReset();
       }
+      // Notify the new current player's controller. Local human / remote
+      // peer are no-ops; AIController starts its turn from here.
+      this.game.players[this.game.currentPlayer]?.controller.onTurnStart()
     },
 
     // Audio settings
@@ -370,11 +381,19 @@ export const useGameStore = defineStore('game', {
 
     restartGame() {
       if (this.game) {
-        const playerCount = this.game.getPlayerCount()
-        this.game.startNewGame(this.buildSeatSpecs(playerCount))
+        // Preserve seat config (kinds, names) from the current game so a
+        // mixed human/AI lineup survives the restart.
+        const seats: SeatSpec[] = this.game.players.map(p => ({
+          name: p.name,
+          kind: p.controller.kind,
+        }))
+        this.broadcastSeq = 0
+        this.lastReceivedSeq = -1
+        this.game.startNewGame(seats)
         if (this.gameMode === GameMode.OnlineMultiPlayer && usePeerStore().isHost) {
           this.sendGameState()
         }
+        this.game.players[this.game.currentPlayer]?.controller.onTurnStart()
       }
     },
 

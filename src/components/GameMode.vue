@@ -17,10 +17,35 @@
       </button>
 
       <div v-if="showMultiplayerMenu" class="flex flex-col gap-4 mt-4">
-        <h3 class="text-lg font-bold">Select Players</h3>
-        <button @click="startGame(GameMode.MultiPlayer, 2)" class="player-count-button">2 Players</button>
-        <button @click="startGame(GameMode.MultiPlayer, 3)" class="player-count-button">3 Players</button>
-        <button @click="startGame(GameMode.MultiPlayer, 4)" class="player-count-button">4 Players</button>
+        <h3 class="text-lg font-bold">Local Multi Player</h3>
+
+        <div class="flex gap-2">
+          <button v-for="n in [2, 3, 4]" :key="n"
+                  @click="setPlayerCount(n)"
+                  :class="['player-count-button flex-1', { 'ring-2 ring-blue-400': playerCount === n }]">
+            {{ n }} Players
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <div v-for="(seat, index) in seats" :key="index"
+               class="flex items-center gap-2 bg-gray-800 rounded-lg p-2">
+            <span class="flex-1 text-sm">{{ seat.name }}</span>
+            <button @click="toggleSeatKind(index)"
+                    :class="['px-3 py-1 rounded transition-colors duration-200',
+                             seat.kind === 'ai'
+                               ? 'bg-orange-600 hover:bg-orange-700 text-white'
+                               : 'bg-blue-600 hover:bg-blue-700 text-white']">
+              <i :class="['fas', seat.kind === 'ai' ? 'fa-robot' : 'fa-user']" class="mr-1"></i>
+              {{ seat.kind === 'ai' ? 'Computer' : 'Human' }}
+            </button>
+          </div>
+        </div>
+
+        <button @click="startLocalMultiplayer"
+                class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors duration-200">
+          Start Game
+        </button>
       </div>
 
       <div v-if="showOnlineMenu" class="flex flex-col gap-4 mt-4">
@@ -85,9 +110,10 @@ import { ref, watch, onMounted } from 'vue'
 import { GameMode } from '../enums/GameMode'
 import { usePeerStore, VERSION } from '../stores/peerStore'
 import { useGameStore } from '../stores/gameStore'
+import type { SeatSpec, ControllerKind } from '../controllers'
 
 const emit = defineEmits<{
-  (e: 'start-game', mode: GameMode, players?: number): void
+  (e: 'start-game', mode: GameMode, players?: number, seats?: SeatSpec[]): void
 }>()
 
 const showMultiplayerMenu = ref(false)
@@ -98,6 +124,47 @@ const gameStore = useGameStore()
 const version = VERSION;
 const copied = ref(false)
 const isConnecting = ref(false)
+
+// Local Multi Player seat config — each seat is human by default; user can
+// flip individual slots to AI before starting.
+const playerCount = ref(2)
+const seats = ref<SeatSpec[]>(defaultSeats(2))
+
+function defaultSeats(n: number): SeatSpec[] {
+  return Array.from({ length: n }, (_, i) => ({
+    name: `Player ${i + 1}`,
+    kind: 'local' as ControllerKind,
+  }))
+}
+
+const setPlayerCount = (n: number) => {
+  playerCount.value = n
+  // Preserve existing kind/name choices when shrinking or growing.
+  if (seats.value.length < n) {
+    while (seats.value.length < n) {
+      seats.value.push({ name: `Player ${seats.value.length + 1}`, kind: 'local' })
+    }
+  } else if (seats.value.length > n) {
+    seats.value = seats.value.slice(0, n)
+  }
+}
+
+const toggleSeatKind = (index: number) => {
+  const s = seats.value[index]
+  if (!s) return
+  if (s.kind === 'local') {
+    s.kind = 'ai'
+    s.name = `Computer ${index + 1}`
+  } else {
+    s.kind = 'local'
+    s.name = `Player ${index + 1}`
+  }
+}
+
+const startLocalMultiplayer = () => {
+  emit('start-game', GameMode.MultiPlayer, undefined, seats.value.slice())
+  showMultiplayerMenu.value = false
+}
 
 const toggleMultiplayerMenu = () => {
   showMultiplayerMenu.value = !showMultiplayerMenu.value

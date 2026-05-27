@@ -1,67 +1,49 @@
-ScoreManager.TS
-- abstract score card
-- create score card templates (rainbow, regular, etc)
+# TODO
 
+The active engineering roadmap lives in [`docs/refactor-plan.md`](./docs/refactor-plan.md) — Player controller refactor → sync hardening → computer-player mode.
 
-Player Class
-- this class will separate player specific data
-- player types: local, online, computer
-- player id (future use for db / online multiplayer)
-- player stats (player level, powerups, etc)
-- player name
+This file is the backlog of items *not* in that plan: bug reports, polish, future ideas.
 
+## Bugs
 
-UI.TS
-- this should handle all game input from the user
-- handle the game state better
-- refactor all functions to be cleaner named
-- add more stats (high score, games played, time played, wins, losses)
-- simplify game input (button clicks)
-- add computer player ai mode
+- [ ] Host: if the host ends the game before completion, the result is still saved to `gameHistory`. Only save *completed* games.
+- [ ] After selecting a category, the category button keeps focus/highlight. Should deselect.
+- [ ] Layout breaks in landscape orientation on mobile and on wide-desktop viewports.
+- [ ] Host can refresh / navigate away and the client is left hanging — add a `beforeunload` guard with a confirmation prompt in online mode.
 
+## UX / polish
 
-Game.TS
-- this is the main game logic
+- [ ] "Your turn" indicator and sound effect (play after the scoring-category animation finishes).
+- [ ] Sound effects for: player joined, game started, game ended.
+- [ ] Peek at other players' scorecards (currently only the active player's card is visible).
+- [ ] Customizable player names (today they default to `Player 1`, `Player 2`, …).
+- [ ] Idle-player nudge: shake screen / play a sound / countdown timer until auto-roll if a player sits idle.
+- [ ] Reorderable dice (drag-to-rearrange).
+- [ ] Debug heartbeat log for hosts (helpful while we work on sync).
 
+## Future features
 
-Game Modes
-- Single Player Game Modes
-    - Classic, Rainbow, Puzzle
-- Multi-Player Game Modes
-    - Battle, Classic, Rainbow, Puzzle
+- [ ] Stats tracking: high score, games played, total time played, wins / losses (per device, persist to `localStorage`).
+- [ ] Game-mode variants:
+  - Single-player: Classic / Rainbow / Puzzle
+  - Multi-player: Battle / Classic / Rainbow / Puzzle
+- [ ] Rebrand: pick a non-"Yahtzee" name and update artwork / icons / splash. (`capacitor.config.ts` `appName` is currently `Color Yahtzee`.)
+- [ ] PWA polish: refresh icons / splash screens / logos once the rebrand lands.
 
+## Recently completed (archived)
 
--- MISC --
-- Remove any reference to Yahtzee
-- Rename game, update artwork
+- ScoreManager abstraction with strategy pattern per category — `src/strategies/`
+- Player class with `name`, `isAI`, and proxy methods — `src/models/Player.ts`
+- Online multiplayer over WebRTC (PeerJS) — `src/stores/peerStore.ts`
+- PWA scaffolding: manifest + service worker — `public/manifest.json`, `public/service-worker.js`
+- Chat + emoji channel between online players
+- Resync button (manual) for clients that fall out of sync
+- Removed legacy `src/ui/ui.ts` (replaced by Vue components)
+- Dockerized local dev — `docker-compose.yml`, plugged into shared `dev-network` + Caddy
 
+## Obsolete (removed from old list)
 
-
-PWA Stuff
-
-- add the service worker
-  if ('serviceWorker' in navigator) {
-     window.addEventListener('load', () => {
-       navigator.serviceWorker.register('/service-worker.js');
-     });
-   }
-
-- clean up assets
-- create icons / splash screens / logos (need new game name)
-
-
-QA STUFF
-- after select category, make sure it deselects the button (no focus it)
-- message that its your turn (needs to play after scoring category animation)
-- fix layout for landscape mode , desktop mode
-- if hosts ends game, do not log the save, only save completed games.
-- add sound effect when player joins, game started, game ended, your turn.
-- add the move dice order feature. ()
-- add peek other player's scorecard.
-- resync should send all scorecards.
-- add feature to add ur name.
-- buzz/alert player or add a timer countdown til it auto rolls
-    - shake screen / play a sound (nudge)
-- add resync option for host.
-- heart beat log (debug for host)
-- prevent host from refreshing or leaving page 
+- ~~"add socket.io for online multiplayer"~~ — superseded by PeerJS / WebRTC.
+- ~~"abstract audio / music / sfx functionality"~~ — done in `App.vue` + `gameStore.playSoundEffect` injection.
+- ~~"abstract animations"~~ — done in `src/utils/animations.ts`.
+- ~~"create score card templates (rainbow, regular, etc)"~~ — covered by the strategy pattern; new variants are a future feature, not architecture work.

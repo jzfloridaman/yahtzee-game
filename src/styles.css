@@ -97,8 +97,6 @@ body {
     justify-content: center;
     align-items: center;
     margin: 0 auto;
-    perspective: 900px;
-    perspective-origin: 50% 35%;
     width: 100%;
     max-width: 100%;
 }
@@ -112,6 +110,11 @@ body {
     flex-shrink: 0;
     cursor: pointer;
     position: relative;
+    /* Perspective lives per-die (not on the container) so every cube has
+       its own viewer centered directly in front of it. Otherwise dice at
+       the row's edges show their side faces. perspective-origin defaults
+       to 50% 50% — face-on. */
+    perspective: 900px;
     transform-style: preserve-3d;
     transition: transform 0.18s ease, filter 0.18s ease;
 }
@@ -122,35 +125,45 @@ body {
     .die { --d: 52px; }
 }
 
-/* Held: lift + accent glow on the wrapper (composes with cube spin). */
+/* Held: lift + accent ring + layered glow (composes with cube spin). */
 .die.held {
-    transform: translateY(-6px) scale(1.05);
-    filter: drop-shadow(0 8px 14px var(--accent-soft, rgba(251,191,36,0.55)));
+    transform: translateY(-10px) scale(1.04);
+    filter:
+        drop-shadow(0 0 4px var(--accent, #22d3ee))
+        drop-shadow(0 12px 22px var(--accent-soft, rgba(251,191,36,0.55)));
+}
+.die.held .face {
+    box-shadow:
+        inset  0  0 0 3px var(--accent, #22d3ee),
+        inset  0  0 0 4px rgba(255, 255, 255, 0.45),
+        inset  0 -4px 6px rgba(15, 23, 42, 0.18),
+        inset  0  4px 4px rgba(255, 255, 255, 0.45);
 }
 
 .die-cube {
     position: absolute;
     inset: 0;
     transform-style: preserve-3d;
-    /* Static value-matched orientation. Short transition smooths value
-       changes when the user isn't actively rolling. */
-    transition: transform 0.45s cubic-bezier(0.34, 1.05, 0.55, 1);
+    /* Target orientation comes from CSS vars set per data-pips, so the
+       roll keyframes can land exactly here at 100% and there's no slow
+       post-animation rotation. */
+    transform: rotateX(var(--pips-x, 0deg)) rotateY(var(--pips-y, 0deg));
 }
-.die[data-pips="1"] .die-cube { transform: rotateX(0deg)    rotateY(0deg);   }
-.die[data-pips="2"] .die-cube { transform: rotateX(0deg)    rotateY(-90deg); }
-.die[data-pips="3"] .die-cube { transform: rotateX(0deg)    rotateY(180deg); }
-.die[data-pips="4"] .die-cube { transform: rotateX(0deg)    rotateY(90deg);  }
-.die[data-pips="5"] .die-cube { transform: rotateX(-90deg)  rotateY(0deg);   }
-.die[data-pips="6"] .die-cube { transform: rotateX(90deg)   rotateY(0deg);   }
+.die[data-pips="1"] { --pips-x: 0deg;   --pips-y: 0deg;   }
+.die[data-pips="2"] { --pips-x: 0deg;   --pips-y: -90deg; }
+.die[data-pips="3"] { --pips-x: 0deg;   --pips-y: 180deg; }
+.die[data-pips="4"] { --pips-x: 0deg;   --pips-y: 90deg;  }
+.die[data-pips="5"] { --pips-x: -90deg; --pips-y: 0deg;   }
+.die[data-pips="6"] { --pips-x: 90deg;  --pips-y: 0deg;   }
 /* Pre-roll: a neutral 3/4 angle so both face 1 and face 5 read as faceted. */
-.die[data-pips="0"] .die-cube { transform: rotateX(-18deg)  rotateY(28deg);  }
+.die[data-pips="0"] { --pips-x: -18deg; --pips-y: 28deg;  }
 
 /* The six faces. Each is positioned at half-edge along its axis normal,
    forming the visible cube. */
 .face {
     position: absolute;
     inset: 0;
-    border-radius: 14%;
+    border-radius: 10%;
     backface-visibility: hidden;
     background: linear-gradient(145deg, #fafbfc 0%, #cbd5e1 100%);
     box-shadow:
@@ -169,6 +182,32 @@ body {
 .face[data-face="4"] { transform: rotateY(-90deg)  translateZ(calc(var(--d) / 2)); }
 .face[data-face="5"] { transform: rotateX(90deg)   translateZ(calc(var(--d) / 2)); }
 .face[data-face="6"] { transform: rotateX(-90deg)  translateZ(calc(var(--d) / 2)); }
+
+/* Inner core cube — sits ~6% inset behind the rounded faces with square
+   corners and a darker shade so the triangular corner gaps no longer
+   reveal the page background. */
+.die-core {
+    position: absolute;
+    inset: 6%;
+    transform-style: preserve-3d;
+    pointer-events: none;
+}
+.die-core-face {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(145deg, #94a3b8 0%, #475569 100%);
+    backface-visibility: hidden;
+}
+.die.red   .die-core-face { background: linear-gradient(145deg, #b91c1c 0%, #7f1d1d 100%); }
+.die.blue  .die-core-face { background: linear-gradient(145deg, #1d4ed8 0%, #1e3a8a 100%); }
+.die.green .die-core-face { background: linear-gradient(145deg, #15803d 0%, #14532d 100%); }
+.die.blank .die-core-face { background: linear-gradient(145deg, #475569 0%, #1e293b 100%); }
+.die-core-face[data-face="1"] { transform: rotateY(0deg)    translateZ(calc(var(--d) * 0.44)); }
+.die-core-face[data-face="2"] { transform: rotateY(90deg)   translateZ(calc(var(--d) * 0.44)); }
+.die-core-face[data-face="3"] { transform: rotateY(180deg)  translateZ(calc(var(--d) * 0.44)); }
+.die-core-face[data-face="4"] { transform: rotateY(-90deg)  translateZ(calc(var(--d) * 0.44)); }
+.die-core-face[data-face="5"] { transform: rotateX(90deg)   translateZ(calc(var(--d) * 0.44)); }
+.die-core-face[data-face="6"] { transform: rotateX(-90deg)  translateZ(calc(var(--d) * 0.44)); }
 
 /* Pre-roll state — hide all pip patterns and show a "?" on face 1
    instead. Keeps the cube reading as "tap to roll" rather than showing
@@ -236,18 +275,24 @@ body {
    settles on the rolled value. The multi-axis spin reads as actual
    3D dice motion (all six faces flash past). */
 .die.roll:not(.held) .die-cube {
-    animation: dieRoll 0.7s cubic-bezier(0.22, 0.95, 0.36, 1);
+    animation: dieRoll var(--roll-dur, 0.7s) cubic-bezier(0.22, 0.95, 0.36, 1);
+}
+/* Mid-tumble desaturate so the held dice's accent ring pops by contrast. */
+.die.roll:not(.held) {
+    filter: saturate(0.92);
 }
 @keyframes dieRoll {
-    0%   { transform: rotateX(-30deg)   rotateY(-45deg)  rotateZ(0deg);   }
-    25%  { transform: rotateX(360deg)   rotateY(180deg)  rotateZ(45deg);  }
-    50%  { transform: rotateX(540deg)   rotateY(360deg)  rotateZ(-45deg); }
-    75%  { transform: rotateX(810deg)   rotateY(720deg)  rotateZ(15deg);  }
-    100% { /* identity — static .die[data-pips=N] .die-cube rule takes over */ }
+    0%   { transform: scale(0.78) rotateX(calc(var(--pips-x, 0deg) - 720deg)) rotateY(calc(var(--pips-y, 0deg) - 540deg)) rotateZ(0deg); }
+    25%  { transform: scale(0.78) rotateX(calc(var(--pips-x, 0deg) - 540deg)) rotateY(calc(var(--pips-y, 0deg) - 405deg)) rotateZ(45deg); }
+    55%  { transform: scale(0.84) rotateX(calc(var(--pips-x, 0deg) - 270deg)) rotateY(calc(var(--pips-y, 0deg) - 180deg)) rotateZ(-30deg); }
+    85%  { transform: scale(0.94) rotateX(var(--pips-x, 0deg)) rotateY(var(--pips-y, 0deg)) rotateZ(0deg); }
+    100% { transform: scale(1) rotateX(var(--pips-x, 0deg)) rotateY(var(--pips-y, 0deg)) rotateZ(0deg); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .die-cube, .die.roll:not(.held) .die-cube {
+    .die, .die.held, .die.held .face,
+    .die-cube, .die.roll:not(.held) .die-cube,
+    .die.roll:not(.held) {
         transition: none;
         animation: none;
     }

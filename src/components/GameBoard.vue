@@ -220,8 +220,12 @@
                die.color ? die.color : ''
              ]"
              :data-pips="die.value"
+             :style="{ '--roll-dur': rollDurations[index % rollDurations.length] }"
              @click="toggleHold(index)">
           <div class="die-cube">
+            <div class="die-core">
+              <div v-for="face in 6" :key="'core-' + face" class="die-core-face" :data-face="face"></div>
+            </div>
             <div v-for="face in 6" :key="face" class="face" :data-face="face">
               <span v-for="n in 9" :key="n" class="pip" :data-slot="n"></span>
             </div>
@@ -337,6 +341,10 @@ function cancelReCycle() {
 // Local reactive states
 const isRolling = ref(false);
 const showLegend = ref(false);
+
+// Per-die roll-animation duration so the five dice don't tumble in lockstep.
+// Paired with the per-die delay in gameStore.playRollDiceAnimation.
+const rollDurations = ['0.62s', '0.74s', '0.66s', '0.82s', '0.70s'];
 
 // Computed properties for game state
 const currentGame = computed(() => gameStore.currentGame);

@@ -683,19 +683,22 @@ export const useGameStore = defineStore('game', {
     },
 
     playRollDiceAnimation() {
-      if (this.game) {
-        const dice = this.game.dice();
-        dice.forEach((die) => {
-          if (!die.held) {
-            die.isRolling = true;
-          }
-        });
-        setTimeout(() => {
-          dice.forEach((die) => {
-            die.isRolling = false;
-          });
-        }, 1000);
-      }
+      if (!this.game) return;
+      const dice = this.game.dice();
+      const ROLL_DELAY_STEP_MS = 55;
+      let unheldIndex = 0;
+      let maxDelay = 0;
+      dice.forEach((die) => {
+        if (die.held) return;
+        const delay = unheldIndex * ROLL_DELAY_STEP_MS;
+        unheldIndex++;
+        maxDelay = Math.max(maxDelay, delay);
+        setTimeout(() => { die.isRolling = true; }, delay);
+      });
+      // Cover the last die's start + its longest CSS animation (~0.85s) + buffer.
+      setTimeout(() => {
+        dice.forEach((die) => { die.isRolling = false; });
+      }, maxDelay + 1100);
     },
 
     // -- Adventure Mode actions --

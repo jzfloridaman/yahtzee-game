@@ -59,6 +59,8 @@
         </div>
       </div>
     </section>
+
+    <ShopPanel />
   </div>
 </template>
 
@@ -67,6 +69,7 @@ import { computed } from 'vue'
 import { usePlayerProfileStore } from '../stores/playerProfileStore'
 import { ACHIEVEMENTS } from '../profile/achievements'
 import { xpToNextLevel } from '../profile/xp'
+import ShopPanel from './ShopPanel.vue'
 
 const profileStore = usePlayerProfileStore()
 const profile = computed(() => profileStore.profile)

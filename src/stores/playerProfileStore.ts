@@ -19,6 +19,11 @@ import type {
     RewardBundle,
 } from '../profile/types';
 import { WORLDS, LEVELS } from '../puzzle/levels/definitions';
+import {
+    buyConsumable as pureBuyConsumable,
+    consumeConsumable as pureConsumeConsumable,
+    type ConsumableId,
+} from '../profile/consumables';
 
 const PROFILE_STORAGE_KEY = 'playerProfile';
 
@@ -157,14 +162,22 @@ export const usePlayerProfileStore = defineStore('playerProfile', {
         },
 
         useConsumableFromInventory(id: string): boolean {
-            const count = this.profile.inventory[id] ?? 0;
-            if (count <= 0) return false;
-            this.profile = {
-                ...this.profile,
-                inventory: { ...this.profile.inventory, [id]: count - 1 },
-            };
+            const result = pureConsumeConsumable(this.profile, id as ConsumableId);
+            if (!result.ok) return false;
+            this.profile = result.profile;
             this.save();
             return true;
+        },
+
+        // Wraps the pure buyConsumable op so UI can purchase through the
+        // store and persist in one call. Returns the same result shape
+        // for the UI to display reasons (insufficient/maxStack/unknown).
+        buyConsumable(id: ConsumableId): { ok: boolean; reason?: string } {
+            const result = pureBuyConsumable(this.profile, id);
+            if (!result.ok) return { ok: false, reason: result.reason };
+            this.profile = result.profile;
+            this.save();
+            return { ok: true };
         },
 
         addToInventory(id: string, count: number = 1) {

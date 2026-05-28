@@ -386,6 +386,20 @@ body.world-cycles .world-fx::after {
     animation: cellFxFlip 0.55s ease-out forwards;
     box-shadow: 0 0 18px 4px rgba(52,211,153,0.55);
 }
+
+/* Score Sense consumable highlight — bright pulse on the best cell for 3s */
+.score-sense-highlight {
+    animation: scoreSensePulse 1s ease-in-out 3;
+    box-shadow: 0 0 0 3px rgba(252, 211, 77, 0.85), 0 0 22px 4px rgba(252, 211, 77, 0.6) !important;
+    z-index: 10 !important;
+}
+@keyframes scoreSensePulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(252, 211, 77, 0.85), 0 0 22px 4px rgba(252, 211, 77, 0.6); }
+    50%      { box-shadow: 0 0 0 6px rgba(252, 211, 77, 1),    0 0 30px 6px rgba(252, 211, 77, 0.8); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .score-sense-highlight { animation: none; }
+}
 @keyframes cellFxFlip {
     0%   { opacity: 0;   transform: scaleX(0.1) rotateY(0deg); }
     40%  { opacity: 0.9; transform: scaleX(1) rotateY(180deg); }

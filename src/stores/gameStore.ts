@@ -137,6 +137,11 @@ export const useGameStore = defineStore('game', {
     // initializeGame; never persisted.
     yahtzeesThisGame: 0,
     bonusTurnsThisGame: 0,
+
+    // Lucky Charm consumable flag — set by useConsumable, consumed by
+    // applySelectCategory on the next Yahtzee selection. Survives turn
+    // boundaries until used.
+    pendingLuckyCharm: false,
   }),
 
   getters: {
@@ -212,6 +217,7 @@ export const useGameStore = defineStore('game', {
       // Reset per-game counters; profile rewards read these in endGame.
       this.yahtzeesThisGame = 0
       this.bonusTurnsThisGame = 0
+      this.pendingLuckyCharm = false
       // Drop any stale GameOver reward payload so the new game starts clean.
       usePlayerProfileStore().clearLastGameRewards()
 
@@ -286,7 +292,15 @@ export const useGameStore = defineStore('game', {
       if (puzzleEngine && !isBonusTurnApply && !puzzleEngine.canScore(category)) return result;
 
       const dice = this.game.dice();
-      const rawScore = this.game.calculateScore(category);
+      // Lucky Charm consumable: substitutes a Yahtzee raw score (50) when
+      // the player picks the Yahtzee category. Consumed on use. Passes
+      // through the engine chain so a Flying Multiplier on Yahtzee still
+      // doubles.
+      let rawScore = this.game.calculateScore(category);
+      if (this.pendingLuckyCharm && category === Categories.Yahtzee) {
+        rawScore = 50;
+        this.pendingLuckyCharm = false;
+      }
       const transformedScore = puzzleEngine ? puzzleEngine.applyScore(category, rawScore, dice) : rawScore;
       result.score = transformedScore;
 
@@ -806,6 +820,89 @@ export const useGameStore = defineStore('game', {
           this.sendGameState();
         }
       }
+    },
+
+    // -- Consumable dispatch --
+    // Returns true if the consumable was applied (and the inventory was
+    // decremented). Online MP is rejected up front — no per-side inventory
+    // sync exists yet.
+    useConsumable(id: string, ctx?: { category?: Categories }): boolean {
+      if (!this.game) return false
+      if (this.gameMode === GameMode.OnlineMultiPlayer) return false
+      const profile = usePlayerProfileStore()
+      switch (id) {
+        case 'extraRoll': {
+          if (this.game.newRoll || this.game.rollsLeft > 0) return false
+          if (!profile.useConsumableFromInventory(id)) return false
+          this.game.rollsLeft = 1
+          return true
+        }
+        case 'freshReroll': {
+          if (this.game.newRoll) return false
+          if (!profile.useConsumableFromInventory(id)) return false
+          // Un-hold every die.
+          for (const die of this.game.dice()) die.held = false
+          this.game.rollsLeft = 1
+          return true
+        }
+        case 'revealBestCell': {
+          if (this.game.newRoll) return false
+          if (!profile.useConsumableFromInventory(id)) return false
+          this.highlightBestCell()
+          return true
+        }
+        case 'reCycleLooping': {
+          const cat = ctx?.category
+          if (!cat) return false
+          const engine = this.game.getPuzzleEngine(this.game.currentPlayer)
+          const mod = engine?.getModifierAt(cat)
+          if (!mod || mod.kind !== 'loopingCategory') return false
+          if (!profile.useConsumableFromInventory(id)) return false
+          // skipToNext only needs ctx.emit; build a minimal proxy that
+          // forwards to engine.emit so the loopingCategory:cycle event
+          // reaches every subscriber.
+          ;(mod as any).skipToNext({ emit: (e: any) => engine!.emit(e) })
+          return true
+        }
+        case 'convertToYahtzee': {
+          if (this.game.newRoll) return false
+          if (this.game.isCategorySelected(Categories.Yahtzee)) return false
+          if (!profile.useConsumableFromInventory(id)) return false
+          this.pendingLuckyCharm = true
+          return true
+        }
+      }
+      return false
+    },
+
+    // Score Sense highlight — finds the unscored cell whose dispatch
+    // result is highest (after passing through engine.applyScore so
+    // multipliers count), then adds a .score-sense-highlight class for
+    // 3 seconds.
+    highlightBestCell() {
+      if (!this.game) return
+      const dice = this.game.dice()
+      const engine = this.game.getPuzzleEngine(this.game.currentPlayer)
+      const scorecard = this.game.players[this.game.currentPlayer].getScorecard()
+      let bestCat: Categories | null = null
+      let bestVal = -1
+      for (const [cat, entry] of Object.entries(scorecard)) {
+        if (entry?.selected) continue
+        const c = cat as Categories
+        if (engine && !engine.canScore(c)) continue
+        const raw = this.game.calculateScore(c)
+        const final = engine ? engine.applyScore(c, raw, dice) : raw
+        if (final > bestVal) {
+          bestVal = final
+          bestCat = c
+        }
+      }
+      if (!bestCat) return
+      if (typeof document === 'undefined') return
+      const el = document.querySelector<HTMLElement>(`[data-category="${bestCat}"]`)
+      if (!el) return
+      el.classList.add('score-sense-highlight')
+      window.setTimeout(() => el.classList.remove('score-sense-highlight'), 3000)
     },
   },
 })

@@ -233,6 +233,12 @@
           <i class="fas fa-thumbtack"></i>
           <span>{{ heldCount }}</span>
         </div>
+        <div v-if="availableConsumables.length > 0" class="consumable-strip">
+          <ConsumableButton v-for="c in availableConsumables" :key="c.def.id"
+                            :def="c.def" :owned="c.owned" :enabled="true"
+                            :targeting="reCycleTargeting && c.def.id === 'reCycleLooping'"
+                            @use="onConsumableUse(c.def.id)" />
+        </div>
         <button @click="rollDice" id="roll-button"
                 :disabled="!canRoll || isRolling || aiTurnInProgress">
           <span class="roll-label">{{ newRoll ? 'START ROLL' : 'ROLL' }}</span>
@@ -243,6 +249,10 @@
           <span class="dot" :class="{ used: newRoll || rollsLeft < 1 }"></span>
         </div>
       </div>
+      <div v-if="reCycleTargeting" class="re-cycle-prompt">
+        <span>Tap a Looping Category cell to advance it.</span>
+        <button class="re-cycle-cancel" @click="cancelReCycle">Cancel</button>
+      </div>
     </footer>
   </div>
 </template>
@@ -251,6 +261,9 @@
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { usePeerStore } from '../stores/peerStore'
+import { usePlayerProfileStore } from '../stores/playerProfileStore'
+import { CONSUMABLES, inventoryCount, type ConsumableId } from '../profile/consumables'
+import ConsumableButton from './ConsumableButton.vue'
 import { Categories } from '../enums/Categories'
 import { GameMode } from '../enums/GameMode'
 import { GameVariant } from '../enums/GameVariant'
@@ -279,6 +292,47 @@ const emit = defineEmits<{
 
 const gameStore = useGameStore()
 const peerStore = usePeerStore()
+const profileStore = usePlayerProfileStore()
+
+// Consumable inventory filtered to "playable right now" and "owned". The
+// strip shows the small circular buttons next to the Roll button.
+const reCycleTargeting = ref(false)
+const availableConsumables = computed(() => {
+  const game = currentGame.value
+  if (!game) return []
+  const args = {
+    rollsLeft: game.rollsLeft,
+    newRoll: game.newRoll,
+    variant: game.variant,
+    hasLooping: game.variant === GameVariant.Puzzle
+      && !!gameStore.currentGame?.getPuzzleEngine(0)?.getModifiers().some(m => m.kind === 'loopingCategory'),
+    hasUnscoredCells: game.variant === GameVariant.Puzzle
+      ? game.players[game.currentPlayer]?.getScorecard
+        ? Object.values(game.players[game.currentPlayer].getScorecard()).some((e: any) => !e?.selected)
+        : true
+      : true,
+    yahtzeeUnscored: !game.isCategorySelected(Categories.Yahtzee),
+    isPlayerTurn: !aiTurnInProgress.value,
+    isOnlineMultiplayer: gameStore.gameMode === GameMode.OnlineMultiPlayer,
+  }
+  return CONSUMABLES
+    .map(def => ({ def, owned: inventoryCount(profileStore.profile, def.id) }))
+    .filter(c => c.owned > 0 && c.def.available(args))
+})
+
+function onConsumableUse(id: ConsumableId) {
+  if (id === 'reCycleLooping') {
+    // Enter two-tap targeting mode — the next cell click consumes the
+    // item against that cell.
+    reCycleTargeting.value = true
+    return
+  }
+  gameStore.useConsumable(id)
+}
+
+function cancelReCycle() {
+  reCycleTargeting.value = false
+}
 
 // Local reactive states
 const isRolling = ref(false);
@@ -397,6 +451,16 @@ const selectCategory = (category: Categories) => {
 }
 
 const handleSelectCategory = (category: Categories) => {
+  // Re-cycle targeting mode intercepts the next category tap.
+  if (reCycleTargeting.value) {
+    const ok = gameStore.useConsumable('reCycleLooping', { category })
+    reCycleTargeting.value = false
+    if (!ok) {
+      // Tap landed on a non-loopingCategory cell or otherwise invalid.
+      // Silent — UI prompt stays cleared so player can retry.
+    }
+    return
+  }
   if (isCategoryLocked(category)) return;
   selectCategory(category);
 }
@@ -608,6 +672,32 @@ watch(currentGame, () => { subscribeToEngines() })
 </script>
 
 <style scoped>
+.consumable-strip {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+.re-cycle-prompt {
+  margin: 0.4rem auto 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: rgba(250, 204, 21, 0.15);
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  color: #fef9c3;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+}
+.re-cycle-cancel {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.3);
+  color: inherit;
+  font-size: 0.7rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+  cursor: pointer;
+}
 .waiting-message {
   position: fixed;
   top:0;

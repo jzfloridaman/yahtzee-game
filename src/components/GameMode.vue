@@ -27,6 +27,13 @@
         <button @click="startPuzzleVsAi" class="mode-sub-btn vs-ai">
           <i class="fas fa-robot"></i><span>Puzzle vs. Dice Master</span>
         </button>
+        <button @click="startDailyPuzzle" class="mode-sub-btn daily">
+          <i class="fas fa-calendar-day"></i>
+          <span>Daily Puzzle</span>
+          <span v-if="dailyStreak > 0" class="daily-streak-badge" :title="`${dailyStreak}-day streak`">
+            <i class="fas fa-fire"></i>{{ dailyStreak }}
+          </span>
+        </button>
       </div>
 
       <button @click="toggleMultiplayerMenu" class="mode-card mode-card-local">
@@ -122,12 +129,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { GameMode } from '../enums/GameMode'
 import { GameVariant } from '../enums/GameVariant'
 import { usePeerStore, VERSION } from '../stores/peerStore'
 import { useGameStore } from '../stores/gameStore'
 import type { SeatSpec, ControllerKind } from '../controllers'
+import { currentStreakFor } from '../puzzle/daily/dailyProgress'
+import { getDailyDateKey } from '../utils/dailyDate'
 
 const emit = defineEmits<{
   (e: 'start-game', mode: GameMode, players?: number, seats?: SeatSpec[], variant?: GameVariant): void
@@ -221,6 +230,16 @@ const startPuzzleVsAi = () => {
   // Puzzle for local multiplayer (only OnlineMultiPlayer is forced back to
   // Rainbow). Random variant config is picked inside the store.
   emit('start-game', GameMode.MultiPlayer, undefined, seats, GameVariant.Puzzle)
+  showSinglePlayerMenu.value = false
+}
+
+const dailyStreak = computed(() => currentStreakFor(gameStore.dailyProgress, getDailyDateKey()))
+
+// Daily Puzzle is its own entry point — the store builds the
+// DailyPuzzleConfig and forwards into initializeGame, so we skip the
+// `start-game` emit and call the store directly.
+const startDailyPuzzle = () => {
+  gameStore.startDailyPuzzle()
   showSinglePlayerMenu.value = false
 }
 
@@ -448,6 +467,20 @@ onMounted(() => {
 .mode-sub-btn.puzzle    { box-shadow: 0 0 0 1px rgba(232,121,249,0.35); }
 .mode-sub-btn.adventure { box-shadow: 0 0 0 1px rgba(168,85,247,0.4); }
 .mode-sub-btn.vs-ai     { box-shadow: 0 0 0 1px rgba(248,113,113,0.35); }
+.mode-sub-btn.daily     { box-shadow: 0 0 0 1px rgba(52,211,153,0.4); }
+.daily-streak-badge {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fb923c, #b91c1c);
+  color: #fff;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+}
+.daily-streak-badge i { font-size: 0.65rem; }
 
 /* Config panels (local MP seat setup, online room flow). */
 .mode-config-panel {

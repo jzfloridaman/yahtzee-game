@@ -4,8 +4,12 @@ import { GameMode } from '../enums/GameMode'
 import { GameVariant } from '../enums/GameVariant'
 import { pickRandomVariant } from '../puzzle/configs/variants'
 import { LevelPuzzleConfig } from '../puzzle/configs/LevelPuzzleConfig'
+import { DailyPuzzleConfig } from '../puzzle/configs/DailyPuzzleConfig'
 import { getLevelByNumber, getLastLevelNumber } from '../puzzle/levels/definitions'
 import { applyWinToProgress, computeStars } from '../puzzle/levels/progression'
+import { applyDailyResult, loadDailyProgress } from '../puzzle/daily/dailyProgress'
+import type { DailyPuzzleProgress } from '../puzzle/daily/types'
+import { getDailyDateKey } from '../utils/dailyDate'
 import type { PuzzleConfig } from '../puzzle/types'
 import { SoundEffects } from '../enums/SoundEffects'
 import { usePeerStore } from './peerStore'
@@ -41,6 +45,7 @@ interface AdventureProgress {
 
 const MAX_HISTORY_ITEMS = 10;
 const ADVENTURE_STORAGE_KEY = 'puzzleAdventureProgress';
+const DAILY_STORAGE_KEY = 'puzzleDaily';
 
 function loadAdventureProgress(): AdventureProgress {
   try {
@@ -94,6 +99,13 @@ export const useGameStore = defineStore('game', {
     adventureProgress: loadAdventureProgress() as AdventureProgress,
     showAdventureMenu: false,
     currentAdventureLevel: null as number | null,
+
+    // Daily Puzzle — once-per-UTC-date deterministic seed. Persisted to
+    // localStorage under `puzzleDaily`. currentDailyDateKey is set when a
+    // daily attempt starts and read by endGame so the recorder fires
+    // exactly once per attempt.
+    dailyProgress: loadDailyProgress(localStorage.getItem(DAILY_STORAGE_KEY)) as DailyPuzzleProgress,
+    currentDailyDateKey: null as string | null,
   }),
 
   getters: {
@@ -155,6 +167,11 @@ export const useGameStore = defineStore('game', {
       // flow (startAdventureLevel sets it AFTER calling initializeGame).
       if (!(effectiveVariant === GameVariant.Puzzle && puzzleConfigOverride instanceof LevelPuzzleConfig)) {
         this.currentAdventureLevel = null;
+      }
+      // Same for the daily-puzzle pointer — startDailyPuzzle sets it AFTER
+      // calling initializeGame so this clear doesn't fight the action.
+      if (!(effectiveVariant === GameVariant.Puzzle && puzzleConfigOverride instanceof DailyPuzzleConfig)) {
+        this.currentDailyDateKey = null;
       }
       this.gameMode = mode
       this.gameVariant = effectiveVariant
@@ -450,6 +467,18 @@ export const useGameStore = defineStore('game', {
         this.gameHistory = this.gameHistory.slice(0, MAX_HISTORY_ITEMS)
         this.saveGameHistory()
 
+        // Daily Puzzle bookkeeping: if the active game was today's daily
+        // attempt, record the outcome (win/loss + score) before we tear
+        // the game state down. Recorded against the locked-in date key
+        // so the streak survives a UTC rollover mid-game.
+        if (this.currentDailyDateKey && this.game.variant === GameVariant.Puzzle) {
+          const engine = this.game.getPuzzleEngine(0);
+          const totalScore = this.game.getPlayerScore(0);
+          const result = engine ? engine.getResult(totalScore) : null;
+          const won = result?.status === 'win';
+          this.recordDailyCompletion(this.currentDailyDateKey, totalScore, won);
+        }
+
         if (this.gameMode === GameMode.OnlineMultiPlayer) {
           usePeerStore().disconnect();
           localStorage.removeItem('online session');
@@ -645,6 +674,36 @@ export const useGameStore = defineStore('game', {
         earnedStars,
       );
       this.saveAdventureProgress();
+    },
+
+    // -- Daily Puzzle --
+
+    saveDailyProgress() {
+      try {
+        localStorage.setItem(DAILY_STORAGE_KEY, JSON.stringify(this.dailyProgress));
+      } catch {
+        // Storage quota / privacy mode — silently ignore.
+      }
+    },
+
+    // Boots today's deterministic daily puzzle. Single-player only.
+    startDailyPuzzle() {
+      const dateKey = getDailyDateKey();
+      const config = new DailyPuzzleConfig(dateKey);
+      this.initializeGame(GameMode.SinglePlayer, 1, GameVariant.Puzzle, config);
+      this.currentDailyDateKey = dateKey;
+    },
+
+    // Records a completed daily attempt. Re-running on the same dateKey is
+    // a no-op inside applyDailyResult, so replays don't bump streak/best.
+    recordDailyCompletion(dateKey: string, score: number, won: boolean) {
+      const today = getDailyDateKey();
+      this.dailyProgress = applyDailyResult(
+        this.dailyProgress,
+        { dateKey, score, won },
+        today,
+      );
+      this.saveDailyProgress();
     },
 
     startOnlineGame() {

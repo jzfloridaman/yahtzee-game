@@ -24,6 +24,11 @@
           {{ puzzleResult.status === 'win' ? 'Puzzle Cleared!' : 'Puzzle Failed' }}
           <span class="text-sm font-normal block opacity-80">{{ puzzleVariantLabel }}</span>
         </h2>
+        <div v-if="dailyBanner" class="daily-result-row">
+          <i class="fas fa-calendar-day"></i>
+          <span><strong>Daily Puzzle</strong> · {{ dailyBanner.dateKey }}</span>
+          <span class="daily-streak"><i class="fas fa-fire"></i>{{ dailyBanner.streak }}-day streak</span>
+        </div>
         <div v-if="isAdventure && earnedStars > 0" class="puzzle-result-stars">
           <i v-for="n in 3" :key="n" class="fas fa-star"
              :class="{ filled: n <= earnedStars, revealed: n <= revealedStars }"></i>
@@ -238,6 +243,17 @@ const puzzleVariantLabel = computed(() => {
 
 const isAdventure = computed(() => gameStore.currentAdventureLevel != null)
 
+// Daily Puzzle banner — visible only when the just-finished game was a
+// daily attempt. The store cleared the date key on init for non-daily
+// games, so this is a single signal.
+const dailyBanner = computed(() => {
+  if (!gameStore.currentDailyDateKey) return null
+  return {
+    dateKey: gameStore.currentDailyDateKey,
+    streak: gameStore.dailyProgress.currentStreak,
+  }
+})
+
 const canAdvance = computed(() => {
   if (!isAdventure.value) return false
   if (puzzleResult.value?.status !== 'win') return false
@@ -424,6 +440,23 @@ const getDieIcon = (die: number): string => {
   background: linear-gradient(135deg, #7f1d1d 0%, #b91c1c 100%);
   border-color: #fca5a5;
   color: #fef2f2;
+}
+.daily-result-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.6rem;
+  background: rgba(0,0,0,0.25);
+  border-radius: 9999px;
+  font-size: 0.85rem;
+}
+.daily-result-row .daily-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #fb923c;
+  font-weight: 700;
 }
 .puzzle-vs-ai-banner {
   border-radius: 0.5rem;

@@ -1,6 +1,6 @@
 import { Categories } from '../../enums/Categories';
 import type { ScorecardTemplateEntry } from '../../config/scorecardTemplates';
-import type { PuzzleConfig, PuzzleModifier } from '../types';
+import type { PuzzleConfig, PuzzleModifier, RNG } from '../types';
 import { IceBlockModifier } from '../modifiers/IceBlockModifier';
 import { FlyingMultiplierModifier } from '../modifiers/FlyingMultiplierModifier';
 import { DoubleCategoryModifier } from '../modifiers/DoubleCategoryModifier';
@@ -8,7 +8,7 @@ import { DoubleCategoryModifier } from '../modifiers/DoubleCategoryModifier';
 // Variant definitions. Each one tweaks the modifier mix + win rules so a
 // random pick lands on a distinct play experience even though we only have
 // three modifier kinds to work with right now.
-type VariantSpec = {
+export type VariantSpec = {
     id: string;
     label: string;
     description: string;
@@ -106,11 +106,11 @@ const VARIANTS: VariantSpec[] = [
 // the player always has a guaranteed-scorable slot on turn 1.
 const PLACEMENT_BLOCKLIST: Categories[] = [Categories.Ones];
 
-function takeRandom<T>(pool: T[], count: number): T[] {
+export function takeRandom<T>(pool: T[], count: number, rng: RNG = Math.random): T[] {
     const remaining = [...pool];
     const picked: T[] = [];
     while (picked.length < count && remaining.length > 0) {
-        const idx = Math.floor(Math.random() * remaining.length);
+        const idx = Math.floor(rng() * remaining.length);
         picked.push(remaining.splice(idx, 1)[0]);
     }
     return picked;
@@ -118,12 +118,16 @@ function takeRandom<T>(pool: T[], count: number): T[] {
 
 // Pick ice block positions such that no two are adjacent in the template,
 // avoiding the soft-lock where a chain of ice has no scorable neighbor.
-function pickIceBlockPositions(template: ScorecardTemplateEntry[], count: number): Categories[] {
+export function pickIceBlockPositions(
+    template: ScorecardTemplateEntry[],
+    count: number,
+    rng: RNG = Math.random,
+): Categories[] {
     if (count <= 0) return [];
     const order = template.map(e => e.category).filter(c => !PLACEMENT_BLOCKLIST.includes(c));
     const indexOf = new Map(order.map((c, i) => [c, i] as const));
     // Greedy: shuffle eligible cells and keep the ones with no adjacent neighbour already picked.
-    const shuffled = takeRandom(order, order.length);
+    const shuffled = takeRandom(order, order.length, rng);
     const picked: Categories[] = [];
     for (const cell of shuffled) {
         if (picked.length >= count) break;
@@ -137,13 +141,13 @@ function pickIceBlockPositions(template: ScorecardTemplateEntry[], count: number
     return picked;
 }
 
-class VariantPuzzleConfig implements PuzzleConfig {
+export class VariantPuzzleConfig implements PuzzleConfig {
     readonly id: string;
     readonly label: string;
     readonly description: string;
     readonly targetScore: number;
     readonly requiredEngagementCount: number;
-    private readonly spec: VariantSpec;
+    readonly spec: VariantSpec;
 
     constructor(spec: VariantSpec) {
         this.spec = spec;
@@ -154,12 +158,12 @@ class VariantPuzzleConfig implements PuzzleConfig {
         this.requiredEngagementCount = spec.requiredEngagementCount;
     }
 
-    build(template: ScorecardTemplateEntry[]): PuzzleModifier[] {
+    build(template: ScorecardTemplateEntry[], rng: RNG = Math.random): PuzzleModifier[] {
         const taken = new Set<Categories>();
         const modifiers: PuzzleModifier[] = [];
 
         // Ice blocks first (most placement-constrained).
-        const icePositions = pickIceBlockPositions(template, this.spec.iceBlocks);
+        const icePositions = pickIceBlockPositions(template, this.spec.iceBlocks, rng);
         for (const cat of icePositions) {
             taken.add(cat);
             modifiers.push(new IceBlockModifier(cat));
@@ -170,18 +174,19 @@ class VariantPuzzleConfig implements PuzzleConfig {
             .filter(c => !PLACEMENT_BLOCKLIST.includes(c) && !taken.has(c));
 
         // Flying multipliers and double categories share what's left.
-        const flying = takeRandom(remainingPool, this.spec.flyingMultipliers);
+        const flying = takeRandom(remainingPool, this.spec.flyingMultipliers, rng);
         flying.forEach(c => taken.add(c));
         for (const cat of flying) modifiers.push(new FlyingMultiplierModifier(cat, 2));
 
         const stillRemaining = remainingPool.filter(c => !taken.has(c));
-        const doubles = takeRandom(stillRemaining, this.spec.doubleCategories);
+        const doubles = takeRandom(stillRemaining, this.spec.doubleCategories, rng);
         for (const cat of doubles) modifiers.push(new DoubleCategoryModifier(cat));
 
         return modifiers;
     }
 }
 
+export const PUZZLE_VARIANT_SPECS: VariantSpec[] = VARIANTS;
 export const PUZZLE_VARIANTS: PuzzleConfig[] = VARIANTS.map(spec => new VariantPuzzleConfig(spec));
 
 export function pickRandomVariant(): PuzzleConfig {

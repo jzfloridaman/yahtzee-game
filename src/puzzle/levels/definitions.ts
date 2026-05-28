@@ -10,6 +10,7 @@ export const WORLDS: World[] = [
     { id: 'storm-front',   name: 'Storm Front',   description: 'Defuse the Hot Potato before the fuse runs out.' },
     { id: 'storm-surge',   name: 'Storm Surge',   description: 'Every mechanic, mixed and matched.' },
     { id: 'finale',        name: 'Finale',        description: 'Boss puzzles — the storm at full strength.' },
+    { id: 'cycles',        name: 'Cycles',        description: 'Categories rotate. Score the slot at the right beat.' },
 ];
 
 // Hand-authored levels. Difficulty climbs by raising the target, adding
@@ -435,6 +436,61 @@ export const LEVELS: LevelDefinition[] = [
             { kind: 'hotPotato', category: Categories.LargeStraight, fuse: 4 },
             { kind: 'multiplierBubble', category: Categories.ThreeOfAKind },
             { kind: 'loopingMultiplier', category: Categories.SmallStraight, min: 1, max: 4 },
+        ],
+    },
+
+    // -- World 7: Cycles --
+    {
+        id: 'l35-first-spin', number: 35, worldId: 'cycles',
+        label: 'First Spin',
+        description: 'The Three of a Kind slot rotates through 4-of-a-kind and Chance.',
+        targetScore: 130, requiredEngagementCount: 1,
+        modifiers: [
+            { kind: 'loopingCategory', category: Categories.ThreeOfAKind,
+              cycle: [Categories.ThreeOfAKind, Categories.FourOfAKind, Categories.Chance] },
+        ],
+    },
+    {
+        id: 'l36-double-helix', number: 36, worldId: 'cycles',
+        label: 'Double Helix',
+        description: 'Two rotating slots — Full House flips with Yahtzee, Chance flips with Sixes.',
+        targetScore: 180, requiredEngagementCount: 2,
+        modifiers: [
+            { kind: 'loopingCategory', category: Categories.FullHouse,
+              cycle: [Categories.FullHouse, Categories.Yahtzee] },
+            { kind: 'loopingCategory', category: Categories.Chance,
+              cycle: [Categories.Sixes, Categories.Yahtzee, Categories.Chance] },
+        ],
+    },
+    {
+        id: 'l37-triple-loop', number: 37, worldId: 'cycles',
+        label: 'Triple Loop',
+        description: 'Three rotating slots, all 3-step cycles. Timing is everything.',
+        targetScore: 220, requiredEngagementCount: 3,
+        modifiers: [
+            { kind: 'loopingCategory', category: Categories.ThreeOfAKind,
+              cycle: [Categories.ThreeOfAKind, Categories.FourOfAKind, Categories.Yahtzee] },
+            { kind: 'loopingCategory', category: Categories.SmallStraight,
+              cycle: [Categories.SmallStraight, Categories.LargeStraight, Categories.Chance] },
+            { kind: 'loopingCategory', category: Categories.FullHouse,
+              cycle: [Categories.FullHouse, Categories.Yahtzee, Categories.Chance] },
+        ],
+    },
+    {
+        id: 'l38-carousel', number: 38, worldId: 'cycles',
+        label: 'Carousel',
+        description: 'Four rotating slots plus a flying chip looking for the right beat.',
+        targetScore: 280, requiredEngagementCount: 4,
+        modifiers: [
+            { kind: 'loopingCategory', category: Categories.ThreeOfAKind,
+              cycle: [Categories.ThreeOfAKind, Categories.Yahtzee] },
+            { kind: 'loopingCategory', category: Categories.FourOfAKind,
+              cycle: [Categories.FourOfAKind, Categories.Yahtzee, Categories.Chance] },
+            { kind: 'loopingCategory', category: Categories.FullHouse,
+              cycle: [Categories.FullHouse, Categories.Yahtzee] },
+            { kind: 'loopingCategory', category: Categories.SmallStraight,
+              cycle: [Categories.SmallStraight, Categories.LargeStraight] },
+            { kind: 'flyingMultiplier', category: Categories.Chance, multiplier: 2 },
         ],
     },
 ];

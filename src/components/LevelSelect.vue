@@ -116,12 +116,12 @@ const maxStars = computed(() => LEVELS.length * 3)
 const pick = (n: number) => emit('start-level', n)
 const back = () => emit('back')
 
-type ModKind = 'iceBlock' | 'flyingMultiplier' | 'doubleCategory' | 'hotPotato' | 'multiplierBubble' | 'loopingMultiplier';
+type ModKind = 'iceBlock' | 'flyingMultiplier' | 'doubleCategory' | 'hotPotato' | 'multiplierBubble' | 'loopingMultiplier' | 'loopingCategory';
 type ModSummary = { kind: ModKind; count: number; label: string };
 const modifierCounts = (level: LevelDefinition): ModSummary[] => {
   const counts: Record<ModKind, number> = {
     iceBlock: 0, flyingMultiplier: 0, doubleCategory: 0,
-    hotPotato: 0, multiplierBubble: 0, loopingMultiplier: 0,
+    hotPotato: 0, multiplierBubble: 0, loopingMultiplier: 0, loopingCategory: 0,
   };
   for (const m of level.modifiers) counts[m.kind]++;
   return [
@@ -131,6 +131,7 @@ const modifierCounts = (level: LevelDefinition): ModSummary[] => {
     { kind: 'hotPotato',         count: counts.hotPotato,         label: 'Hot Potatoes' },
     { kind: 'multiplierBubble',  count: counts.multiplierBubble,  label: 'Multiplier Bubbles' },
     { kind: 'loopingMultiplier', count: counts.loopingMultiplier, label: 'Looping Multipliers' },
+    { kind: 'loopingCategory',   count: counts.loopingCategory,   label: 'Looping Categories' },
   ].filter(c => c.count > 0);
 }
 </script>
@@ -201,6 +202,7 @@ const modifierCounts = (level: LevelDefinition): ModSummary[] => {
 .world-storm-front  { --w-from: #475569; --w-to: #1e293b; --w-accent: #facc15; }
 .world-storm-surge  { --w-from: #7c2d12; --w-to: #450a0a; --w-accent: #fb923c; }
 .world-finale       { --w-from: #3a1212; --w-to: #050505; --w-accent: #f43f5e; }
+.world-cycles       { --w-from: #064e3b; --w-to: #115e59; --w-accent: #34d399; }
 
 /* Accent bar on the left edge of each card. */
 .world-section::before {
@@ -375,6 +377,7 @@ const modifierCounts = (level: LevelDefinition): ModSummary[] => {
 .level-tile-mod.modifier-hotPotato         { background: linear-gradient(135deg, #f87171, #b91c1c); }
 .level-tile-mod.modifier-multiplierBubble  { background: linear-gradient(135deg, #5eead4, #0d9488); }
 .level-tile-mod.modifier-loopingMultiplier { background: linear-gradient(135deg, #f9a8d4, #be185d); }
+.level-tile-mod.modifier-loopingCategory   { background: linear-gradient(135deg, #6ee7b7, #047857); color: #042f1d; }
 .level-tile-mod-count {
   font-size: 0.55rem;
   opacity: 0.9;

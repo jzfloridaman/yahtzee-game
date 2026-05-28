@@ -110,6 +110,15 @@ body.world-finale {
     --bg-to:   #3a1212;
 }
 
+/* Cycles — verdant carousel: deep teal + emerald with golden accent */
+body.world-cycles {
+    --accent: #34d399;
+    --accent-soft: rgba(52, 211, 153, 0.32);
+    --bg-from: #064e3b;
+    --bg-via:  #0f766e;
+    --bg-to:   #115e59;
+}
+
 /* ============================================================
    Mobile-locked viewport shell
    ============================================================ */
@@ -309,6 +318,31 @@ body.world-finale .world-fx::before {
     50%      { opacity: 1; }
 }
 
+/* Cycles — slow orbital ring sweep + emerald motes */
+body.world-cycles .world-fx::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+        conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(52,211,153,0.10) 30deg, transparent 60deg, transparent 360deg);
+    animation: fxRotate 18s linear infinite;
+}
+body.world-cycles .world-fx::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        radial-gradient(2px 2px at 15% 30%, rgba(167,243,208,0.55), transparent 60%),
+        radial-gradient(1px 1px at 60% 20%, rgba(110,231,183,0.45), transparent 60%),
+        radial-gradient(2px 2px at 85% 70%, rgba(52,211,153,0.45), transparent 60%),
+        radial-gradient(1px 1px at 40% 85%, rgba(167,243,208,0.4), transparent 60%);
+    background-size: 320px 320px;
+    animation: fxRotate 24s linear infinite reverse;
+    opacity: 0.7;
+}
+@keyframes fxRotate {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
 /* ============================================================
    Cell-anchored modifier animations (created by cellAnimations.ts)
    ============================================================ */
@@ -346,6 +380,16 @@ body.world-finale .world-fx::before {
     background: radial-gradient(ellipse, rgba(236,72,153,0.5) 0%, transparent 70%);
     animation: cellFxFlash 0.6s ease-out forwards;
     box-shadow: 0 0 16px 4px rgba(236,72,153,0.6);
+}
+.cell-fx-flash-loop-category {
+    background: radial-gradient(ellipse, rgba(52,211,153,0.55) 0%, rgba(16,185,129,0.30) 50%, transparent 100%);
+    animation: cellFxFlip 0.55s ease-out forwards;
+    box-shadow: 0 0 18px 4px rgba(52,211,153,0.55);
+}
+@keyframes cellFxFlip {
+    0%   { opacity: 0;   transform: scaleX(0.1) rotateY(0deg); }
+    40%  { opacity: 0.9; transform: scaleX(1) rotateY(180deg); }
+    100% { opacity: 0;   transform: scaleX(1) rotateY(360deg); }
 }
 .cell-fx-flash-bonus {
     background: linear-gradient(120deg, rgba(253,224,71,0) 0%, rgba(253,224,71,0.6) 50%, rgba(253,224,71,0) 100%);

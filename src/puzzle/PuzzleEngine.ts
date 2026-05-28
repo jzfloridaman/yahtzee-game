@@ -1,4 +1,5 @@
 import { Categories } from '../enums/Categories';
+import type { Die } from '../types/Die';
 import type { ScorecardTemplateEntry } from '../config/scorecardTemplates';
 import type {
     EngineEvent,
@@ -8,6 +9,7 @@ import type {
     PuzzleEngineCtx,
     PuzzleModifier,
     PuzzleResult,
+    RNG,
 } from './types';
 
 // Minimal read shape the engine needs from the active player's scorecard.
@@ -31,6 +33,10 @@ export class PuzzleEngine {
     private pendingBonusCategory: Categories | null = null;
     private readonly ctx: PuzzleEngineCtx;
     private listeners: Set<EngineEventListener> = new Set();
+    // Snapshot of dice for the current scoring call. Set immediately before
+    // applyScore/afterScore so modifier hooks can recompute against the live
+    // roll (Looping Categories needs this). Empty between turns.
+    private currentDice: Die[] = [];
     // Track which goals have already fired `engine:goalMet` so the chime
     // only plays on the transition turn, not every subsequent score.
     private goalMetEmitted = { score: false, engagement: false };
@@ -43,11 +49,11 @@ export class PuzzleEngine {
         this.ctx = this.buildCtx();
     }
 
-    initFromConfig(config: PuzzleConfig, template: ScorecardTemplateEntry[]): void {
+    initFromConfig(config: PuzzleConfig, template: ScorecardTemplateEntry[], rng?: RNG): void {
         this.template = template;
         this.targetScore = config.targetScore;
         this.requiredEngagementCount = config.requiredEngagementCount;
-        this.modifiers = config.build(template);
+        this.modifiers = config.build(template, rng);
         // Snapshot the modifier kinds present at game start — once they're
         // consumed (ice melted, double exhausted) the modifier list won't
         // reflect what the puzzle originally contained.
@@ -127,14 +133,16 @@ export class PuzzleEngine {
     // doubles when on-target). Called once per scoring attempt. Passes ctx
     // so modifiers can emit "applied" events with the raw/final breakdown
     // for cell-anchored score animations.
-    applyScore(category: Categories, rawScore: number): number {
+    applyScore(category: Categories, rawScore: number, dice: Die[] = []): number {
+        this.currentDice = dice;
         return this.modifiers.reduce(
             (score, m) => (m.transformScore ? m.transformScore(category, score, this.ctx) : score),
             rawScore
         );
     }
 
-    afterScore(category: Categories, finalScore: number): void {
+    afterScore(category: Categories, finalScore: number, dice: Die[] = []): void {
+        this.currentDice = dice;
         // Snapshot the list so a modifier removing itself mid-iteration
         // doesn't skip subsequent ones.
         const snapshot = [...this.modifiers];
@@ -190,6 +198,9 @@ export class PuzzleEngine {
         return {
             get template() {
                 return engine.template;
+            },
+            get dice() {
+                return engine.currentDice;
             },
             scoredCategories: () => {
                 const scorecard = engine.readScorecard();

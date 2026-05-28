@@ -2,6 +2,8 @@ import { Categories } from '../../enums/Categories';
 import type { Die } from '../../types/Die';
 import type { YahtzeeGame } from '../../game';
 import { useCalculateScore } from '../../utils/CalculateScore';
+import { LoopingCategoryModifier } from '../../puzzle/modifiers/LoopingCategoryModifier';
+import type { PuzzleEngine } from '../../puzzle/PuzzleEngine';
 
 export type AIDecision =
     | { action: 'pickCategory'; category: Categories }
@@ -24,7 +26,7 @@ export class GreedyStrategy {
         const engine = game.getPuzzleEngine?.(game.currentPlayer) ?? null;
         const canScore = (cat: Categories) => engine ? engine.canScore(cat) : true;
 
-        const potentials = this.scorePotentials(scorecard, dice, canScore);
+        const potentials = this.scorePotentials(scorecard, dice, canScore, engine);
 
         // Out of rolls — must pick a category.
         if (rollsLeft === 0) {
@@ -44,19 +46,34 @@ export class GreedyStrategy {
     }
 
     // Score every unselected, scorable category against the current dice.
+    // For loopingCategory slots, swap in the currently-active cycle category
+    // so the AI sees the score the engine would actually bank.
     private scorePotentials(
         scorecard: Record<string, { selected: boolean }>,
         dice: Die[],
         canScore: (c: Categories) => boolean,
+        engine: PuzzleEngine | null,
     ): Map<Categories, number> {
         const map = new Map<Categories, number>();
         for (const [category, entry] of Object.entries(scorecard)) {
             if (entry.selected) continue;
             const cat = category as Categories;
             if (!canScore(cat)) continue;
-            map.set(cat, useCalculateScore(cat, dice));
+            const effectiveCat = this.effectiveScoringCategory(cat, engine);
+            map.set(cat, useCalculateScore(effectiveCat, dice));
         }
         return map;
+    }
+
+    // Returns the category whose scoring rule will actually apply when the
+    // player scores `slotCategory`. Today only LoopingCategory rewrites this.
+    private effectiveScoringCategory(slotCategory: Categories, engine: PuzzleEngine | null): Categories {
+        if (!engine) return slotCategory;
+        const mod = engine.getModifierAt(slotCategory);
+        if (mod instanceof LoopingCategoryModifier) {
+            return mod.activeCategory;
+        }
+        return slotCategory;
     }
 
     // Definite "take it" thresholds — these scores are too good to risk.

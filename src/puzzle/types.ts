@@ -1,5 +1,11 @@
 import { Categories } from '../enums/Categories';
+import type { Die } from '../types/Die';
 import type { ScorecardTemplateEntry } from '../config/scorecardTemplates';
+
+// Deterministic RNG function: returns a number in [0, 1). Pass mulberry32-style
+// seeded RNGs when reproducibility matters (Daily Puzzle); default Math.random
+// elsewhere.
+export type RNG = () => number;
 
 export type ModifierKind =
     | 'iceBlock'
@@ -7,7 +13,8 @@ export type ModifierKind =
     | 'doubleCategory'
     | 'hotPotato'
     | 'multiplierBubble'
-    | 'loopingMultiplier';
+    | 'loopingMultiplier'
+    | 'loopingCategory';
 
 // Lightweight, typed event bus surface. The engine emits these so the UI
 // can play cell-anchored animations + sounds without diffing reactive state.
@@ -22,6 +29,8 @@ export type EngineEvent =
     | { type: 'multiplierBubble:pop'; from: Categories; targets: Categories[] }
     | { type: 'loopingMultiplier:change'; category: Categories; value: number; min: number; max: number; atPeak: boolean }
     | { type: 'loopingMultiplier:applied'; category: Categories; raw: number; final: number; multiplier: number }
+    | { type: 'loopingCategory:cycle'; category: Categories; activeCategory: Categories; index: number; total: number }
+    | { type: 'loopingCategory:applied'; category: Categories; raw: number; final: number; active: Categories }
     | { type: 'engine:bonusTurn'; category: Categories }
     | { type: 'engine:goalMet'; kind: 'score' | 'engagement' };
 
@@ -57,6 +66,11 @@ export interface PuzzleModifier {
 
 export interface PuzzleEngineCtx {
     template: ScorecardTemplateEntry[];
+    // Snapshot of the dice for the active scoring call. Only meaningful inside
+    // transformScore / onAfterScore — set immediately before those hooks and
+    // empty otherwise. Modifiers that need to recompute against a different
+    // category (Looping Categories) read this and call useCalculateScore.
+    readonly dice: Die[];
     // Categories already filled on the scorecard (any value, including 0).
     scoredCategories(): Set<Categories>;
     // Remove a specific modifier instance.
@@ -95,7 +109,9 @@ export interface PuzzleConfig {
     description?: string;
     targetScore: number;
     requiredEngagementCount: number;
-    build(template: ScorecardTemplateEntry[]): PuzzleModifier[];
+    // `rng` is optional and defaults to Math.random. Daily Puzzle threads a
+    // seeded RNG through here for deterministic placement.
+    build(template: ScorecardTemplateEntry[], rng?: RNG): PuzzleModifier[];
 }
 
 export type PuzzleResultStatus = 'win' | 'lose';

@@ -220,6 +220,59 @@ export function showLoopingChange(category: Categories, atPeak: boolean): void {
     }
 }
 
+// ---- Looping category cycle ----
+// Short emerald flip flash on the slot when the active category rotates.
+export function showLoopingCategoryCycle(category: Categories): void {
+    if (reducedMotion()) return;
+    const rect = cellRect(category);
+    const layer = ensureFxLayer();
+    if (!rect || !layer) return;
+    const flash = document.createElement('div');
+    flash.className = 'cell-fx-flash cell-fx-flash-loop-category';
+    Object.assign(flash.style, positionOver(rect));
+    layer.appendChild(flash);
+    fade(flash, 550);
+}
+
+// ---- Looping category applied ----
+// `raw → <ActiveCat> = +final` popup above the cell when the substitution lands.
+export function showLoopingCategoryApplied(
+    category: Categories,
+    raw: number,
+    final: number,
+    active: Categories,
+): void {
+    const rect = cellRect(category);
+    const layer = ensureFxLayer();
+    if (!rect || !layer) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'cell-fx-score-breakdown cell-fx-score-breakdown-cycle';
+    wrap.style.left = `${rect.left + rect.width / 2}px`;
+    wrap.style.top  = `${rect.top}px`;
+    if (reducedMotion()) {
+        wrap.innerHTML = `<span class="cell-fx-final">+${final}</span>`;
+    } else {
+        // Compact category label for the substitution
+        const label = activeShortLabel(active);
+        wrap.innerHTML = `
+            <span class="cell-fx-raw">${raw}</span>
+            <span class="cell-fx-mult">as ${label}</span>
+            <span class="cell-fx-final">+${final}</span>
+        `;
+    }
+    layer.appendChild(wrap);
+    fade(wrap, 1300);
+}
+
+function activeShortLabel(c: Categories): string {
+    const map: Record<string, string> = {
+        'Ones': '1s', 'Twos': '2s', 'Threes': '3s', 'Fours': '4s', 'Fives': '5s', 'Sixes': '6s',
+        'Three of a Kind': '3K', 'Four of a Kind': '4K', 'Full House': 'FH',
+        'Small Straight': 'SS', 'Large Straight': 'LS', 'Yahtzee': 'Y', 'Chance': 'CH',
+    };
+    return map[c as unknown as string] ?? String(c);
+}
+
 // ---- Bonus turn banner shimmer ----
 // Glow on the bonus-eligible cell.
 export function showBonusTurnGlow(category: Categories): void {

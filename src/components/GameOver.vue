@@ -45,6 +45,7 @@
                 <i v-else-if="kind === 'doubleCategory'" class="fas fa-clone"></i>
                 <i v-else-if="kind === 'hotPotato'" class="fas fa-bomb"></i>
                 <i v-else-if="kind === 'multiplierBubble'" class="fas fa-circle-dot"></i>
+                <i v-else-if="kind === 'loopingCategory'" class="fas fa-rotate-right"></i>
                 <span v-else>×</span>
               </span>
             </span>
@@ -558,6 +559,7 @@ const getDieIcon = (die: number): string => {
 .puzzle-result-kind.modifier-hotPotato         { background: #dc2626; }
 .puzzle-result-kind.modifier-multiplierBubble  { background: #14b8a6; }
 .puzzle-result-kind.modifier-loopingMultiplier { background: #ec4899; }
+.puzzle-result-kind.modifier-loopingCategory  { background: #10b981; }
 .player-tabs {
   /* margin-bottom: 1rem; */
 }

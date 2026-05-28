@@ -7,6 +7,7 @@ import { DoubleCategoryModifier } from '../modifiers/DoubleCategoryModifier';
 import { HotPotatoModifier } from '../modifiers/HotPotatoModifier';
 import { MultiplierBubbleModifier } from '../modifiers/MultiplierBubbleModifier';
 import { LoopingMultiplierModifier } from '../modifiers/LoopingMultiplierModifier';
+import { LoopingCategoryModifier } from '../modifiers/LoopingCategoryModifier';
 
 // PuzzleConfig adapter for hand-authored Adventure levels. Modifier types
 // and positions are fixed (no randomness in build()).
@@ -48,6 +49,11 @@ export class LevelPuzzleConfig implements PuzzleConfig {
                     return new LoopingMultiplierModifier(spec.category, {
                         min: spec.min,
                         max: spec.max,
+                        start: spec.start,
+                    });
+                case 'loopingCategory':
+                    return new LoopingCategoryModifier(spec.category, {
+                        cycle: spec.cycle,
                         start: spec.start,
                     });
             }

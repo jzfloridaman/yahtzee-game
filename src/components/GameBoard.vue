@@ -57,6 +57,7 @@
             <i v-else-if="kind === 'doubleCategory'" class="fas fa-clone"></i>
             <i v-else-if="kind === 'hotPotato'" class="fas fa-bomb"></i>
             <i v-else-if="kind === 'multiplierBubble'" class="fas fa-circle-dot"></i>
+            <i v-else-if="kind === 'loopingCategory'" class="fas fa-rotate-right"></i>
             <span v-else>×</span>
           </span>
         </span>
@@ -94,6 +95,10 @@
         <div class="puzzle-legend-row">
           <span class="puzzle-legend-badge modifier-loopingMultiplier">×2</span>
           <span class="puzzle-legend-text"><strong>Looping Multiplier</strong> — value oscillates each turn. Wait for the high end.</span>
+        </div>
+        <div class="puzzle-legend-row">
+          <span class="puzzle-legend-badge modifier-loopingCategory"><i class="fas fa-rotate-right"></i></span>
+          <span class="puzzle-legend-text"><strong>Looping Category</strong> — the slot scores as a different category each turn. Time the right beat.</span>
         </div>
       </div>
     </div>
@@ -261,6 +266,8 @@ import {
   showHotPotatoExpire,
   showBubblePop,
   showLoopingChange,
+  showLoopingCategoryCycle,
+  showLoopingCategoryApplied,
   showBonusTurnGlow,
   showScoreBreakdown,
   showGoalMet,
@@ -505,6 +512,7 @@ const kindLabel = (kind: string): string => {
     case 'hotPotato': return 'Hot Potato — defuse before the fuse expires'
     case 'multiplierBubble': return 'Multiplier Bubble — score to scatter chips'
     case 'loopingMultiplier': return 'Looping Multiplier — score while value is high'
+    case 'loopingCategory': return 'Looping Category — score on the right active category'
     default: return kind
   }
 }
@@ -562,6 +570,13 @@ function handleEngineEvent(event: EngineEvent) {
     case 'loopingMultiplier:change':
       showLoopingChange(event.category, event.atPeak)
       if (sfx) playModifierSfx(event.atPeak ? 'loopPeak' : 'loopChange')
+      break
+    case 'loopingCategory:cycle':
+      showLoopingCategoryCycle(event.category)
+      if (sfx) playModifierSfx('loopingCategory')
+      break
+    case 'loopingCategory:applied':
+      showLoopingCategoryApplied(event.category, event.raw, event.final, event.active)
       break
     case 'engine:bonusTurn':
       showBonusTurnGlow(event.category)

@@ -234,14 +234,14 @@ export const useGameStore = defineStore('game', {
 
       const dice = this.game.dice();
       const rawScore = this.game.calculateScore(category);
-      const transformedScore = puzzleEngine ? puzzleEngine.applyScore(category, rawScore) : rawScore;
+      const transformedScore = puzzleEngine ? puzzleEngine.applyScore(category, rawScore, dice) : rawScore;
       result.score = transformedScore;
 
       if (isBonusTurnApply) {
         // Double Category second score: sum onto the existing slot value.
         this.game.players[this.game.currentPlayer].scoreManager.addScoreToCategory(category, transformedScore);
         puzzleEngine!.consumePendingBonusCategory();
-        puzzleEngine!.afterScore(category, transformedScore);
+        puzzleEngine!.afterScore(category, transformedScore, dice);
         puzzleEngine!.checkGoalMet(this.game.getTotalScore());
 
         if (transformedScore > 0) {
@@ -277,7 +277,7 @@ export const useGameStore = defineStore('game', {
       }
 
       this.game.updateSelectedScore(category, transformedScore, false);
-      puzzleEngine?.afterScore(category, transformedScore);
+      puzzleEngine?.afterScore(category, transformedScore, dice);
       puzzleEngine?.checkGoalMet(this.game.getTotalScore());
 
       // Modifiers (e.g., Double Category) can request a bonus turn from

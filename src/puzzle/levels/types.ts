@@ -8,7 +8,8 @@ export type LevelModifierSpec =
     | { kind: 'doubleCategory'; category: Categories }
     | { kind: 'hotPotato'; category: Categories; fuse?: number }
     | { kind: 'multiplierBubble'; category: Categories; scatterCount?: number; scatterMultiplier?: number }
-    | { kind: 'loopingMultiplier'; category: Categories; min?: number; max?: number; start?: number };
+    | { kind: 'loopingMultiplier'; category: Categories; min?: number; max?: number; start?: number }
+    | { kind: 'loopingCategory'; category: Categories; cycle: Categories[]; start?: number };
 
 export interface LevelDefinition {
     id: string;          // stable persistence key — never reuse across levels

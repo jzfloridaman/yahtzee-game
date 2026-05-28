@@ -18,6 +18,7 @@ export type ModifierSfxKind =
     | 'bombExpire'
     | 'loopChange'
     | 'loopPeak'
+    | 'loopingCategory'
     | 'bonusTurn'
     | 'goalChime'
     | 'starWin';
@@ -178,6 +179,11 @@ export function playModifierSfx(kind: ModifierSfxKind): void {
             // Bright bell.
             tone({ freq: 880, duration: 0.4, type: 'sine', peakGain: 0.3 });
             tone({ freq: 1320, duration: 0.35, type: 'sine', peakGain: 0.22, delay: 0.02 });
+            break;
+        case 'loopingCategory':
+            // Detuned shimmer sweep: rising third followed by an airy tail.
+            tone({ freq: 659.25, duration: 0.16, type: 'triangle', peakGain: 0.26, glideTo: 988 });
+            tone({ freq: 1318, duration: 0.18, type: 'sine', peakGain: 0.18, delay: 0.08 });
             break;
         case 'bonusTurn':
             // Harmonized clone chord.

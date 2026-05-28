@@ -8,6 +8,7 @@ import { DoubleCategoryModifier } from '../../modifiers/DoubleCategoryModifier';
 import { HotPotatoModifier } from '../../modifiers/HotPotatoModifier';
 import { MultiplierBubbleModifier } from '../../modifiers/MultiplierBubbleModifier';
 import { LoopingMultiplierModifier } from '../../modifiers/LoopingMultiplierModifier';
+import { LoopingCategoryModifier } from '../../modifiers/LoopingCategoryModifier';
 import { LEVELS } from '../../levels/definitions';
 
 const sample: LevelDefinition = {
@@ -65,7 +66,7 @@ describe('LevelPuzzleConfig', () => {
         }
     });
 
-    test('build() handles all six modifier kinds', () => {
+    test('build() handles all seven modifier kinds', () => {
         const allKinds: LevelDefinition = {
             id: 'allk', number: 1, worldId: 'test', label: 'all',
             targetScore: 0, requiredEngagementCount: 0,
@@ -76,20 +77,26 @@ describe('LevelPuzzleConfig', () => {
                 { kind: 'hotPotato', category: Categories.Chance, fuse: 4 },
                 { kind: 'multiplierBubble', category: Categories.ThreeOfAKind, scatterCount: 2 },
                 { kind: 'loopingMultiplier', category: Categories.LargeStraight, min: 1, max: 4 },
+                { kind: 'loopingCategory', category: Categories.SmallStraight,
+                  cycle: [Categories.SmallStraight, Categories.LargeStraight, Categories.Chance] },
             ],
         };
         const config = new LevelPuzzleConfig(allKinds);
         const modifiers = config.build(PUZZLE_TEMPLATE);
-        expect(modifiers).toHaveLength(6);
+        expect(modifiers).toHaveLength(7);
         expect(modifiers.find(m => m.kind === 'iceBlock')).toBeInstanceOf(IceBlockModifier);
         expect(modifiers.find(m => m.kind === 'flyingMultiplier')).toBeInstanceOf(FlyingMultiplierModifier);
         expect(modifiers.find(m => m.kind === 'doubleCategory')).toBeInstanceOf(DoubleCategoryModifier);
         expect(modifiers.find(m => m.kind === 'hotPotato')).toBeInstanceOf(HotPotatoModifier);
         expect(modifiers.find(m => m.kind === 'multiplierBubble')).toBeInstanceOf(MultiplierBubbleModifier);
         expect(modifiers.find(m => m.kind === 'loopingMultiplier')).toBeInstanceOf(LoopingMultiplierModifier);
+        expect(modifiers.find(m => m.kind === 'loopingCategory')).toBeInstanceOf(LoopingCategoryModifier);
         const hp = modifiers.find(m => m.kind === 'hotPotato') as HotPotatoModifier;
         expect(hp.fuseRemaining).toBe(4);
         const lm = modifiers.find(m => m.kind === 'loopingMultiplier') as LoopingMultiplierModifier;
         expect(lm.value).toBe(1);
+        const lc = modifiers.find(m => m.kind === 'loopingCategory') as LoopingCategoryModifier;
+        expect(lc.cycle).toHaveLength(3);
+        expect(lc.activeCategory).toBe(Categories.SmallStraight);
     });
 });

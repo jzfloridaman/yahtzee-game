@@ -8,9 +8,27 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { PuzzleModifier } from '../puzzle/types'
+import { Categories } from '../enums/Categories'
 import { FlyingMultiplierModifier } from '../puzzle/modifiers/FlyingMultiplierModifier'
 import { LoopingMultiplierModifier } from '../puzzle/modifiers/LoopingMultiplierModifier'
+import { LoopingCategoryModifier } from '../puzzle/modifiers/LoopingCategoryModifier'
 import { HotPotatoModifier } from '../puzzle/modifiers/HotPotatoModifier'
+
+const SHORT_CAT: Partial<Record<Categories, string>> = {
+  [Categories.Ones]: '1s',
+  [Categories.Twos]: '2s',
+  [Categories.Threes]: '3s',
+  [Categories.Fours]: '4s',
+  [Categories.Fives]: '5s',
+  [Categories.Sixes]: '6s',
+  [Categories.ThreeOfAKind]: '3K',
+  [Categories.FourOfAKind]: '4K',
+  [Categories.FullHouse]: 'FH',
+  [Categories.SmallStraight]: 'SS',
+  [Categories.LargeStraight]: 'LS',
+  [Categories.Yahtzee]: 'Y',
+  [Categories.Chance]: 'CH',
+}
 
 const props = defineProps<{ modifier: PuzzleModifier }>()
 
@@ -22,6 +40,7 @@ const iconClass = computed(() => {
     case 'doubleCategory': return 'fa-clone'
     case 'hotPotato': return 'fa-bomb'
     case 'multiplierBubble': return 'fa-circle-dot'
+    case 'loopingCategory': return 'fa-rotate-right'
     default: return null
   }
 })
@@ -40,6 +59,9 @@ const label = computed(() => {
   if (props.modifier instanceof HotPotatoModifier && props.modifier.activated) {
     return String(props.modifier.fuseRemaining)
   }
+  if (props.modifier instanceof LoopingCategoryModifier) {
+    return SHORT_CAT[props.modifier.activeCategory] ?? ''
+  }
   return ''
 })
 
@@ -54,6 +76,8 @@ const title = computed(() => {
         : 'Hot Potato — arms once you score elsewhere'
     case 'multiplierBubble': return 'Multiplier Bubble — score here to scatter ×2 chips'
     case 'loopingMultiplier': return 'Looping Multiplier — value cycles each turn'
+    case 'loopingCategory':
+      return `Looping Category — scores as ${(props.modifier as LoopingCategoryModifier).activeCategory} this turn`
     default: return ''
   }
 })
@@ -99,6 +123,7 @@ const title = computed(() => {
 .modifier-hotPotato.armed    { background: linear-gradient(135deg, #f87171, #b91c1c); animation: hot-potato-pulse 0.9s ease-in-out infinite; }
 .modifier-multiplierBubble   { background: linear-gradient(135deg, #5eead4, #0d9488); }
 .modifier-loopingMultiplier  { background: linear-gradient(135deg, #f9a8d4, #be185d); color: #fff; }
+.modifier-loopingCategory    { background: linear-gradient(135deg, #6ee7b7, #047857); color: #042f1d; }
 .modifier-label {
   margin-left: 0.15rem;
   font-size: 0.7rem;

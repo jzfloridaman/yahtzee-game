@@ -1,9 +1,6 @@
 <template>
   <div id="level-select-container" class="flex flex-col items-center gap-3 w-full p-3">
     <div class="ls-header">
-      <button @click="back" class="back-button" aria-label="Back">
-        <i class="fas fa-arrow-left"></i>
-      </button>
       <h2 class="ls-title">Adventure</h2>
       <div class="ls-stars">
         <i class="fas fa-star"></i>{{ totalStars }} / {{ maxStars }}
@@ -81,7 +78,6 @@ const gameStore = useGameStore()
 
 const emit = defineEmits<{
   (e: 'start-level', n: number): void
-  (e: 'back'): void
 }>()
 
 const worlds = WORLDS
@@ -114,7 +110,6 @@ const totalStars = computed(() => LEVELS.reduce((sum, l) => sum + bestStars(l.id
 const maxStars = computed(() => LEVELS.length * 3)
 
 const pick = (n: number) => emit('start-level', n)
-const back = () => emit('back')
 
 type ModKind = 'iceBlock' | 'flyingMultiplier' | 'doubleCategory' | 'hotPotato' | 'multiplierBubble' | 'loopingMultiplier' | 'loopingCategory';
 type ModSummary = { kind: ModKind; count: number; label: string };

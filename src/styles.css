@@ -8,40 +8,66 @@ body {
     font-feature-settings: "tnum" 1;
 }
 
-#game-container, #game-mode-container, #game-over-container {
+#game-container, #game-mode-container, #game-over-container, #level-select-container {
     @apply p-4 flex flex-col items-center w-full mx-auto;
     background: var(--surface);
     border-radius: 0;
     box-shadow: none;
-    min-height: 100dvh;
-    /* Top padding intentionally small — the floating .app-top-bar
-       (rendered above in App.vue) already provides the safe-area top
-       padding for the hamburger. */
+    /* Fill the remaining column height under the top icon nav. min-height:0
+       lets internal flex children (.game-main, scrollable lists) shrink
+       and own their own overflow instead of pushing the page out. */
+    flex: 1;
+    min-height: 0;
+    /* Top padding intentionally small — the .app-top-bar above already
+       provides the safe-area top padding for the nav row. */
     padding-top: 0.25rem;
-    padding-bottom: calc(1rem + var(--safe-bottom));
+    padding-bottom: calc(0.5rem + var(--safe-bottom));
     position: relative;
     z-index: 1; /* sits above the absolutely-positioned .world-fx */
-}
-
-/* GameBoard reserves heavy bottom space for the fixed .bottom-stack
-   (dice tray + roll button + held chip). ~11rem covers it + safe-area. */
-#game-container {
-    padding-bottom: calc(11rem + var(--safe-bottom));
 }
 
 /* Main menu is short — vertically center the whole stack so it sits in
    the middle of the column rather than hugging the top. */
 #game-mode-container {
     justify-content: center;
+    /* Center vertically; if content ever exceeds the column, allow internal
+       scroll inside this container rather than the page. */
+    overflow-y: auto;
+}
+
+/* GameOver may render a tall rewards banner + stats; let it scroll inside
+   the column without affecting the page. */
+#game-over-container {
+    overflow-y: auto;
+}
+
+/* Adventure level select has 38 levels across 7 worlds — internal scroll
+   so the worlds list can be tall without affecting the page. */
+#level-select-container {
+    overflow-y: auto;
+}
+
+/* GameBoard hosts .bottom-stack which owns its own safe-area padding;
+   zero #game-container's bottom pad so the dice tray sits flush with the
+   column's edge. */
+#game-container {
+    padding-bottom: 0;
 }
 
 /* Middle region that holds the puzzle context box + bonus banner +
    scorecard. flex:1 lets it fill remaining vertical space below the
-   sticky player header; justify-content:center vertically centers the
+   player header; justify-content:center vertically centers the
    block so when there's room the scorecard sits with even top/bottom
-   padding instead of hugging the top. */
+   padding instead of hugging the top.
+
+   min-height:0 lets this band shrink inside the parent flex column so
+   the bottom-stack (dice tray) stays anchored at the bottom. If the
+   scorecard ever exceeds the available height, this band scrolls
+   internally rather than the page. */
 .game-main {
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -61,20 +87,19 @@ body {
    ============================================================ */
 
 .bottom-stack {
-    /* Fixed to viewport bottom, horizontally centered, capped at the
-       column's max-width so it lines up with the 430px column on desktop
-       and spans full width on mobile. */
-    position: fixed;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 25;
-    width: 100%;
-    max-width: var(--frame-max-width, 430px);
-    padding: 0.6rem 0.6rem calc(0.6rem + var(--safe-bottom, 0px));
+    /* In-flow flex child at the bottom of #game-container. The parent
+       flex column distributes height so .game-main fills the middle and
+       this footer hugs the bottom without page-level overflow. */
+    flex-shrink: 0;
+    /* Pull to the column's edge to undo #game-container's p-4. */
+    margin: 0 -1rem;
+    width: calc(100% + 2rem);
+    /* Generous top pad gives the rolled 3D dice breathing room above the
+       gradient lip; horizontal + bottom keep the chrome tight. */
+    padding: 1.25rem 0.6rem calc(0.6rem + var(--safe-bottom, 0px));
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1.25rem;
     background: linear-gradient(0deg, var(--surface-strong) 0%, var(--surface-strong) 88%, rgba(15,23,42,0.6) 100%);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
@@ -642,14 +667,16 @@ body {
    ============================================================ */
 
 .players-header {
-    position: sticky;
-    /* The .app-top-bar sits sticky at top:0 (z-index 30). Pin this row
-       directly below it so player chips remain visible while scrolling. */
-    top: calc(2.7rem + var(--safe-top, 0px));
+    /* First flex child of #game-container — sits naturally below the top
+       icon nav. Negative top + horizontal margins pull the row out of
+       #game-container's padding so the background fills flush against
+       the top bar and the column's side edges. No longer sticky because
+       the page itself doesn't scroll. */
+    flex-shrink: 0;
     z-index: 20;
-    width: calc(100% + 1rem);
-    margin: 0 -0.5rem 0.5rem;
-    padding: 0.45rem 0.45rem 0.5rem;
+    width: calc(100% + 2rem);
+    margin: -0.25rem -1rem 0.5rem;
+    padding: 0.6rem 0.55rem 0.55rem;
     background: linear-gradient(180deg, var(--surface-strong) 0%, var(--surface-strong) 80%, rgba(15,23,42,0) 100%);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);

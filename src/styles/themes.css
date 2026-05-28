@@ -126,10 +126,13 @@ body.world-cycles {
 html, body {
     margin: 0;
     padding: 0;
-    min-height: 100dvh;
+    height: 100dvh;
 }
 
 body {
+    /* Lock the page to the viewport so any overflow is contained inside
+       #app's internal flex column (only .game-main scrolls). */
+    overflow: hidden;
     /* Background: animated gradient driven by mode/world tokens. */
     background:
         radial-gradient(circle at 20% 10%, var(--bg-via) 0%, transparent 55%),
@@ -174,11 +177,12 @@ body.mode-rainbow {
    player header pin to the viewport, while the column's rounded corners
    still clip the world-fx atmosphere layer. */
 #app {
-    display: block;
+    display: flex;
+    flex-direction: column;
     width: 100%;
     max-width: var(--frame-max-width);
     margin: 0 auto;
-    min-height: 100dvh;
+    height: 100dvh;
     background: rgba(8, 8, 24, 0.32);
     box-shadow:
         0 0 0 1px rgba(255, 255, 255, 0.06),
@@ -194,7 +198,7 @@ body.mode-rainbow {
     #app {
         margin-top: 16px;
         margin-bottom: 16px;
-        min-height: calc(100dvh - 32px);
+        height: calc(100dvh - 32px);
         border-radius: var(--frame-radius);
     }
 }

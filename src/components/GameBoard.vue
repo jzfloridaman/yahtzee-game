@@ -62,46 +62,61 @@
           </span>
         </span>
       </div>
-      <!-- Modifier help legend lives inside the goals panel so the whole
-           puzzle context (target, engagement progress, mechanic key)
-           stays in one container. -->
-      <button type="button" class="puzzle-legend-toggle" @click="showLegend = !showLegend"
-              :aria-expanded="showLegend" aria-controls="puzzle-legend-panel">
+      <!-- Modifier help opens a modal so the inline goals panel doesn't
+           grow and push the scorecard out of view. -->
+      <button type="button" class="puzzle-legend-toggle" @click="showLegend = true"
+              :aria-haspopup="true" aria-controls="puzzle-legend-modal">
         <i class="fas fa-circle-question"></i>
-        <span>{{ showLegend ? 'Hide modifier help' : 'Modifier help' }}</span>
-        <i class="fas" :class="showLegend ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+        <span>Modifier help</span>
       </button>
-      <div v-show="showLegend" id="puzzle-legend-panel" class="puzzle-legend">
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-iceBlock"><i class="fas fa-snowflake"></i></span>
-          <span class="puzzle-legend-text"><strong>Ice Block</strong> — locked. Score &gt;0 in the slot directly above or below to melt it.</span>
-        </div>
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-flyingMultiplier">×2</span>
-          <span class="puzzle-legend-text"><strong>Flying Multiplier</strong> — doubles the score in this slot. Moves at end of every turn.</span>
-        </div>
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-doubleCategory"><i class="fas fa-clone"></i></span>
-          <span class="puzzle-legend-text"><strong>Double Category</strong> — score here and you get a bonus turn to score it again.</span>
-        </div>
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-hotPotato"><i class="fas fa-bomb"></i></span>
-          <span class="puzzle-legend-text"><strong>Hot Potato</strong> — arms after your first non-zero score. Defuse before the fuse runs out.</span>
-        </div>
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-multiplierBubble"><i class="fas fa-circle-dot"></i></span>
-          <span class="puzzle-legend-text"><strong>Multiplier Bubble</strong> — score here to scatter three ×2 chips to random cells.</span>
-        </div>
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-loopingMultiplier">×2</span>
-          <span class="puzzle-legend-text"><strong>Looping Multiplier</strong> — value oscillates each turn. Wait for the high end.</span>
-        </div>
-        <div class="puzzle-legend-row">
-          <span class="puzzle-legend-badge modifier-loopingCategory"><i class="fas fa-rotate-right"></i></span>
-          <span class="puzzle-legend-text"><strong>Looping Category</strong> — the slot scores as a different category each turn. Time the right beat.</span>
-        </div>
-      </div>
     </div>
+
+    <!-- Centered modal for modifier help. Teleported to body so it's
+         outside any clipped/relative ancestor. -->
+    <teleport to="body">
+      <transition name="legend-modal">
+        <div v-if="showLegend" class="legend-modal-backdrop" @click="showLegend = false">
+          <div id="puzzle-legend-modal" class="legend-modal" @click.stop role="dialog" aria-modal="true" aria-labelledby="legend-modal-title">
+            <header class="legend-modal-header">
+              <h3 id="legend-modal-title">Modifier help</h3>
+              <button type="button" class="legend-modal-close" @click="showLegend = false" aria-label="Close">
+                <i class="fas fa-xmark"></i>
+              </button>
+            </header>
+            <div class="legend-modal-body">
+              <div class="puzzle-legend-row">
+                <span class="puzzle-legend-badge modifier-iceBlock"><i class="fas fa-snowflake"></i></span>
+                <span class="puzzle-legend-text"><strong>Ice Block</strong> — locked. Score &gt;0 in the slot directly above or below to melt it.</span>
+              </div>
+              <div class="puzzle-legend-row">
+                <span class="puzzle-legend-badge modifier-flyingMultiplier">×2</span>
+                <span class="puzzle-legend-text"><strong>Flying Multiplier</strong> — doubles the score in this slot. Moves at end of every turn.</span>
+              </div>
+              <div class="puzzle-legend-row">
+                <span class="puzzle-legend-badge modifier-doubleCategory"><i class="fas fa-clone"></i></span>
+                <span class="puzzle-legend-text"><strong>Double Category</strong> — score here and you get a bonus turn to score it again.</span>
+              </div>
+              <div class="puzzle-legend-row">
+                <span class="puzzle-legend-badge modifier-hotPotato"><i class="fas fa-bomb"></i></span>
+                <span class="puzzle-legend-text"><strong>Hot Potato</strong> — arms after your first non-zero score. Defuse before the fuse runs out.</span>
+              </div>
+              <div class="puzzle-legend-row">
+                <span class="puzzle-legend-badge modifier-multiplierBubble"><i class="fas fa-circle-dot"></i></span>
+                <span class="puzzle-legend-text"><strong>Multiplier Bubble</strong> — score here to scatter three ×2 chips to random cells.</span>
+              </div>
+              <div class="puzzle-legend-row">
+                <span class="puzzle-legend-badge modifier-loopingMultiplier">×2</span>
+                <span class="puzzle-legend-text"><strong>Looping Multiplier</strong> — value oscillates each turn. Wait for the high end.</span>
+              </div>
+              <div class="puzzle-legend-row">
+                <span class="puzzle-legend-badge modifier-loopingCategory"><i class="fas fa-rotate-right"></i></span>
+                <span class="puzzle-legend-text"><strong>Looping Category</strong> — the slot scores as a different category each turn. Time the right beat.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </teleport>
 
     <div v-if="pendingBonusName()" class="puzzle-bonus-banner">
       <i class="fas fa-clone"></i>
@@ -233,10 +248,6 @@
         </div>
       </div>
       <div class="action-zone">
-        <div class="action-chip held-chip" :class="{ active: heldCount > 0 }">
-          <i class="fas fa-thumbtack"></i>
-          <span>{{ heldCount }}</span>
-        </div>
         <div v-if="availableConsumables.length > 0" class="consumable-strip">
           <ConsumableButton v-for="c in availableConsumables" :key="c.def.id"
                             :def="c.def" :owned="c.owned" :enabled="true"
@@ -406,7 +417,6 @@ const rollDice = () => {
   setTimeout(() => { isRolling.value = false; }, 1000);
 }
 
-const heldCount = computed(() => dice.value.filter(d => d.held).length)
 
 // Used to render category icons (Ones..Sixes) in the scorecard — the
 // dice themselves use CSS pips now, but the FontAwesome dice glyph still
@@ -758,5 +768,88 @@ position:fixed;
 @keyframes thinking-dot {
   0%, 60%, 100% { opacity: 0.3; }
   30% { opacity: 1; }
+}
+
+/* ============================================================
+   Modifier-help modal
+   Teleported to <body> so it sits above #app's clipped column.
+   ============================================================ */
+.legend-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.legend-modal {
+  width: 100%;
+  max-width: 400px;
+  max-height: 80dvh;
+  background: linear-gradient(180deg, var(--bg-via, #1e1b4b) 0%, var(--bg-from, #0f0a2e) 100%);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  box-shadow: 0 30px 80px -10px rgba(0,0,0,0.7);
+  color: var(--text, #fff);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.legend-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.legend-modal-header h3 {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+.legend-modal-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--text-soft, #cbd5e1);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.15s ease;
+}
+.legend-modal-close:hover { background: rgba(255,255,255,0.14); color: #fff; }
+.legend-modal-body {
+  padding: 0.85rem 1rem 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.legend-modal-enter-active, .legend-modal-leave-active {
+  transition: opacity 0.18s ease;
+}
+.legend-modal-enter-active .legend-modal, .legend-modal-leave-active .legend-modal {
+  transition: transform 0.22s cubic-bezier(0.32, 0.72, 0.36, 1.0);
+}
+.legend-modal-enter-from, .legend-modal-leave-to { opacity: 0; }
+.legend-modal-enter-from .legend-modal, .legend-modal-leave-to .legend-modal {
+  transform: scale(0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .legend-modal-enter-active, .legend-modal-leave-active,
+  .legend-modal-enter-active .legend-modal, .legend-modal-leave-active .legend-modal {
+    transition: none;
+  }
 }
 </style> 

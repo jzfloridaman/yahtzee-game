@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="app-root">
     <!-- Rejoin Online Session Modal -->
     <div v-if="showRejoinModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-70">
       <div class="bg-red-700 p-8 rounded-lg shadow-lg text-center max-w-xs mx-auto">
@@ -19,66 +19,67 @@
         <button @click="handleNewGame" class="bg-white text-red-700 font-bold px-4 py-2 rounded hover:bg-gray-200 transition">New Game</button>
       </div>
     </div>
-    <!-- Sticky top bar — owns the hamburger so player rows + section
-         headers below get the full column width back. -->
+    <!-- Top icon nav. First flex child of #app; non-scrolling. Each icon
+         toggles a dropdown panel anchored below the bar. Left side hosts
+         a contextual Back button shown on every screen except the main
+         menu (closes adventure, abandons active game, etc.). -->
     <header class="app-top-bar">
-      <button class="hamburger-btn" @click="toggleSheet"
-              :aria-expanded="showSheet" aria-label="Open menu">
-        <i class="fas fa-bars"></i>
-        <span v-if="unreadChatCount > 0 && peerStore.isConnected" class="chat-counter-bubble">{{ unreadChatCount }}</span>
-      </button>
+      <div class="top-nav-left">
+        <button v-if="!isOnMainMenu" class="nav-icon-btn back-btn"
+                @click="goBack" aria-label="Back">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+      </div>
+      <nav class="top-nav" role="tablist" aria-label="Game menu">
+        <button role="tab" class="nav-icon-btn" :class="{ active: activePanel === 'audio' }"
+                @click="togglePanel('audio')" :aria-selected="activePanel === 'audio'" aria-label="Audio">
+          <i class="fas fa-volume-up"></i>
+        </button>
+        <button role="tab" class="nav-icon-btn" :class="{ active: activePanel === 'history' }"
+                @click="togglePanel('history')" :aria-selected="activePanel === 'history'" aria-label="History">
+          <i class="fas fa-history"></i>
+        </button>
+        <button role="tab" class="nav-icon-btn" :class="{ active: activePanel === 'profile' }"
+                @click="togglePanel('profile')" :aria-selected="activePanel === 'profile'" aria-label="Profile">
+          <i class="fas fa-user-circle"></i>
+        </button>
+        <button v-if="gameStore.isGameActive && peerStore.isConnected"
+                role="tab" class="nav-icon-btn" :class="{ active: activePanel === 'chat' }"
+                @click="togglePanel('chat')" :aria-selected="activePanel === 'chat'" aria-label="Chat">
+          <i class="fas fa-comment-dots"></i>
+          <span v-if="unreadChatCount > 0" class="chat-counter-bubble">{{ unreadChatCount }}</span>
+        </button>
+        <button v-if="gameStore.isGameActive"
+                role="tab" class="nav-icon-btn" :class="{ active: activePanel === 'options' }"
+                @click="togglePanel('options')" :aria-selected="activePanel === 'options'" aria-label="Options">
+          <i class="fas fa-cog"></i>
+        </button>
+      </nav>
     </header>
 
-    <!-- Bottom-sheet drawer -->
-    <transition name="sheet">
-      <div v-if="showSheet" class="sheet-backdrop" @click="closeSheet">
-        <div class="sheet" @click.stop>
-          <div class="sheet-handle"></div>
-
-          <div class="sheet-tabs" role="tablist">
-            <button role="tab" :class="['sheet-tab', { active: activeTab === 'audio' }]"
-                    @click="activeTab = 'audio'">
-              <i class="fas fa-volume-up"></i><span>Audio</span>
-            </button>
-            <button role="tab" :class="['sheet-tab', { active: activeTab === 'history' }]"
-                    @click="activeTab = 'history'">
-              <i class="fas fa-history"></i><span>History</span>
-            </button>
-            <button role="tab" :class="['sheet-tab', { active: activeTab === 'profile' }]"
-                    @click="activeTab = 'profile'">
-              <i class="fas fa-user-circle"></i><span>Profile</span>
-            </button>
-            <button v-if="gameStore.isGameActive && peerStore.isConnected"
-                    role="tab" :class="['sheet-tab', { active: activeTab === 'chat' }]"
-                    @click="activeTab = 'chat'">
-              <i class="fas fa-comment-dots"></i><span>Chat</span>
-              <span v-if="unreadChatCount > 0" class="chat-counter-bubble">{{ unreadChatCount }}</span>
-            </button>
-            <button v-if="gameStore.isGameActive"
-                    role="tab" :class="['sheet-tab', { active: activeTab === 'options' }]"
-                    @click="activeTab = 'options'">
-              <i class="fas fa-cog"></i><span>Options</span>
-            </button>
-          </div>
-
-          <div class="sheet-panel" v-show="activeTab === 'audio'">
-            <h3 class="sheet-h3">Audio Settings</h3>
-            <label class="sheet-checkbox">
+    <!-- Dropdown panel below the top nav. Backdrop is subtle so the nav
+         remains visible; clicking it closes. -->
+    <transition name="nav-panel">
+      <div v-if="activePanel" class="nav-panel-backdrop" @click="closePanel">
+        <div class="nav-panel" @click.stop role="tabpanel">
+          <div v-if="activePanel === 'audio'" class="nav-panel-body">
+            <h3 class="nav-panel-h3">Audio Settings</h3>
+            <label class="nav-panel-checkbox">
               <input type="checkbox" v-model="gameStore.bgmEnabled"
                      @change="(e: Event) => gameStore.setBgmEnabled((e.target as HTMLInputElement).checked)">
               <span>Background Music</span>
             </label>
-            <label class="sheet-checkbox">
+            <label class="nav-panel-checkbox">
               <input type="checkbox" v-model="gameStore.sfxEnabled"
                      @change="(e: Event) => gameStore.setSfxEnabled((e.target as HTMLInputElement).checked)">
               <span>Sound Effects</span>
             </label>
           </div>
 
-          <div class="sheet-panel" v-show="activeTab === 'history'">
-            <h3 class="sheet-h3">Recent Games</h3>
-            <div v-if="gameStore.gameHistory.length === 0" class="sheet-empty">No games played yet.</div>
-            <div class="sheet-scroll">
+          <div v-else-if="activePanel === 'history'" class="nav-panel-body">
+            <h3 class="nav-panel-h3">Recent Games</h3>
+            <div v-if="gameStore.gameHistory.length === 0" class="nav-panel-empty">No games played yet.</div>
+            <div class="nav-panel-scroll">
               <div v-for="(game, index) in gameStore.gameHistory" :key="index" class="history-card">
                 <div class="history-meta">
                   <span>{{ new Date(game.date).toLocaleString() }}</span>
@@ -94,8 +95,8 @@
             </div>
           </div>
 
-          <div class="sheet-panel" v-show="activeTab === 'chat'">
-            <h3 class="sheet-h3">Chat</h3>
+          <div v-else-if="activePanel === 'chat'" class="nav-panel-body">
+            <h3 class="nav-panel-h3">Chat</h3>
             <div class="emoji-row">
               <span v-for="emoji in chatEmojis" :key="emoji" class="emoji-pick"
                     @click="sendEmojiAnimation(emoji)">{{ emoji }}</span>
@@ -104,23 +105,23 @@
               <input v-model="chatInput" @keyup.enter="sendChatMessage" placeholder="Type a message..." />
               <button @click="sendChatMessage" class="chat-send-btn">Send</button>
             </div>
-            <div ref="chatHistoryEl" class="chat-history sheet-scroll">
+            <div ref="chatHistoryEl" class="chat-history nav-panel-scroll">
               <div v-for="(msg, idx) in chatHistory" :key="idx" class="chat-msg">
                 <span class="chat-history-sender">{{ msg.sender }}:</span> {{ msg.message }}
               </div>
             </div>
           </div>
 
-          <div class="sheet-panel" v-show="activeTab === 'profile'">
+          <div v-else-if="activePanel === 'profile'" class="nav-panel-body">
             <ProfilePanel />
           </div>
 
-          <div class="sheet-panel" v-show="activeTab === 'options'">
-            <h3 class="sheet-h3">Game Options</h3>
-            <button v-if="peerStore.isHost" class="sheet-action-btn danger" @click="endHostGame">End Game</button>
-            <button v-if="peerStore.isHost || !peerStore.isConnected" class="sheet-action-btn primary" @click="restartGame">Restart Game</button>
-            <button v-if="peerStore.isHost || !peerStore.isConnected" class="sheet-action-btn success" @click="newGame">Select Game</button>
-            <button v-if="peerStore.isConnected" class="sheet-action-btn warning" @click="requestResync">Request Resync</button>
+          <div v-else-if="activePanel === 'options'" class="nav-panel-body">
+            <h3 class="nav-panel-h3">Game Options</h3>
+            <button v-if="peerStore.isHost" class="nav-panel-action-btn danger" @click="endHostGame">End Game</button>
+            <button v-if="peerStore.isHost || !peerStore.isConnected" class="nav-panel-action-btn primary" @click="restartGame">Restart Game</button>
+            <button v-if="peerStore.isHost || !peerStore.isConnected" class="nav-panel-action-btn success" @click="newGame">Select Game</button>
+            <button v-if="peerStore.isConnected" class="nav-panel-action-btn warning" @click="requestResync">Request Resync</button>
           </div>
         </div>
       </div>
@@ -130,8 +131,7 @@
     <div class="world-fx" aria-hidden="true"></div>
 
     <LevelSelect v-if="!gameStore.gameIsActive && gameStore.showAdventureMenu"
-                 @start-level="startAdventureLevel"
-                 @back="closeAdventure" />
+                 @start-level="startAdventureLevel" />
     <GameMode v-else-if="!gameStore.gameIsActive" @start-game="startGame" />
     <GameBoard v-else-if="!gameStore.gameIsOver" @end-game="endGame" />
     <GameOver v-if="gameStore.gameIsOver"
@@ -166,7 +166,7 @@ import { getLevelByNumber } from './puzzle/levels/definitions'
 const gameStore = useGameStore()
 const peerStore = usePeerStore()
 
-// Chat emojis (state for chat panel visibility now lives in showSheet + activeTab)
+// Chat emojis (state for chat panel visibility now lives in activePanel)
 const chatEmojis = [
   '💩','😀', '😂', '😎', '😍', '😡', '😭', '👍', '👎', '🎲', '🔥', '👏', '🤔', '🥳', '😱', '😴', '💯', '🍀', '🍻', '🏆', '🤝' 
 ];
@@ -411,20 +411,29 @@ const backToLevels = () => {
   gameStore.returnToAdventureMenu();
 }
 
-// Bottom-sheet drawer state.
-const showSheet = ref(false)
-type SheetTab = 'audio' | 'history' | 'profile' | 'chat' | 'options'
-const activeTab = ref<SheetTab>('audio')
+// Top icon nav state. Tapping an icon toggles its dropdown panel; tapping
+// the same icon again or the backdrop closes.
+type NavPanel = 'audio' | 'history' | 'profile' | 'chat' | 'options'
+const activePanel = ref<NavPanel | null>(null)
 
-const toggleSheet = () => {
-  showSheet.value = !showSheet.value
-  // Default to chat when opening if there are unread messages.
-  if (showSheet.value && unreadChatCount.value > 0 && peerStore.isConnected && gameStore.isGameActive) {
-    activeTab.value = 'chat'
+const togglePanel = (panel: NavPanel) => {
+  activePanel.value = activePanel.value === panel ? null : panel
+}
+const closePanel = () => { activePanel.value = null }
+const closeAllMenus = () => { activePanel.value = null }
+
+// True only on the GameMode screen (mode-select menu). When false, the
+// top-nav shows a Back button on the left whose action is contextual.
+const isOnMainMenu = computed(() =>
+  !gameStore.gameIsActive && !gameStore.gameIsOver && !gameStore.showAdventureMenu)
+
+const goBack = () => {
+  if (gameStore.showAdventureMenu) {
+    closeAdventure()
+  } else {
+    newGame()
   }
 }
-const closeSheet = () => { showSheet.value = false }
-const closeAllMenus = () => { showSheet.value = false }
 
 const sendEmojiAnimation = (emoji: string) => {
   // send emoji to peer
@@ -450,8 +459,7 @@ gameStore.handleIncomingData = function (data: any) {
       sender: peerStore.isHost ? 'Client' : 'Host', // invert for local display
       message: data.message
     })
-    const chatOpen = showSheet.value && activeTab.value === 'chat'
-    if (!chatOpen) {
+    if (activePanel.value !== 'chat') {
       unreadChatCount.value++
     }
     nextTick(() => {
@@ -463,9 +471,9 @@ gameStore.handleIncomingData = function (data: any) {
   return originalHandleIncomingData.call(this, data)
 }
 
-// Reset unread count when the chat tab becomes active in the sheet.
-watch([showSheet, activeTab], () => {
-  if (showSheet.value && activeTab.value === 'chat') unreadChatCount.value = 0
+// Reset unread count when the chat panel opens.
+watch(activePanel, () => {
+  if (activePanel.value === 'chat') unreadChatCount.value = 0
 })
 
 const sendChatMessage = () => {
@@ -510,26 +518,44 @@ function handleRejoinYes() {
 </script>
 
 <style scoped>
+/* The Vue root <div> dissolves into #app's flex column so the top bar
+   and active screen become direct flex children. */
+.app-root {
+  display: contents;
+}
+
 /* ============================================================
-   Sticky top bar — owns the hamburger trigger in normal flow above
-   the active section. Sits at the top of the column on every screen
-   so child headers (player chips, level-select header) can use the
-   full column width.
+   Top icon nav — first flex child of #app. Holds a row of icon
+   buttons; each toggles a dropdown panel anchored below.
    ============================================================ */
 .app-top-bar {
-  position: sticky;
-  top: 0;
-  z-index: 30;
+  position: relative;
+  z-index: 60;
+  flex-shrink: 0;
   width: 100%;
   padding: calc(0.4rem + var(--safe-top, 0px)) 0.55rem 0.4rem;
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  pointer-events: none; /* let clicks fall through the empty space */
+  justify-content: space-between;
+  gap: 0.4rem;
 }
-.app-top-bar > * { pointer-events: auto; }
 
-.hamburger-btn {
+.top-nav-left {
+  display: flex;
+  align-items: center;
+  /* Reserve the slot so the right-side nav doesn't shift between screens
+     where the Back button is absent vs. present. */
+  min-width: 38px;
+}
+
+.top-nav {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+}
+
+.nav-icon-btn {
+  position: relative;
   width: 38px;
   height: 38px;
   display: flex;
@@ -540,14 +566,19 @@ function handleRejoinYes() {
   background: rgba(15, 23, 42, 0.7);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  color: var(--text, #fff);
+  color: var(--text-soft, #cbd5e1);
   cursor: pointer;
   font-size: 1.05rem;
-  position: relative;
-  transition: background 0.2s ease, transform 0.12s ease;
+  transition: background 0.2s ease, color 0.18s ease, transform 0.12s ease, box-shadow 0.18s ease;
 }
-.hamburger-btn:hover { background: rgba(15, 23, 42, 0.92); }
-.hamburger-btn:active { transform: scale(0.95); }
+.nav-icon-btn:hover { background: rgba(15, 23, 42, 0.92); color: var(--text); }
+.nav-icon-btn:active { transform: scale(0.95); }
+.nav-icon-btn.active {
+  background: var(--accent-soft, rgba(232,121,249,0.25));
+  color: #fff;
+  border-color: var(--accent, #e879f9);
+  box-shadow: 0 0 0 1px var(--accent, #e879f9);
+}
 
 .chat-counter-bubble {
   position: absolute;
@@ -571,82 +602,55 @@ function handleRejoinYes() {
 }
 
 /* ============================================================
-   Bottom sheet
+   Dropdown panel
+   ------------------------------------------------------------
+   Anchors below .app-top-bar inside #app's relative box.
+   Backdrop covers everything below the bar so the nav row stays
+   tappable to close. Panel itself caps at 70dvh and scrolls
+   internally for long content (profile, history).
    ============================================================ */
-.sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.55);
-  backdrop-filter: blur(2px);
-  z-index: 200;
+.nav-panel-backdrop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(2.8rem + var(--safe-top, 0px));
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  z-index: 50;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
 }
-.sheet {
+.nav-panel {
   width: 100%;
-  max-width: var(--frame-max-width, 430px);
-  max-height: 75dvh;
+  max-height: 70dvh;
   background: linear-gradient(180deg, var(--bg-via, #1e1b4b) 0%, var(--bg-from, #0f0a2e) 100%);
-  border-top-left-radius: 22px;
-  border-top-right-radius: 22px;
-  box-shadow: 0 -10px 40px -5px rgba(0,0,0,0.55);
-  padding: 0.6rem 1rem calc(1rem + var(--safe-bottom, 0px));
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+  box-shadow: 0 10px 40px -5px rgba(0,0,0,0.55);
+  padding: 0.9rem 1rem 1rem;
   color: var(--text, #fff);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
-.sheet-handle {
-  width: 40px;
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255,255,255,0.3);
-  margin: 0 auto 0.6rem;
-}
-.sheet-tabs {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.8rem;
-}
-.sheet-tab {
-  position: relative;
+.nav-panel-body {
   flex: 1;
-  padding: 0.45rem 0.3rem;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: var(--text-soft, #cbd5e1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease;
-}
-.sheet-tab i { font-size: 0.95rem; }
-.sheet-tab.active {
-  background: var(--accent-soft, rgba(232,121,249,0.25));
-  color: #fff;
-  border-color: var(--accent, #e879f9);
-  box-shadow: 0 0 0 1px var(--accent, #e879f9);
-}
-.sheet-panel {
-  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
 }
-.sheet-h3 {
+.nav-panel-h3 {
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   margin: 0 0 0.2rem;
   color: var(--text);
 }
-.sheet-checkbox {
+.nav-panel-checkbox {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -657,16 +661,14 @@ function handleRejoinYes() {
   cursor: pointer;
   font-weight: 600;
 }
-.sheet-checkbox input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; }
-.sheet-empty {
+.nav-panel-checkbox input { accent-color: var(--accent); width: 1.1rem; height: 1.1rem; }
+.nav-panel-empty {
   color: var(--text-soft);
   font-size: 0.85rem;
   text-align: center;
   padding: 1rem 0;
 }
-.sheet-scroll {
-  max-height: 55dvh;
-  overflow-y: auto;
+.nav-panel-scroll {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -742,7 +744,7 @@ function handleRejoinYes() {
   font-weight: 700;
   margin-right: 0.25rem;
 }
-.sheet-action-btn {
+.nav-panel-action-btn {
   padding: 0.7rem 0.9rem;
   border-radius: 10px;
   font-weight: 700;
@@ -752,26 +754,26 @@ function handleRejoinYes() {
   background: rgba(255,255,255,0.06);
   text-align: left;
 }
-.sheet-action-btn.primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
-.sheet-action-btn.success { background: linear-gradient(135deg, #16a34a, #166534); }
-.sheet-action-btn.warning { background: linear-gradient(135deg, #d97706, #b45309); }
-.sheet-action-btn.danger  { background: linear-gradient(135deg, #dc2626, #7f1d1d); }
-.sheet-action-btn:hover { transform: translateY(-1px); }
-.sheet-action-btn:active { transform: translateY(1px); }
+.nav-panel-action-btn.primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+.nav-panel-action-btn.success { background: linear-gradient(135deg, #16a34a, #166534); }
+.nav-panel-action-btn.warning { background: linear-gradient(135deg, #d97706, #b45309); }
+.nav-panel-action-btn.danger  { background: linear-gradient(135deg, #dc2626, #7f1d1d); }
+.nav-panel-action-btn:hover { transform: translateY(-1px); }
+.nav-panel-action-btn:active { transform: translateY(1px); }
 
-/* Slide-in transition for the sheet */
-.sheet-enter-active, .sheet-leave-active {
-  transition: opacity 0.25s ease;
+/* Slide-down transition for the dropdown panel */
+.nav-panel-enter-active, .nav-panel-leave-active {
+  transition: opacity 0.2s ease;
 }
-.sheet-enter-active .sheet, .sheet-leave-active .sheet {
-  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0.36, 1.0);
+.nav-panel-enter-active .nav-panel, .nav-panel-leave-active .nav-panel {
+  transition: transform 0.24s cubic-bezier(0.32, 0.72, 0.36, 1.0);
 }
-.sheet-enter-from, .sheet-leave-to { opacity: 0; }
-.sheet-enter-from .sheet, .sheet-leave-to .sheet { transform: translateY(100%); }
+.nav-panel-enter-from, .nav-panel-leave-to { opacity: 0; }
+.nav-panel-enter-from .nav-panel, .nav-panel-leave-to .nav-panel { transform: translateY(-100%); }
 
 @media (prefers-reduced-motion: reduce) {
-  .sheet-enter-active, .sheet-leave-active,
-  .sheet-enter-active .sheet, .sheet-leave-active .sheet {
+  .nav-panel-enter-active, .nav-panel-leave-active,
+  .nav-panel-enter-active .nav-panel, .nav-panel-leave-active .nav-panel {
     transition: none;
   }
 }

@@ -116,7 +116,7 @@
              class="score-item grid-singles"
              :data-category="category.name"
              :data-modifier-kind="getCategoryModifier(category.value)?.kind || ''"
-             :class="{ 'selected': isCategorySelected(category.value) && !isPendingBonus(category.value), 'puzzle-locked': isCategoryLocked(category.value), 'puzzle-bonus-eligible': isPendingBonus(category.value) }"
+             :class="{ 'selected': isCategorySelected(category.value) && !isPendingBonus(category.value), 'zero-scored': isCategoryZeroScored(category.value), 'puzzle-locked': isCategoryLocked(category.value), 'puzzle-bonus-eligible': isPendingBonus(category.value) }"
              @click="handleSelectCategory(category.value)">
           <div class="category-icon">
             <i :class="['fas', `${getDieIcon(index + 1)}`]"></i>
@@ -141,7 +141,7 @@
             class="score-item grid-multiples"
             :data-category="category.name"
             :data-modifier-kind="getCategoryModifier(category.value)?.kind || ''"
-            :class="{ 'selected': isCategorySelected(category.value) && !isPendingBonus(category.value), 'puzzle-locked': isCategoryLocked(category.value), 'puzzle-bonus-eligible': isPendingBonus(category.value) }"
+            :class="{ 'selected': isCategorySelected(category.value) && !isPendingBonus(category.value), 'zero-scored': isCategoryZeroScored(category.value), 'puzzle-locked': isCategoryLocked(category.value), 'puzzle-bonus-eligible': isPendingBonus(category.value) }"
             @click="handleSelectCategory(category.value)">
           <div class="category-icon">
               <template v-if="category.icon">
@@ -163,7 +163,7 @@
             :data-category="category.name"
             :data-modifier-kind="getCategoryModifier(category.value)?.kind || ''"
             :class="[
-              { 'selected': isCategorySelected(category.value) && !isPendingBonus(category.value), 'puzzle-locked': isCategoryLocked(category.value), 'puzzle-bonus-eligible': isPendingBonus(category.value) },
+              { 'selected': isCategorySelected(category.value) && !isPendingBonus(category.value), 'zero-scored': isCategoryZeroScored(category.value), 'puzzle-locked': isCategoryLocked(category.value), 'puzzle-bonus-eligible': isPendingBonus(category.value) },
               category.color ? category.color : ''
             ]"
             @click="handleSelectCategory(category.value)">
@@ -452,6 +452,13 @@ const getScoreDisplay = (category: Categories): string => {
 
 const isCategorySelected = (category: Categories): boolean => {
   return currentGame.value?.isCategorySelected(category) || false
+}
+
+const isCategoryZeroScored = (category: Categories): boolean => {
+  return (
+    !!currentGame.value?.isCategorySelected(category) &&
+    currentGame.value?.getScoreByCategory(category) === 0
+  )
 }
 
 const selectCategory = (category: Categories) => {

@@ -578,6 +578,12 @@ body {
     color: rgba(34,197,94,0.85);
     pointer-events: none;
 }
+/* Zero-scored cells: swap the green check for a red X so the corner
+   badge matches the wasted-slot state. */
+.score-item.selected.zero-scored::before {
+    content: '\f00d'; /* fa-xmark */
+    color: rgba(239,68,68,0.9);
+}
 .score-item.no-score{
     @apply bg-red-500;
 }
@@ -967,7 +973,6 @@ h2 {
 }
 @media (prefers-reduced-motion: reduce) {
   .yahtzee-animation { animation: none; opacity: 1; transform: scale(1) rotate(0); }
-  .score-popup-animation { animation: none; opacity: 1; }
   .emoji-animation { animation: none; opacity: 1; transform: translate(-50%, -50%) scale(1); }
   .confetti { display: none; }
 }
@@ -1030,92 +1035,6 @@ h2 {
     z-index: 999;
     overflow: hidden;
 }
-
-/* Score Popup Animation */
-@keyframes scorePopupAnimation {
-  0% {
-    transform: translate(-50%, -50%) scale(0.5);
-    opacity: 0;
-  }
-  20% {
-    transform: translate(-50%, -50%) scale(1.2);
-    opacity: 1;
-  }
-  40% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 1;
-  }
-  80% {
-    transform: translate(-50%, -50%) scale(1.1);
-    opacity: 0.7;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(2);
-    opacity: 0;
-  }
-}
-
-.score-popup-animation {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 4rem;
-  font-weight: 900;
-  text-align: center;
-  pointer-events: none;
-  z-index: 1000;
-  animation: scorePopupAnimation 2s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
-  /* Thick text stroke + drop shadow gives the popup real punch against
-     any background; the .score-fx-backdrop dims the page further. */
-  -webkit-text-stroke: 2px rgba(0, 0, 0, 0.85);
-  text-shadow:
-    0 0 18px rgba(0, 0, 0, 0.85),
-    0 4px 12px rgba(0, 0, 0, 0.65);
-  letter-spacing: 0.02em;
-  white-space: pre-line;
-}
-
-.score-popup-animation.high-score {
-  color: #ffd700;
-  font-size: 5.25rem;
-  -webkit-text-stroke: 3px #4a2c00;
-  text-shadow:
-    0 0 22px rgba(255, 215, 0, 0.85),
-    0 0 50px rgba(255, 215, 0, 0.4),
-    0 6px 16px rgba(0, 0, 0, 0.7);
-}
-
-.score-popup-animation.medium-score {
-  color: #60a5fa;
-  font-size: 4.5rem;
-  -webkit-text-stroke: 3px #0c1e3d;
-  text-shadow:
-    0 0 20px rgba(96, 165, 250, 0.85),
-    0 0 40px rgba(59, 130, 246, 0.45),
-    0 6px 16px rgba(0, 0, 0, 0.7);
-}
-
-.score-popup-animation.normal-score {
-  color: #4ade80;
-  font-size: 4rem;
-  -webkit-text-stroke: 3px #0d2f17;
-  text-shadow:
-    0 0 18px rgba(74, 222, 128, 0.85),
-    0 0 36px rgba(34, 197, 94, 0.4),
-    0 6px 14px rgba(0, 0, 0, 0.7);
-}
-
-.score-popup-animation.no-score {
-  color: #f87171;
-  font-size: 4rem;
-  -webkit-text-stroke: 3px #3a0e0e;
-  text-shadow:
-    0 0 18px rgba(248, 113, 113, 0.9),
-    0 0 36px rgba(220, 38, 38, 0.4),
-    0 6px 14px rgba(0, 0, 0, 0.7);
-}
-
 
 .overlay {
     position: fixed;

@@ -125,48 +125,6 @@ export const showYahtzeeAnimation = () => {
   }, 2000);
 }
 
-export const showScoreAnimation = (score: number, category: string = '') => {
-  showBackdrop(2000);
-
-  // Create the score text animation
-  const scoreText = document.createElement('div');
-  scoreText.className = 'score-popup-animation';
-
-  let scoreToDisplay: string = score.toString();
-  if(score === 0){
-    scoreToDisplay = 'X';
-  }else{
-    scoreToDisplay = `+${score}`;
-  }
-
-  // Add color class based on score value
-  if (score >= 50) {
-    scoreText.classList.add('high-score');
-  } else if (score >= 30) {
-    scoreText.classList.add('medium-score');
-  } else if(score === 0){
-    scoreText.classList.add('no-score');
-  }else {
-    scoreText.classList.add('normal-score');
-  }
-
-  if(category){
-    scoreText.style.whiteSpace = 'pre-line';
-    scoreText.textContent = `${category}\n${scoreToDisplay} `;
-  }else{
-    scoreText.textContent = `${scoreToDisplay}`;
-  }
-  
-
-  
-  document.body.appendChild(scoreText);
-
-  // Clean up after animation
-  setTimeout(() => {
-    scoreText.remove();
-  }, 2000);
-}
-
 export function showEmojiAnimation(emoji: string) {
   // Remove any existing emoji animation
   const prev = document.querySelector('.emoji-animation');

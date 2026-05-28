@@ -328,6 +328,139 @@ export function showGoalMet(): void {
     window.setTimeout(() => panel.classList.remove('cell-fx-goal-met'), 1200);
 }
 
+// ---- Score commit: dice fly into the scored cell ----
+// Cause-and-effect animation when a player banks a score. The five rolled
+// dice in #dice-container are deep-cloned into #cell-fx-layer, lift off
+// staggered (~50ms each), tumble + glide + shrink into the target cell
+// (~700ms total), then a tier-colored "+score" banner rises from the cell
+// with a particle burst.
+//
+// Reduced motion: skip the flight + particles, just show a small "+score"
+// chip on the cell (mirrors showScoreBreakdown's reduced-motion branch).
+const PARTICLE_COLORS = [
+    '#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+    '#FF69B4', '#9B59B6', '#3498DB', '#2ECC71', '#F1C40F',
+];
+
+type ScoreTier = 'high' | 'mid' | 'norm';
+
+function tierFor(score: number): ScoreTier {
+    if (score >= 50) return 'high';
+    if (score >= 30) return 'mid';
+    return 'norm';
+}
+
+export function showScoreCellFlight(category: Categories, score: number): void {
+    if (typeof document === 'undefined') return;
+    const cellEl = document.querySelector<HTMLElement>(`[data-category="${category}"]`);
+    const layer = ensureFxLayer();
+    if (!cellEl || !layer) return;
+    const cellRect = cellEl.getBoundingClientRect();
+    const tier = tierFor(score);
+
+    if (reducedMotion()) {
+        showScoreBanner(cellRect, score, tier, layer, /*delay*/ 0);
+        return;
+    }
+
+    const diceEls = Array.from(
+        document.querySelectorAll<HTMLElement>('#dice-container .die'),
+    );
+    // Snapshot every rect BEFORE appending clones so a layout reflow can't
+    // shift later measurements.
+    const dieRects = diceEls.map(el => el.getBoundingClientRect());
+
+    const targetX = cellRect.left + cellRect.width / 2;
+    const targetY = cellRect.top + cellRect.height / 2;
+
+    diceEls.forEach((dieEl, i) => {
+        const dieRect = dieRects[i];
+        const clone = dieEl.cloneNode(true) as HTMLElement;
+        clone.classList.remove('roll', 'held');
+        clone.classList.add('die-flight');
+        clone.style.position = 'fixed';
+        clone.style.left = `${dieRect.left}px`;
+        clone.style.top = `${dieRect.top}px`;
+        clone.style.width = `${dieRect.width}px`;
+        clone.style.height = `${dieRect.height}px`;
+        clone.style.margin = '0';
+        clone.style.removeProperty('--roll-dur');
+        const dieCenterX = dieRect.left + dieRect.width / 2;
+        const dieCenterY = dieRect.top + dieRect.height / 2;
+        clone.style.setProperty('--fly-tx', `${targetX - dieCenterX}px`);
+        clone.style.setProperty('--fly-ty', `${targetY - dieCenterY}px`);
+        clone.style.setProperty('--fly-rx', `${i % 2 ? 360 : -360}deg`);
+        clone.style.setProperty('--fly-ry', `${i % 2 ? -540 : 540}deg`);
+        clone.style.animationDelay = `${i * 50}ms`;
+        layer.appendChild(clone);
+        fade(clone, 750 + i * 50);
+    });
+
+    // Banner + particles fire as the dice land (~700ms after the first
+    // lift-off). Stagger-aware: the last die touches at ~700 + 4*50 = 900.
+    showScoreBanner(cellRect, score, tier, layer, 700);
+    spawnScoreParticles(cellRect, tier, layer, 720);
+}
+
+export function showScoreZeroChip(category: Categories): void {
+    if (typeof document === 'undefined') return;
+    const cellEl = document.querySelector<HTMLElement>(`[data-category="${category}"]`);
+    const layer = ensureFxLayer();
+    if (!cellEl || !layer) return;
+    const rect = cellEl.getBoundingClientRect();
+    const chip = document.createElement('div');
+    chip.className = 'cell-fx-score-zero';
+    chip.textContent = '—';
+    chip.style.left = `${rect.left + rect.width / 2}px`;
+    chip.style.top = `${rect.top + rect.height / 2}px`;
+    layer.appendChild(chip);
+    fade(chip, 900);
+}
+
+function showScoreBanner(
+    cellRect: DOMRect,
+    score: number,
+    tier: ScoreTier,
+    layer: HTMLElement,
+    delayMs: number,
+): void {
+    const banner = document.createElement('div');
+    banner.className = `cell-fx-score-banner tier-${tier}`;
+    banner.textContent = `+${score}`;
+    banner.style.left = `${cellRect.left + cellRect.width / 2}px`;
+    banner.style.top = `${cellRect.top}px`;
+    banner.style.animationDelay = `${delayMs}ms`;
+    layer.appendChild(banner);
+    fade(banner, delayMs + 1100);
+}
+
+function spawnScoreParticles(
+    cellRect: DOMRect,
+    tier: ScoreTier,
+    layer: HTMLElement,
+    delayMs: number,
+): void {
+    if (reducedMotion()) return;
+    const cx = cellRect.left + cellRect.width / 2;
+    const cy = cellRect.top + cellRect.height / 2;
+    const count = tier === 'high' ? 18 : 12;
+    for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = `cell-fx-score-particle tier-${tier}`;
+        const angle = (i / count) * Math.PI * 2 + Math.random() * 0.4;
+        const distance = 60 + Math.random() * (tier === 'high' ? 70 : 40);
+        p.style.left = `${cx}px`;
+        p.style.top = `${cy}px`;
+        p.style.backgroundColor =
+            PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)];
+        p.style.setProperty('--fx-tx', `${Math.cos(angle) * distance}px`);
+        p.style.setProperty('--fx-ty', `${Math.sin(angle) * distance}px`);
+        p.style.animationDelay = `${delayMs}ms`;
+        layer.appendChild(p);
+        fade(p, delayMs + 800);
+    }
+}
+
 // ---- Internals ----
 
 function positionOver(rect: DOMRect): Partial<CSSStyleDeclaration> {

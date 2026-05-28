@@ -18,7 +18,8 @@ import type { GameSummary } from '../profile/types'
 import { Categories } from '../enums/Categories'
 import type { SeatSpec, ControllerKind } from '../controllers'
 
-import { showYahtzeeAnimation, showScoreAnimation, showEmojiAnimation } from '../utils/animations'
+import { showYahtzeeAnimation, showEmojiAnimation } from '../utils/animations'
+import { showScoreCellFlight, showScoreZeroChip } from '../utils/cellAnimations'
 
 interface PlayerScore {
   playerNumber: number;
@@ -312,9 +313,10 @@ export const useGameStore = defineStore('game', {
         puzzleEngine!.checkGoalMet(this.game.getTotalScore());
 
         if (transformedScore > 0) {
-          showScoreAnimation(transformedScore, category);
+          showScoreCellFlight(category, transformedScore);
           this.playSoundEffect?.(SoundEffects.Score);
         } else {
+          showScoreZeroChip(category);
           this.playSoundEffect?.(SoundEffects.NoScore);
         }
 
@@ -356,14 +358,19 @@ export const useGameStore = defineStore('game', {
 
       if (transformedScore > 0) {
         if (category === Categories.Yahtzee) {
-          showYahtzeeAnimation();
+          // Dice fly into the Yahtzee cell first, then the celebration
+          // banner lands ~150ms after they touch down so the two beats
+          // chain cleanly.
+          showScoreCellFlight(category, transformedScore);
+          window.setTimeout(() => showYahtzeeAnimation(), 850);
           this.playSoundEffect?.(SoundEffects.Yahtzee);
           this.yahtzeesThisGame += 1
         } else {
-          showScoreAnimation(transformedScore, category);
+          showScoreCellFlight(category, transformedScore);
           this.playSoundEffect?.(SoundEffects.Score);
         }
       } else {
+        showScoreZeroChip(category);
         this.playSoundEffect?.(SoundEffects.NoScore);
       }
       // Count bonus-Yahtzees too — the dice-match path above sets
@@ -458,14 +465,19 @@ export const useGameStore = defineStore('game', {
           if (peer.isHost) {
             remoteSeat()?.controller.requestCategory(data.category);
           } else {
-            // Animate using the score the host calculated
+            // Animate using the score the host calculated. Dice DOM is
+            // whatever the latest gameState push landed — `showScoreCellFlight`
+            // degrades gracefully (banner + particles still fire) if the
+            // dice tray happened to reset before this message arrived.
             if (data.category === Categories.Yahtzee && data.score > 0) {
-              showYahtzeeAnimation();
+              showScoreCellFlight(data.category, data.score);
+              window.setTimeout(() => showYahtzeeAnimation(), 850);
               this.playSoundEffect?.(SoundEffects.Yahtzee);
             } else if (data.score > 0) {
-              showScoreAnimation(data.score, data.category);
+              showScoreCellFlight(data.category, data.score);
               this.playSoundEffect?.(SoundEffects.Score);
             } else {
+              showScoreZeroChip(data.category);
               this.playSoundEffect?.(SoundEffects.NoScore);
             }
           }

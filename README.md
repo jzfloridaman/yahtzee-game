@@ -1,6 +1,6 @@
 # 🎲 Rainbow Yahtzee!
 
-Rainbow Yahtzee is a Vue 3 + TypeScript dice game with classic Yahtzee rules plus color-based scoring, a modifier-based **Puzzle Mode**, a 34-level **Adventure** campaign, a **vs-AI Dice Master** variant, and **local + online multiplayer**. Wraps as native Android / iOS apps via Capacitor and runs as an installable PWA.
+Rainbow Yahtzee is a Vue 3 + TypeScript dice game with classic Yahtzee rules plus color-based scoring, a modifier-based **Puzzle Mode** with **7 modifier kinds**, a **38-level Adventure** campaign across 7 themed worlds, a **vs-AI Dice Master** variant, a **once-per-UTC-date Daily Puzzle** seeded so every player worldwide shares the same board, a persistent **player profile** (XP, level, 12 achievements, coin balance), a **coin shop** of 5 consumables, and **local + online multiplayer**. Wraps as native Android / iOS apps via Capacitor and runs as an installable PWA.
 
 ---
 
@@ -24,20 +24,24 @@ Rainbow Yahtzee is a Vue 3 + TypeScript dice game with classic Yahtzee rules plu
 
 - **Classic Yahtzee** — Ones through Sixes, 3-of-a-kind, 4-of-a-kind, Full House, Small / Large Straight, Chance, Yahtzee.
 - **Rainbow scoring twist** — dice carry colors (red / green / blue); **Color Full House** (3 + 2 by color) and **Blues / Reds / Greens** (color-Yahtzees) layer on top of the classic categories.
-- **Puzzle Mode** — uncolored dice on a scorecard sprinkled with modifiers:
+- **Puzzle Mode** — uncolored dice on a scorecard sprinkled with 7 modifier kinds:
   - 🧊 **Ice Block** — locks a cell until an adjacent row scores
   - ×2 **Flying Multiplier** — doubles its cell, then hops to another open cell
   - **Looping Multiplier** — value triangle-waves each turn (×1 → ×N → ×1)
   - 🌀 **Multiplier Bubble** — pops into 3 random Flying Multipliers
   - 🔁 **Double Category** — scoring it grants a bonus turn that sums on top
   - 💣 **Hot Potato** — arms after first score; defuse it before the fuse runs out
-- **Puzzle — Adventure** — 34 hand-tuned levels across 6 themed worlds with sequential unlocks, persisted best score, and 1–3 star ratings.
+  - 🔄 **Looping Category** — slot scores as a different category each turn, cycling through an author-defined list
+- **Puzzle — Adventure** — 38 hand-tuned levels across 7 themed worlds (Beginnings, Frostlands, Echo Chamber, Storm Front, Storm Surge, Finale, Cycles) with sequential unlocks, persisted best score, and 1–3 star ratings.
 - **Puzzle — Random** — 10 hand-tuned random-placement puzzles for one-off challenges.
-- **vs-AI Dice Master** — 2-player Puzzle against a greedy AI that respects modifiers.
+- **Daily Puzzle** — once-per-UTC-date deterministic puzzle that every player worldwide sees identically. Tracks current streak, longest streak, best score, and a 30-day history (last 7 days surfaced in the menu).
+- **vs-AI Dice Master** — 2-player Puzzle against a greedy AI that respects modifiers (and swaps in the active cycle category for Looping Category slots).
+- **Player Profile** — persisted XP / level / 12 achievements (e.g. First Win, Yahtzee Hunter, 7-day Streak, Modifier Master) / lifetime stats. Quadratic XP curve. Profile tab in the bottom-sheet menu shows progress + locked-vs-unlocked achievement grid.
+- **Coin Shop + 5 consumables** — earn coins from wins, level-ups, achievements, and daily streaks. Spend them on **Extra Roll** (30c), **Fresh Re-Roll** (50c), **Score Sense** (25c — highlights the best cell), **Re-Cycle** (40c — bump a Looping Category slot), and **Lucky Charm** (100c — your next Yahtzee selection is treated as a Yahtzee).
 - **Online multiplayer** — host / client over WebRTC (PeerJS), reconnect on tab refocus, in-game chat + emojis.
 - **Local multiplayer** — up to 4 players sharing a device.
 - **Native apps via Capacitor** — Android + iOS, plus installable PWA.
-- **Mobile-first UI** — themed gradients per mode / world, 3D pip cubes, cell-anchored animations, Web Audio-synthesized SFX for every modifier event.
+- **Mobile-first UI** — themed gradients per mode / world (incl. a teal/emerald Cycles atmosphere), 3D pip cubes, cell-anchored animations, Web Audio-synthesized SFX for every modifier event.
 
 ---
 
@@ -47,8 +51,9 @@ Rainbow Yahtzee is a Vue 3 + TypeScript dice game with classic Yahtzee rules plu
 |---|---|---|---|
 | Single Player — Classic Rainbow | 1 | Rainbow | 17-slot scorecard with color categories |
 | Single Player — Puzzle (Random) | 1 | Puzzle | One of 10 random variants per game |
-| Single Player — Puzzle (Adventure) | 1 | Puzzle | 34 levels, 6 worlds, persistent progress |
+| Single Player — Puzzle (Adventure) | 1 | Puzzle | 38 levels, 7 worlds, persistent progress + 1–3 star ratings |
 | Single Player — Puzzle vs. Dice Master | 1 vs AI | Puzzle | Same placements, independent modifier state |
+| Single Player — Daily Puzzle | 1 | Puzzle | Deterministic; same board worldwide; tracks streak |
 | Local Multiplayer | 2–4 local | Rainbow | Share one device |
 | Online Multiplayer | 1 host + 1 client | Rainbow | WebRTC P2P via room code |
 
@@ -219,10 +224,26 @@ From Xcode, pick your team / signing identity and run on a simulator or attached
 
 ### Puzzle Mode
 
-1. Pick **Single Player → Puzzle—Random** for a one-off, **Puzzle—Adventure** for the campaign, or **Puzzle vs. Dice Master** for AI.
+1. Pick **Single Player → Puzzle—Random** for a one-off, **Puzzle—Adventure** for the campaign, **Puzzle vs. Dice Master** for AI, or **Daily Puzzle** for the once-a-day shared challenge.
 2. Watch the **goals panel** at the top of the scorecard — it shows the target score and which modifier kinds you need to engage.
 3. Tap a cell's modifier badge to see what it does. The collapsible legend lives inside the goals panel.
 4. You win when both gates are green: score ≥ target **and** engagement ≥ required count.
+5. **Looping Category** slots show a small letter badge (e.g. `FH`, `Y`, `3K`) indicating the active scoring category for the current turn — the badge cycles at the end of each turn.
+
+### Daily Puzzle
+
+1. Pick **Single Player → Daily Puzzle**. The same board appears for every player on the same UTC date.
+2. The streak badge (🔥) next to the menu entry shows your current consecutive-win streak.
+3. Daily puzzles roll over at **midnight UTC**. A game in progress when the day flips still records against the date it started.
+
+### Player Profile, Achievements & Shop
+
+1. Open the hamburger menu and switch to the **Profile** tab.
+2. The top shows your level, XP progress, and coin balance.
+3. Below the lifetime stats grid you'll see the achievement gallery (12 achievements; 2 are hidden until unlocked).
+4. The **Shop** at the bottom of the Profile tab sells 5 consumables — Extra Roll, Fresh Re-Roll, Score Sense, Re-Cycle, Lucky Charm.
+5. Owned consumables appear as small circular buttons next to the Roll button mid-game (when they're usable). Re-Cycle is a two-tap action: tap the button, then tap the Looping Category slot you want to advance.
+6. Coins come from game completions (puzzle wins, daily streaks, 3⭐ adventure clears), level-ups, and achievement unlocks. No real-money purchases.
 
 ### Online Multiplayer
 
@@ -242,22 +263,24 @@ yahtzee-game/
 ├── docs/                          # Design docs (puzzle-mode-next.md, refactor-plan.md, ...)
 ├── scripts/                       # Build / release helpers
 ├── src/
-│   ├── components/                # Vue 3 SFCs (GameBoard, LevelSelect, GameOver, ...)
+│   ├── components/                # Vue 3 SFCs (GameBoard, LevelSelect, GameOver, ProfilePanel, ShopPanel, AchievementToast, ...)
 │   ├── config/                    # Scorecard templates (RAINBOW_TEMPLATE, PUZZLE_TEMPLATE)
 │   ├── controllers/               # PlayerController (Local / Remote / AI)
 │   ├── enums/                     # Categories, GameState, GameMode, GameVariant
 │   ├── interfaces/                # Shared TS interfaces
 │   ├── managers/                  # DiceManager, ScoreManager
 │   ├── models/                    # Player
+│   ├── profile/                   # Pure account-state logic (xp, achievements, rewards, consumables)
 │   ├── puzzle/
-│   │   ├── PuzzleEngine.ts        # Engine + event bus
-│   │   ├── modifiers/             # IceBlock, FlyingMultiplier, HotPotato, ...
-│   │   ├── configs/               # Random + level config adapters
-│   │   └── levels/                # 34 levels in 6 worlds, progression rules
-│   ├── stores/                    # Pinia stores (gameStore, peerStore)
+│   │   ├── PuzzleEngine.ts        # Engine + event bus + ctx.dice getter
+│   │   ├── modifiers/             # IceBlock, FlyingMultiplier, HotPotato, LoopingCategory, ...
+│   │   ├── configs/               # Random + level + daily config adapters
+│   │   ├── daily/                 # DailyPuzzleProgress types + pure streak math
+│   │   └── levels/                # 38 levels in 7 worlds, progression rules
+│   ├── stores/                    # Pinia stores (gameStore, peerStore, playerProfileStore)
 │   ├── strategies/                # Scoring strategies + AI (GreedyStrategy)
 │   ├── styles/                    # Theme CSS variables, world atmospheres
-│   ├── utils/                     # Animations, cell FX, Web Audio synth SFX
+│   ├── utils/                     # Animations, cell FX, Web Audio synth SFX, seeded RNG, UTC date helpers
 │   ├── __tests__/                 # Jest unit tests
 │   ├── game.ts                    # Engine entry point
 │   └── main.ts                    # Vue / Capacitor bootstrap

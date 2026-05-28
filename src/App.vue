@@ -44,6 +44,10 @@
                     @click="activeTab = 'history'">
               <i class="fas fa-history"></i><span>History</span>
             </button>
+            <button role="tab" :class="['sheet-tab', { active: activeTab === 'profile' }]"
+                    @click="activeTab = 'profile'">
+              <i class="fas fa-user-circle"></i><span>Profile</span>
+            </button>
             <button v-if="gameStore.isGameActive && peerStore.isConnected"
                     role="tab" :class="['sheet-tab', { active: activeTab === 'chat' }]"
                     @click="activeTab = 'chat'">
@@ -107,6 +111,10 @@
             </div>
           </div>
 
+          <div class="sheet-panel" v-show="activeTab === 'profile'">
+            <ProfilePanel />
+          </div>
+
           <div class="sheet-panel" v-show="activeTab === 'options'">
             <h3 class="sheet-h3">Game Options</h3>
             <button v-if="peerStore.isHost" class="sheet-action-btn danger" @click="endHostGame">End Game</button>
@@ -132,6 +140,8 @@
               @next-level="nextLevel"
               @back-to-levels="backToLevels" />
 
+    <AchievementToast />
+
     <div class="hidden grid-cols-3 grid-cols-4">Tailwind forced classes</div>
   </div>
 </template>
@@ -142,6 +152,8 @@ import GameMode from './components/GameMode.vue'
 import GameBoard from './components/GameBoard.vue'
 import GameOver from './components/GameOver.vue'
 import LevelSelect from './components/LevelSelect.vue'
+import ProfilePanel from './components/ProfilePanel.vue'
+import AchievementToast from './components/AchievementToast.vue'
 import { useGameStore } from './stores/gameStore'
 import { GameMode as GameModeEnum } from './enums/GameMode'
 import { GameVariant } from './enums/GameVariant'
@@ -401,7 +413,7 @@ const backToLevels = () => {
 
 // Bottom-sheet drawer state.
 const showSheet = ref(false)
-type SheetTab = 'audio' | 'history' | 'chat' | 'options'
+type SheetTab = 'audio' | 'history' | 'profile' | 'chat' | 'options'
 const activeTab = ref<SheetTab>('audio')
 
 const toggleSheet = () => {

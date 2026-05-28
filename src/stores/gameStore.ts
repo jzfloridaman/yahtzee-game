@@ -5,7 +5,7 @@ import { GameVariant } from '../enums/GameVariant'
 import { pickRandomVariant } from '../puzzle/configs/variants'
 import { LevelPuzzleConfig } from '../puzzle/configs/LevelPuzzleConfig'
 import { DailyPuzzleConfig } from '../puzzle/configs/DailyPuzzleConfig'
-import { getLevelByNumber, getLastLevelNumber } from '../puzzle/levels/definitions'
+import { getLevelByNumber, getLastLevelNumber, getLevelsByWorld } from '../puzzle/levels/definitions'
 import { applyWinToProgress, computeStars } from '../puzzle/levels/progression'
 import { applyDailyResult, loadDailyProgress } from '../puzzle/daily/dailyProgress'
 import type { DailyPuzzleProgress } from '../puzzle/daily/types'
@@ -13,6 +13,8 @@ import { getDailyDateKey } from '../utils/dailyDate'
 import type { PuzzleConfig } from '../puzzle/types'
 import { SoundEffects } from '../enums/SoundEffects'
 import { usePeerStore } from './peerStore'
+import { usePlayerProfileStore } from './playerProfileStore'
+import type { GameSummary } from '../profile/types'
 import { Categories } from '../enums/Categories'
 import type { SeatSpec, ControllerKind } from '../controllers'
 
@@ -66,6 +68,29 @@ function loadAdventureProgress(): AdventureProgress {
   return { highestUnlocked: 1, bestScores: {}, bestStars: {} };
 }
 
+// Seat 0 is "the local player" for profile bookkeeping. Single-player
+// Rainbow always counts as won (no losing condition). Multi-player
+// Rainbow counts seat 0 as the winner only if they have the highest
+// score outright (ties don't count). Typed structurally so this works
+// against a Pinia-proxied YahtzeeGame instance.
+type GameScoreSource = {
+    getPlayerCount(): number;
+    getPlayerScore(seat: number): number;
+};
+function isLocalPlayerRainbowWinner(game: GameScoreSource, seat: number): boolean {
+    const count = game.getPlayerCount();
+    if (count <= 1) return true;
+    const seatScore = game.getPlayerScore(seat);
+    let topScore = -Infinity;
+    let topCount = 0;
+    for (let i = 0; i < count; i++) {
+        const s = game.getPlayerScore(i);
+        if (s > topScore) { topScore = s; topCount = 1; }
+        else if (s === topScore) topCount += 1;
+    }
+    return seatScore === topScore && topCount === 1;
+}
+
 export const useGameStore = defineStore('game', {
   state: () => ({
     // Game state
@@ -106,6 +131,12 @@ export const useGameStore = defineStore('game', {
     // exactly once per attempt.
     dailyProgress: loadDailyProgress(localStorage.getItem(DAILY_STORAGE_KEY)) as DailyPuzzleProgress,
     currentDailyDateKey: null as string | null,
+
+    // Transient per-game counters fed into the GameSummary that
+    // playerProfileStore.recordGameComplete consumes. Reset on every
+    // initializeGame; never persisted.
+    yahtzeesThisGame: 0,
+    bonusTurnsThisGame: 0,
   }),
 
   getters: {
@@ -178,6 +209,11 @@ export const useGameStore = defineStore('game', {
       this.isGameActive = true
       this.broadcastSeq = 0
       this.lastReceivedSeq = -1
+      // Reset per-game counters; profile rewards read these in endGame.
+      this.yahtzeesThisGame = 0
+      this.bonusTurnsThisGame = 0
+      // Drop any stale GameOver reward payload so the new game starts clean.
+      usePlayerProfileStore().clearLastGameRewards()
 
       const seats: SeatSpec[] = typeof playersOrSeats === 'number'
         ? this.buildSeatSpecs(playersOrSeats)
@@ -308,6 +344,7 @@ export const useGameStore = defineStore('game', {
         if (category === Categories.Yahtzee) {
           showYahtzeeAnimation();
           this.playSoundEffect?.(SoundEffects.Yahtzee);
+          this.yahtzeesThisGame += 1
         } else {
           showScoreAnimation(transformedScore, category);
           this.playSoundEffect?.(SoundEffects.Score);
@@ -315,6 +352,10 @@ export const useGameStore = defineStore('game', {
       } else {
         this.playSoundEffect?.(SoundEffects.NoScore);
       }
+      // Count bonus-Yahtzees too — the dice-match path above sets
+      // result.bonusYahtzee when it fires.
+      if (result.bonusYahtzee > 0) this.yahtzeesThisGame += 1
+      if (result.bonusTurnQueued) this.bonusTurnsThisGame += 1
 
       return result;
     },
@@ -477,6 +518,41 @@ export const useGameStore = defineStore('game', {
           const result = engine ? engine.getResult(totalScore) : null;
           const won = result?.status === 'win';
           this.recordDailyCompletion(this.currentDailyDateKey, totalScore, won);
+        }
+
+        // Profile rewards: build the GameSummary and let the profile
+        // store compute XP/coins/achievements. Only seat 0 is treated as
+        // "the player" — vs-AI MultiPlayer still tracks seat 0 only.
+        // Online MP skipped since the profile is single-device.
+        if (this.gameMode !== GameMode.OnlineMultiPlayer) {
+          const playerScore = this.game.getPlayerScore(0)
+          const engine = this.game.getPuzzleEngine(0)
+          const puzzleResult = engine ? engine.getResult(playerScore) : null
+          const won = this.gameVariant === GameVariant.Puzzle
+            ? puzzleResult?.status === 'win'
+            : isLocalPlayerRainbowWinner(this.game, 0)
+          const summary: GameSummary = {
+            mode: this.gameMode!,
+            variant: this.gameVariant,
+            totalScore: playerScore,
+            won,
+            presentKinds: engine?.getPresentKinds(),
+            engagedKinds: engine?.getEngagedKinds(),
+            levelId: this.currentAdventureLevel != null
+              ? this.game.puzzleConfig?.id
+              : undefined,
+            levelNumber: this.currentAdventureLevel ?? undefined,
+            starsEarned: this.currentAdventureLevel != null && puzzleResult?.status === 'win'
+              ? computeStars(playerScore, puzzleResult.targetScore)
+              : undefined,
+            dailyDateKey: this.currentDailyDateKey ?? undefined,
+            dailyStreakAfter: this.currentDailyDateKey
+              ? this.dailyProgress.currentStreak
+              : undefined,
+            yahtzeesScored: this.yahtzeesThisGame,
+            bonusTurnsTaken: this.bonusTurnsThisGame,
+          }
+          usePlayerProfileStore().recordGameComplete(summary)
         }
 
         if (this.gameMode === GameMode.OnlineMultiPlayer) {
@@ -674,6 +750,21 @@ export const useGameStore = defineStore('game', {
         earnedStars,
       );
       this.saveAdventureProgress();
+
+      // After updating bestStars, check whether the level's world is now
+      // fully 3-starred. If so, notify the profile store so the
+      // threeStarWorld achievement can fire.
+      if (earnedStars === 3) {
+        const level = getLevelByNumber(levelNumber);
+        if (level) {
+          const worldLevels = getLevelsByWorld(level.worldId);
+          const allThreeStarred = worldLevels.length > 0
+            && worldLevels.every(l => (this.adventureProgress.bestStars?.[l.id] ?? 0) >= 3);
+          if (allThreeStarred) {
+            usePlayerProfileStore().recordThreeStarWorld(level.worldId);
+          }
+        }
+      }
     },
 
     // -- Daily Puzzle --

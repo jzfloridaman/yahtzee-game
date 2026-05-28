@@ -60,6 +60,31 @@
       <div v-else-if="winner && !puzzleVsAiResult" class="winner-banner mb-4">
         <h2 class="text-2xl font-bold text-green-400">Winner: {{ winner.name }} ({{ winner.score }})</h2>
       </div>
+
+      <!-- Per-game rewards: XP gained, level-ups, coins, achievements. -->
+      <div v-if="lastRewards && (lastRewards.xpGained > 0 || lastRewards.coinsGained > 0 || lastRewards.newAchievements.length > 0)"
+           class="rewards-banner mb-4">
+        <div class="rewards-header">
+          <i class="fas fa-bolt"></i>
+          <span>Rewards</span>
+          <span v-if="lastRewards.levelsGained > 0" class="rewards-levelup">
+            <i class="fas fa-arrow-up"></i>Level up! ×{{ lastRewards.levelsGained }}
+          </span>
+        </div>
+        <div class="rewards-row">
+          <span class="rewards-chip rewards-xp"><i class="fas fa-bolt"></i>+{{ lastRewards.xpGained }} XP</span>
+          <span class="rewards-chip rewards-coins" v-if="lastRewards.coinsGained > 0">
+            <i class="fas fa-coins"></i>+{{ lastRewards.coinsGained }}
+          </span>
+        </div>
+        <div v-if="lastRewards.newAchievements.length > 0" class="rewards-achievements">
+          <div v-for="ach in lastRewards.newAchievements" :key="ach.id" class="rewards-ach-chip">
+            <i :class="['fas', ach.icon]"></i>
+            <span>{{ ach.name }}</span>
+          </div>
+        </div>
+      </div>
+
       <div v-if="players.length > 1" class="player-tabs flex justify-center gap-2">
         <button v-for="(player, idx) in players" :key="idx"
                 @click="selectedTab = idx"
@@ -153,12 +178,15 @@
 import { computed, ref, watch, onMounted } from 'vue'
 import { Categories } from '../enums/Categories'
 import { useGameStore } from '../stores/gameStore'
+import { usePlayerProfileStore } from '../stores/playerProfileStore'
 import { getLastLevelNumber } from '../puzzle/levels/definitions'
 import { computeStars } from '../puzzle/levels/progression'
 import { GameVariant } from '../enums/GameVariant'
 import { playModifierSfx } from '../utils/synthSfx'
 
 const gameStore = useGameStore()
+const profileStore = usePlayerProfileStore()
+const lastRewards = computed(() => profileStore.lastGameRewards)
 const game = computed(() => gameStore.currentGame)
 
 const emit = defineEmits<{
@@ -458,6 +486,62 @@ const getDieIcon = (die: number): string => {
   color: #fb923c;
   font-weight: 700;
 }
+.rewards-banner {
+  background: linear-gradient(135deg, rgba(15,23,42,0.92) 0%, rgba(30,41,59,0.92) 100%);
+  border: 2px solid rgba(52,211,153,0.4);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  color: #ecfdf5;
+  text-align: left;
+}
+.rewards-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+}
+.rewards-header i { color: #facc15; }
+.rewards-levelup {
+  margin-left: auto;
+  font-size: 0.7rem;
+  background: linear-gradient(135deg, #f59e0b, #b45309);
+  color: #fff;
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+}
+.rewards-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.rewards-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.rewards-chip.rewards-xp    { background: rgba(167,243,208,0.18); color: #a7f3d0; }
+.rewards-chip.rewards-coins { background: rgba(251,191,36,0.18); color: #fcd34d; }
+.rewards-achievements {
+  margin-top: 0.5rem;
+  display: flex; flex-wrap: wrap; gap: 0.35rem;
+}
+.rewards-ach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  background: rgba(52,211,153,0.18);
+  color: #ecfdf5;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.rewards-ach-chip i { color: #facc15; }
 .puzzle-vs-ai-banner {
   border-radius: 0.5rem;
   padding: 1rem;

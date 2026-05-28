@@ -1,129 +1,144 @@
 <template>
-  <div id="game-mode-container" class="flex flex-col items-center gap-3">
+  <div id="game-mode-container" class="flex flex-col items-center">
     <div class="gm-brand">
       <h1 class="gm-title">Rainbow Yahtzee</h1>
       <div class="gm-subtitle">Roll. Score. Survive the puzzle.</div>
     </div>
-    <div class="flex flex-col w-full gap-2.5">
-      <button @click="toggleSinglePlayerMenu" class="mode-card mode-card-solo">
-        <i class="fas fa-user mode-card-icon"></i>
-        <div class="mode-card-body">
-          <div class="mode-card-title">Single Player</div>
-          <div class="mode-card-sub">Classic, Puzzle, Adventure, vs. AI</div>
-        </div>
-        <i class="fas mode-card-chevron" :class="showSinglePlayerMenu ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-      </button>
 
-      <div v-if="showSinglePlayerMenu" class="mode-submenu">
-        <button @click="startSinglePlayer(GameVariant.Rainbow)" class="mode-sub-btn rainbow">
-          <i class="fas fa-palette"></i><span>Classic Rainbow</span>
-        </button>
-        <button @click="startSinglePlayer(GameVariant.Puzzle)" class="mode-sub-btn puzzle">
-          <i class="fas fa-shuffle"></i><span>Puzzle — Random</span>
-        </button>
-        <button @click="openAdventure" class="mode-sub-btn adventure">
-          <i class="fas fa-map"></i><span>Puzzle — Adventure</span>
-        </button>
-        <button @click="startPuzzleVsAi" class="mode-sub-btn vs-ai">
-          <i class="fas fa-robot"></i><span>Puzzle vs. Dice Master</span>
-        </button>
-        <button @click="startDailyPuzzle" class="mode-sub-btn daily">
-          <i class="fas fa-calendar-day"></i>
-          <span>Daily Puzzle</span>
-          <span v-if="dailyStreak > 0" class="daily-streak-badge" :title="`${dailyStreak}-day streak`">
-            <i class="fas fa-fire"></i>{{ dailyStreak }}
-          </span>
-        </button>
-      </div>
+    <div class="menu-stage">
+      <section class="menu-view menu-view-main"
+               :class="{ 'is-back': activeView !== 'main' }"
+               :aria-hidden="activeView !== 'main'">
+        <div class="flex flex-col w-full gap-2.5">
+          <button @click="activeView = 'single'" class="mode-card mode-card-solo">
+            <i class="fas fa-user mode-card-icon"></i>
+            <div class="mode-card-body">
+              <div class="mode-card-title">Single Player</div>
+              <div class="mode-card-sub">Classic, Puzzle, Adventure, vs. AI</div>
+            </div>
+            <i class="fas fa-chevron-right mode-card-chevron"></i>
+          </button>
 
-      <button @click="toggleMultiplayerMenu" class="mode-card mode-card-local">
-        <i class="fas fa-users mode-card-icon"></i>
-        <div class="mode-card-body">
-          <div class="mode-card-title">Local Multi Player</div>
-          <div class="mode-card-sub">2–4 players, share a screen</div>
-        </div>
-        <i class="fas mode-card-chevron" :class="showMultiplayerMenu ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-      </button>
+          <button @click="activeView = 'local'" class="mode-card mode-card-local">
+            <i class="fas fa-users mode-card-icon"></i>
+            <div class="mode-card-body">
+              <div class="mode-card-title">Local Multi Player</div>
+              <div class="mode-card-sub">2–4 players, share a screen</div>
+            </div>
+            <i class="fas fa-chevron-right mode-card-chevron"></i>
+          </button>
 
-      <button @click="toggleOnlineMenu" class="mode-card mode-card-online">
-        <i class="fas fa-globe mode-card-icon"></i>
-        <div class="mode-card-body">
-          <div class="mode-card-title">Online Multi Player</div>
-          <div class="mode-card-sub">Play with a friend over WebRTC</div>
-        </div>
-        <i class="fas mode-card-chevron" :class="showOnlineMenu ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
-      </button>
-
-      <div v-if="showMultiplayerMenu" class="mode-config-panel">
-        <h3 class="mode-config-title">Local Multi Player</h3>
-
-        <div class="player-count-row">
-          <button v-for="n in [2, 3, 4]" :key="n"
-                  @click="setPlayerCount(n)"
-                  :class="['player-count-button', { active: playerCount === n }]">
-            {{ n }} Players
+          <button @click="activeView = 'online'" class="mode-card mode-card-online">
+            <i class="fas fa-globe mode-card-icon"></i>
+            <div class="mode-card-body">
+              <div class="mode-card-title">Online Multi Player</div>
+              <div class="mode-card-sub">Play with a friend over WebRTC</div>
+            </div>
+            <i class="fas fa-chevron-right mode-card-chevron"></i>
           </button>
         </div>
+      </section>
 
-        <div class="seat-rows">
-          <div v-for="(seat, index) in seats" :key="index" class="seat-row">
-            <span class="seat-name">{{ seat.name }}</span>
-            <button @click="toggleSeatKind(index)"
-                    :class="['seat-kind-btn', seat.kind === 'ai' ? 'ai' : 'human']">
-              <i :class="['fas', seat.kind === 'ai' ? 'fa-robot' : 'fa-user']"></i>
-              {{ seat.kind === 'ai' ? 'Computer' : 'Human' }}
+      <Transition name="sub-slide">
+        <section v-if="activeView !== 'main'" :key="activeView" class="menu-view menu-view-sub">
+          <header class="submenu-header">
+            <button class="submenu-back" @click="activeView = 'main'" aria-label="Back to menu">
+              <i class="fas fa-arrow-left"></i>
+            </button>
+            <h3 class="mode-config-title">{{ submenuTitle }}</h3>
+          </header>
+
+          <div v-if="activeView === 'single'" class="mode-submenu">
+            <button @click="startSinglePlayer(GameVariant.Rainbow)" class="mode-sub-btn rainbow">
+              <i class="fas fa-palette"></i><span>Classic Rainbow</span>
+            </button>
+            <button @click="startSinglePlayer(GameVariant.Puzzle)" class="mode-sub-btn puzzle">
+              <i class="fas fa-shuffle"></i><span>Puzzle — Random</span>
+            </button>
+            <button @click="openAdventure" class="mode-sub-btn adventure">
+              <i class="fas fa-map"></i><span>Puzzle — Adventure</span>
+            </button>
+            <button @click="startPuzzleVsAi" class="mode-sub-btn vs-ai">
+              <i class="fas fa-robot"></i><span>Puzzle vs. Dice Master</span>
+            </button>
+            <button @click="startDailyPuzzle" class="mode-sub-btn daily">
+              <i class="fas fa-calendar-day"></i>
+              <span>Daily Puzzle</span>
+              <span v-if="dailyStreak > 0" class="daily-streak-badge" :title="`${dailyStreak}-day streak`">
+                <i class="fas fa-fire"></i>{{ dailyStreak }}
+              </span>
             </button>
           </div>
-        </div>
 
-        <button @click="startLocalMultiplayer" class="start-btn">
-          <i class="fas fa-play"></i>Start Game
-        </button>
-      </div>
+          <div v-else-if="activeView === 'local'" class="mode-config-panel">
+            <div class="player-count-row">
+              <button v-for="n in [2, 3, 4]" :key="n"
+                      @click="setPlayerCount(n)"
+                      :class="['player-count-button', { active: playerCount === n }]">
+                {{ n }} Players
+              </button>
+            </div>
 
-      <div v-if="showOnlineMenu" class="mode-config-panel">
-        <h3 class="mode-config-title">Online Game</h3>
-        <button v-if="!peerStore.isHost && !peerStore.isConnected"
-                @click="createRoom" class="online-action-btn host">
-          <i class="fas fa-house-flag"></i>Create Room
-        </button>
+            <div class="seat-rows">
+              <div v-for="(seat, index) in seats" :key="index" class="seat-row">
+                <span class="seat-name">{{ seat.name }}</span>
+                <button @click="toggleSeatKind(index)"
+                        :class="['seat-kind-btn', seat.kind === 'ai' ? 'ai' : 'human']">
+                  <i :class="['fas', seat.kind === 'ai' ? 'fa-robot' : 'fa-user']"></i>
+                  {{ seat.kind === 'ai' ? 'Computer' : 'Human' }}
+                </button>
+              </div>
+            </div>
 
-        <div v-if="peerStore.roomCode && peerStore.isHost" class="room-code-block">
-          <p class="room-code-label">Room Code</p>
-          <div class="room-code-row">
-            <code class="room-code">{{ peerStore.roomCode }}</code>
-            <button @click="copyRoomCode" class="room-share-btn">
-              <i class="fa-solid fa-share"></i>Share
+            <button @click="startLocalMultiplayer" class="start-btn">
+              <i class="fas fa-play"></i>Start Game
             </button>
           </div>
-          <transition name="fade">
-            <span v-if="copied" class="room-copied">Copied!</span>
-          </transition>
-        </div>
 
-        <div v-if="!peerStore.isHost && peerStore.isConnected" class="online-status">
-          <i class="fas fa-spinner fa-spin"></i>Waiting for host to start game…
-        </div>
+          <div v-else-if="activeView === 'online'" class="mode-config-panel">
+            <button v-if="!peerStore.isHost && !peerStore.isConnected"
+                    @click="createRoom" class="online-action-btn host">
+              <i class="fas fa-house-flag"></i>Create Room
+            </button>
 
-        <div v-if="!peerStore.isHost && !peerStore.isConnected" class="join-row">
-          <input v-model="roomCodeInput" type="text" placeholder="Enter room code" />
-          <button @click="joinRoom" :disabled="isConnecting" class="join-btn">
-            {{ isConnecting ? 'Connecting…' : 'Join' }}
-          </button>
-        </div>
+            <div v-if="peerStore.roomCode && peerStore.isHost" class="room-code-block">
+              <p class="room-code-label">Room Code</p>
+              <div class="room-code-row">
+                <code class="room-code">{{ peerStore.roomCode }}</code>
+                <button @click="copyRoomCode" class="room-share-btn">
+                  <i class="fa-solid fa-share"></i>Share
+                </button>
+              </div>
+              <transition name="fade">
+                <span v-if="copied" class="room-copied">Copied!</span>
+              </transition>
+            </div>
 
-        <button v-if="peerStore.isHost" @click="stopHosting" class="online-action-btn danger">
-          <i class="fas fa-power-off"></i>Stop Hosting
-        </button>
-        <button v-if="peerStore.isConnected" @click="startOnlineGame" class="start-btn">
-          <i class="fas fa-play"></i>Start Game
-        </button>
-      </div>
+            <div v-if="!peerStore.isHost && peerStore.isConnected" class="online-status">
+              <i class="fas fa-spinner fa-spin"></i>Waiting for host to start game…
+            </div>
 
-      <div class="gm-footer">
-        <div>Programmed by John Zappone</div>
-        <div class="gm-version">Version: {{ version }}</div>
-      </div>
+            <div v-if="!peerStore.isHost && !peerStore.isConnected" class="join-row">
+              <input v-model="roomCodeInput" type="text" placeholder="Enter room code" />
+              <button @click="joinRoom" :disabled="isConnecting" class="join-btn">
+                {{ isConnecting ? 'Connecting…' : 'Join' }}
+              </button>
+            </div>
+
+            <button v-if="peerStore.isHost" @click="stopHosting" class="online-action-btn danger">
+              <i class="fas fa-power-off"></i>Stop Hosting
+            </button>
+            <button v-if="peerStore.isConnected" @click="startOnlineGame" class="start-btn">
+              <i class="fas fa-play"></i>Start Game
+            </button>
+          </div>
+        </section>
+      </Transition>
+    </div>
+
+    <div class="gm-footer">
+      <div>Programmed by John Zappone</div>
+      <div class="gm-version">Version: {{ version }}</div>
     </div>
   </div>
 </template>
@@ -142,9 +157,17 @@ const emit = defineEmits<{
   (e: 'start-game', mode: GameMode, players?: number, seats?: SeatSpec[], variant?: GameVariant): void
 }>()
 
-const showSinglePlayerMenu = ref(false)
-const showMultiplayerMenu = ref(false)
-const showOnlineMenu = ref(false)
+type MenuView = 'main' | 'single' | 'local' | 'online'
+const activeView = ref<MenuView>('main')
+const submenuTitle = computed(() => {
+  switch (activeView.value) {
+    case 'single': return 'Single Player'
+    case 'local':  return 'Local Multi Player'
+    case 'online': return 'Online Game'
+    default:       return ''
+  }
+})
+
 const roomCodeInput = ref('')
 const peerStore = usePeerStore()
 const gameStore = useGameStore()
@@ -190,34 +213,16 @@ const toggleSeatKind = (index: number) => {
 
 const startLocalMultiplayer = () => {
   emit('start-game', GameMode.MultiPlayer, undefined, seats.value.slice())
-  showMultiplayerMenu.value = false
-}
-
-const toggleSinglePlayerMenu = () => {
-  showSinglePlayerMenu.value = !showSinglePlayerMenu.value
-  showMultiplayerMenu.value = false
-  showOnlineMenu.value = false
-}
-
-const toggleMultiplayerMenu = () => {
-  showMultiplayerMenu.value = !showMultiplayerMenu.value
-  showSinglePlayerMenu.value = false
-  showOnlineMenu.value = false
-}
-
-const toggleOnlineMenu = () => {
-  showOnlineMenu.value = !showOnlineMenu.value
-  showSinglePlayerMenu.value = false
-  showMultiplayerMenu.value = false
+  activeView.value = 'main'
 }
 
 const startSinglePlayer = (variant: GameVariant) => {
   emit('start-game', GameMode.SinglePlayer, 1, undefined, variant)
-  showSinglePlayerMenu.value = false
+  activeView.value = 'main'
 }
 
 const openAdventure = () => {
-  showSinglePlayerMenu.value = false
+  activeView.value = 'main'
   gameStore.openAdventureMenu()
 }
 
@@ -230,7 +235,7 @@ const startPuzzleVsAi = () => {
   // Puzzle for local multiplayer (only OnlineMultiPlayer is forced back to
   // Rainbow). Random variant config is picked inside the store.
   emit('start-game', GameMode.MultiPlayer, undefined, seats, GameVariant.Puzzle)
-  showSinglePlayerMenu.value = false
+  activeView.value = 'main'
 }
 
 const dailyStreak = computed(() => currentStreakFor(gameStore.dailyProgress, getDailyDateKey()))
@@ -240,7 +245,7 @@ const dailyStreak = computed(() => currentStreakFor(gameStore.dailyProgress, get
 // `start-game` emit and call the store directly.
 const startDailyPuzzle = () => {
   gameStore.startDailyPuzzle()
-  showSinglePlayerMenu.value = false
+  activeView.value = 'main'
 }
 
 const createRoom = () => {
@@ -319,7 +324,7 @@ const copyRoomCode = async () => {
 // Watch for connection status changes
 watch(() => peerStore.isConnected, (isConnected) => {
   if (!isConnected) {
-    showOnlineMenu.value = false
+    if (activeView.value === 'online') activeView.value = 'main'
     isConnecting.value = false
   } else {
     isConnecting.value = false
@@ -331,7 +336,7 @@ onMounted(() => {
   const code = params.get('room')
   if (code) {
     roomCodeInput.value = code
-    showOnlineMenu.value = true // Optionally open the online menu automatically
+    activeView.value = 'online'
   }
 
   window.addEventListener('rejoin-session', (e: any) => {
@@ -360,6 +365,7 @@ onMounted(() => {
 .gm-brand {
   text-align: center;
   padding: 1.5rem 0 0.6rem;
+  flex-shrink: 0;
 }
 .gm-title {
   font-size: clamp(1.7rem, 7vw, 2.2rem);
@@ -384,6 +390,79 @@ onMounted(() => {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+
+/* Stage fills the vertical space between the brand header and the
+   footer. The main pane is the always-rendered baseline; the active
+   sub-pane is an absolutely-positioned overlay that slides in from the
+   right edge and out the same way (no scroll-through of sibling subs). */
+.menu-stage {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.menu-view {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0 0.15rem;
+}
+.menu-view-main {
+  /* Slides out left when a sub-view takes over. */
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0.36, 1.0);
+  will-change: transform;
+}
+.menu-view-main.is-back {
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+.menu-view-sub {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  padding: 0 0.15rem;
+}
+.sub-slide-enter-active,
+.sub-slide-leave-active {
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0.36, 1.0);
+}
+.sub-slide-enter-from { transform: translateX(100%); }
+.sub-slide-leave-to   { transform: translateX(100%); }
+@media (prefers-reduced-motion: reduce) {
+  .menu-view-main,
+  .sub-slide-enter-active,
+  .sub-slide-leave-active { transition: none; }
+}
+
+/* Sub-pane header with Back button. */
+.submenu-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.1rem;
+}
+.submenu-back {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(15, 23, 42, 0.7);
+  color: var(--text-soft, #cbd5e1);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.12s ease;
+  flex-shrink: 0;
+}
+.submenu-back:hover { background: rgba(15, 23, 42, 0.92); color: var(--text); }
+.submenu-back:active { transform: scale(0.94); }
 
 /* Top-level mode cards. */
 .mode-card {
@@ -443,7 +522,6 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  margin: -0.2rem 0 0.3rem;
   padding-left: 0.6rem;
   border-left: 2px solid var(--accent);
 }
@@ -631,10 +709,11 @@ onMounted(() => {
 }
 
 .gm-footer {
-  margin-top: 1.5rem;
+  flex-shrink: 0;
   text-align: center;
   color: var(--text-soft, #94a3b8);
   font-size: 0.72rem;
+  padding: 0.6rem 0 0.2rem;
 }
 .gm-version { opacity: 0.6; margin-top: 0.15rem; }
 
@@ -644,4 +723,4 @@ onMounted(() => {
 .fade-enter-from, .fade-leave-to {
   opacity: 0;
 }
-</style> 
+</style>

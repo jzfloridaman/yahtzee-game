@@ -19,6 +19,10 @@ services:
   #   docker compose run --rm playwright                            # all e2e tests
   #   docker compose run --rm playwright npm run e2e:screenshots    # capture screenshots
   playwright:
+    # Profile keeps this service out of `docker compose up`. It only runs
+    # when explicitly invoked via `docker compose run --rm playwright`
+    # (or `docker compose --profile tools up`).
+    profiles: ["tools"]
     image: mcr.microsoft.com/playwright:v1.60.0-noble
     working_dir: /app
     volumes:

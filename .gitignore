@@ -28,3 +28,6 @@ tests/e2e/screenshots/
 # OS / runtime droppings
 core
 core.*
+
+# Built APKs (sideload artifacts)
+android/dist-apks/

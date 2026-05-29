@@ -57,6 +57,22 @@ const DAILY_STORAGE_KEY = 'puzzleDaily';
 const ACTION_PHASE_MS = 30_000;
 const MUSTPICK_PHASE_MS = 10_000;
 const TIMER_CHECK_MS = 250;
+
+// ---- Turn-transition banner (multiplayer hand-off) -----------------------
+// After a player scores we let the score-cell flight finish, sweep a banner
+// announcing the next player, then hand over control. The settle values track
+// showScoreCellFlight's tail so the banner lands just as it ends.
+// How long the banner element stays mounted. MUST match the CSS keyframe
+// duration in TurnBanner.vue (turnBannerSweep / turnBannerBackdrop = 2s),
+// which itself sweeps in → holds at center → sweeps out.
+const BANNER_TOTAL_MS = 2000;
+// Point during the banner at which the scorecard is flipped to the next player.
+// Must land while the dim backdrop is fully opaque (≈14%–80% of BANNER_TOTAL_MS
+// per TurnBanner.vue) so the switch is hidden, then revealed as the banner exits.
+const BANNER_REVEAL_MS = 1150;
+const SCORE_SETTLE_NORMAL_MS = 1700; // showScoreCellFlight tail
+const SCORE_SETTLE_YAHTZEE_MS = 2700;
+const SCORE_SETTLE_ZERO_MS = 900;
 // The raw interval handle lives outside reactive Pinia state so the 4Hz
 // expiry check doesn't churn reactivity. The reactive countdown the UI binds
 // to is game.turnTimer.deadline, which only changes on phase transitions/resets.
@@ -163,6 +179,15 @@ export const useGameStore = defineStore('game', {
     // applySelectCategory on the next Yahtzee selection. Survives turn
     // boundaries until used.
     pendingLuckyCharm: false,
+
+    // Turn-transition banner (multiplayer hand-off). turnTransitionActive
+    // gates human input for the whole sequence (wait-for-score-anim → banner
+    // sweep). turnBanner is non-null only while the banner element renders.
+    turnTransitionActive: false,
+    turnBanner: null as { text: string } | null,
+    // Timestamp (ms) when the most recent score animation finishes; the
+    // banner waits for this so it lands AFTER the score-cell flight.
+    scoreAnimationEndsAt: 0,
   }),
 
   getters: {
@@ -372,11 +397,21 @@ export const useGameStore = defineStore('game', {
       const puzzleEngine = this.game.getPuzzleEngine();
       const isBonusTurnApply = puzzleEngine?.hasPendingBonusFor(category) ?? false;
 
+      // Puzzle veto (e.g., Ice Block on this category). Enforced even on the
+      // bonus path so a blocked cell can NEVER be scored — a stale or
+      // mismatched pending bonus must not be able to slip past an Ice Block.
+      if (puzzleEngine && !puzzleEngine.canScore(category)) return result;
+
+      // A queued Double Category bonus that gets abandoned by scoring a
+      // DIFFERENT category is forfeited: clear it so the pending state can't
+      // dangle into later turns (an AI that ignores its bonus turn used to
+      // strand this, and the stale flag bypassed vetoes above).
+      if (puzzleEngine && !isBonusTurnApply && puzzleEngine.getPendingBonusCategory() !== null) {
+        puzzleEngine.consumePendingBonusCategory();
+      }
+
       // Reject double-scoring unless we're applying the Double Category bonus.
       if (this.game.isCategorySelected(category) && !isBonusTurnApply) return result;
-
-      // Puzzle veto (e.g., Ice Block on this category).
-      if (puzzleEngine && !isBonusTurnApply && !puzzleEngine.canScore(category)) return result;
 
       const dice = this.game.dice();
       // Lucky Charm consumable: substitutes a Yahtzee raw score (50) when
@@ -400,9 +435,11 @@ export const useGameStore = defineStore('game', {
 
         if (transformedScore > 0) {
           showScoreCellFlight(category, transformedScore);
+          this.scoreAnimationEndsAt = Date.now() + SCORE_SETTLE_NORMAL_MS;
           this.playSoundEffect?.(SoundEffects.Score);
         } else {
           showScoreZeroChip(category);
+          this.scoreAnimationEndsAt = Date.now() + SCORE_SETTLE_ZERO_MS;
           this.playSoundEffect?.(SoundEffects.NoScore);
         }
 
@@ -449,14 +486,17 @@ export const useGameStore = defineStore('game', {
           // chain cleanly.
           showScoreCellFlight(category, transformedScore);
           window.setTimeout(() => showYahtzeeAnimation(), 850);
+          this.scoreAnimationEndsAt = Date.now() + SCORE_SETTLE_YAHTZEE_MS;
           this.playSoundEffect?.(SoundEffects.Yahtzee);
           this.yahtzeesThisGame += 1
         } else {
           showScoreCellFlight(category, transformedScore);
+          this.scoreAnimationEndsAt = Date.now() + SCORE_SETTLE_NORMAL_MS;
           this.playSoundEffect?.(SoundEffects.Score);
         }
       } else {
         showScoreZeroChip(category);
+        this.scoreAnimationEndsAt = Date.now() + SCORE_SETTLE_ZERO_MS;
         this.playSoundEffect?.(SoundEffects.NoScore);
       }
       // Count bonus-Yahtzees too — the dice-match path above sets
@@ -472,20 +512,20 @@ export const useGameStore = defineStore('game', {
     //    inside the controller for the seat that owns the action.
 
     rollDice() {
-      if (!this.game) return;
+      if (!this.game || this.turnTransitionActive) return;
       // Online MP: only act on your own seat's turn.
       if (this.gameMode === GameMode.OnlineMultiPlayer && !this.isLocalSeatActive) return;
       this.game.players[this.game.currentPlayer].controller.requestRoll();
     },
 
     toggleHold(index: number) {
-      if (!this.game || this.game.newRoll) return;
+      if (!this.game || this.game.newRoll || this.turnTransitionActive) return;
       if (this.gameMode === GameMode.OnlineMultiPlayer && !this.isLocalSeatActive) return;
       this.game.players[this.game.currentPlayer].controller.requestHold(index);
     },
 
     selectCategory(category: Categories) {
-      if (!this.game || this.game.newRoll) return;
+      if (!this.game || this.game.newRoll || this.turnTransitionActive) return;
       if (this.gameMode === GameMode.OnlineMultiPlayer && !this.isLocalSeatActive) return;
       const puzzleEngine = this.game.getPuzzleEngine();
       const pendingBonus = puzzleEngine?.getPendingBonusCategory() ?? null;
@@ -570,13 +610,22 @@ export const useGameStore = defineStore('game', {
             if (data.category === Categories.Yahtzee && data.score > 0) {
               showScoreCellFlight(data.category, data.score);
               window.setTimeout(() => showYahtzeeAnimation(), 850);
+              this.scoreAnimationEndsAt = Date.now() + SCORE_SETTLE_YAHTZEE_MS;
               this.playSoundEffect?.(SoundEffects.Yahtzee);
             } else if (data.score > 0) {
               showScoreCellFlight(data.category, data.score);
+              this.scoreAnimationEndsAt = Date.now() + SCORE_SETTLE_NORMAL_MS;
               this.playSoundEffect?.(SoundEffects.Score);
             } else {
               showScoreZeroChip(data.category);
+              this.scoreAnimationEndsAt = Date.now() + SCORE_SETTLE_ZERO_MS;
               this.playSoundEffect?.(SoundEffects.NoScore);
+            }
+            // The preceding gameState already advanced currentPlayer; sweep
+            // the banner after the score flight settles. Client owns no
+            // turn-start/timer, so no onDone.
+            if (this.game) {
+              this.showTurnTransition(this.turnBannerText(this.game.currentPlayer));
             }
           }
           break;
@@ -695,29 +744,108 @@ export const useGameStore = defineStore('game', {
     // decides when to call this; broadcasting is the controller's job.
     nextPlayer() {
       if (!this.game) return;
-      // Puzzle modifiers may relocate or expire at end of turn (Flying
-      // Multiplier moves here; Hot Potato fuse can force-burn a slot).
-      // Fire this before advancing so the next player sees the updated
-      // board.
-      this.game.getPuzzleEngine()?.onTurnEnd();
-      // Hot Potato fuse expiry can fill the last remaining slot and end
-      // the game from inside onTurnEnd. Surface that immediately so the
-      // GameOver screen renders.
-      if (this.game.isGameOver) {
-        this.endGame();
+      const count = this.game.getPlayerCount();
+      const isOnline = this.gameMode === GameMode.OnlineMultiPlayer;
+
+      // Hand control to whoever is current: notify its controller (Local human
+      // / remote peer are no-ops; AIController starts its turn here) and arm the
+      // fresh clock (host-only / online-only).
+      const handControl = () => {
+        if (!this.game) return;
+        this.game.players[this.game.currentPlayer]?.controller.onTurnStart();
+        this.startTurnTimer();
+      };
+
+      // End-of-turn modifier effects on the FINISHING player's engine (Flying
+      // Multiplier relocates; Hot Potato fuse ticks; Looping rotates). Returns
+      // true if a Hot Potato fuse expiry ended the game. Local MP / vs-AI defer
+      // this into the banner (onReveal) so the relocation animations play hidden
+      // behind the dim backdrop instead of jumping the instant you score; every
+      // other path runs it now, up front.
+      const runTurnEnd = (): boolean => {
+        if (!this.game) return true;
+        this.game.getPuzzleEngine()?.onTurnEnd();
+        if (this.game.isGameOver) {
+          this.endGame();
+          return true;
+        }
+        return false;
+      };
+      const deferTurnEnd = count > 1 && !isOnline;
+      if (!deferTurnEnd && runTurnEnd()) return;
+
+      // Single-player: no hand-off, advance and start immediately as before.
+      if (count <= 1) {
+        this.game.nextPlayer();
+        this.game.rollsLeft = 2;
+        this.game.newRoll = true;
+        handControl();
         return;
       }
-      this.game.nextPlayer();
-      this.game.rollsLeft = 2;
-      this.game.newRoll = true;
-      if (this.gameMode === GameMode.OnlineMultiPlayer) {
+
+      // Online MP keeps the synchronous advance — the controller broadcasts the
+      // advanced gameState right after this returns. The banner only gates when
+      // the next player actually gets control.
+      if (isOnline) {
+        this.game.nextPlayer();
+        this.game.rollsLeft = 2;
+        this.game.newRoll = true;
         this.game.forceDiceReset();
+        this.showTurnTransition(this.turnBannerText(this.game.currentPlayer), {
+          onDone: handControl,
+        });
+        return;
       }
-      // Notify the new current player's controller. Local human / remote
-      // peer are no-ops; AIController starts its turn from here.
-      this.game.players[this.game.currentPlayer]?.controller.onTurnStart()
-      // Fresh 30s clock for the new player (host-only / online-only).
-      this.startTurnTimer()
+
+      // Local MP / vs-AI: keep the finishing player's scorecard on screen through
+      // the score animation + banner so the upper-score progression is visible,
+      // then run the deferred end-of-turn effects + advance under the banner's
+      // dim backdrop. The finishing player is still current during onReveal, so
+      // relocation animations anchor to the correct board.
+      const nextIdx = (this.game.currentPlayer + 1) % count;
+      this.showTurnTransition(this.turnBannerText(nextIdx), {
+        onReveal: () => {
+          if (runTurnEnd()) return;
+          if (!this.game) return;
+          this.game.nextPlayer();
+          this.game.rollsLeft = 2;
+          this.game.newRoll = true;
+        },
+        onDone: handControl,
+      });
+    },
+
+    // Builds the banner label for a seat. Online shows "Your turn" for the
+    // local seat (mirrors GameBoard's isMyTurn); everyone else is named.
+    turnBannerText(idx: number): string {
+      const name = this.game?.players[idx]?.name ?? 'Player';
+      if (this.gameMode === GameMode.OnlineMultiPlayer) {
+        const isYou = (idx === 0) === usePeerStore().isHost;
+        if (isYou) return 'Your turn';
+      }
+      return `${name}'s turn`;
+    },
+
+    // Gates input, waits for the in-flight score animation to finish, sweeps
+    // the banner, then runs onDone (the control hand-off). Not awaited by
+    // callers — the synchronous state advance has already happened, so any
+    // host broadcast after nextPlayer() still reflects the new player.
+    async showTurnTransition(
+      text: string,
+      opts: { onReveal?: () => void; onDone?: () => void } = {},
+    ) {
+      this.turnTransitionActive = true;
+      const wait = Math.max(0, this.scoreAnimationEndsAt - Date.now());
+      await new Promise((r) => setTimeout(r, wait));
+      this.turnBanner = { text };
+      // Fire onReveal (e.g. flip the scorecard to the next player) while the dim
+      // backdrop is fully opaque, so the switch is hidden behind the banner.
+      await new Promise((r) => setTimeout(r, BANNER_REVEAL_MS));
+      opts.onReveal?.();
+      await new Promise((r) => setTimeout(r, Math.max(0, BANNER_TOTAL_MS - BANNER_REVEAL_MS)));
+      this.turnBanner = null;
+      this.turnTransitionActive = false;
+      opts.onDone?.();
     },
 
     // Reset per-turn state for a Puzzle Mode bonus turn (Double Category),

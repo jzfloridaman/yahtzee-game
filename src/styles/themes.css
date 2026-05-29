@@ -425,6 +425,28 @@ body.world-cycles .world-fx::after {
     100% { opacity: 0; background-position: -50% 50%; }
 }
 
+/* Floating "+N" that rises above a player's header chip on a score gain. */
+.cell-fx-player-pop {
+    position: fixed;
+    transform: translate(-50%, -50%);
+    font-size: 1.15rem;
+    font-weight: 900;
+    color: #4ade80;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.55), 0 0 10px rgba(74,222,128,0.6);
+    pointer-events: none;
+    white-space: nowrap;
+    animation: cellFxPlayerPop 1.1s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+@keyframes cellFxPlayerPop {
+    0%   { opacity: 0; transform: translate(-50%, -10%) scale(0.6); }
+    25%  { opacity: 1; transform: translate(-50%, -90%) scale(1.1); }
+    70%  { opacity: 1; transform: translate(-50%, -150%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -220%) scale(0.95); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .cell-fx-player-pop { animation: none; opacity: 1; transform: translate(-50%, -130%); }
+}
+
 /* Ice fragment confetti */
 .cell-fx-ice-fragment {
     position: fixed;

@@ -28,6 +28,18 @@ export class GreedyStrategy {
 
         const potentials = this.scorePotentials(scorecard, dice, canScore, engine);
 
+        // Double Category bonus turn: the engine only accepts the same category
+        // again (summing onto the slot), so pursue it — hold toward it while
+        // rolls remain, otherwise bank it now.
+        const pendingBonus = engine?.getPendingBonusCategory() ?? null;
+        if (pendingBonus !== null) {
+            if (rollsLeft > 0) {
+                const holds = this.computeHolds(dice, pendingBonus);
+                if (holds.some(h => !h)) return { action: 'rollAgain', holds };
+            }
+            return { action: 'pickCategory', category: pendingBonus };
+        }
+
         // Out of rolls — must pick a category.
         if (rollsLeft === 0) {
             return { action: 'pickCategory', category: this.pickBestCategory(potentials, scorecard, canScore) };

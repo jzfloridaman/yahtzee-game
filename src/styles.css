@@ -728,6 +728,18 @@ body {
     0%, 100% { box-shadow: 0 0 0 1px var(--accent), 0 0 12px -4px var(--accent-soft); }
     50%      { box-shadow: 0 0 0 1px var(--accent), 0 0 22px 2px var(--accent-soft); }
 }
+/* Score bump — brief pop of the chip's score number when it counts up. */
+.player-chip.score-bump .player-score {
+    animation: playerScoreBump 0.5s ease-out;
+}
+@keyframes playerScoreBump {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.35); color: #4ade80; }
+    100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .player-chip.score-bump .player-score { animation: none; }
+}
 .player-avatar {
     width: 32px;
     height: 32px;
@@ -963,18 +975,21 @@ h2 {
 
 /* Yahtzee Animation */
 @keyframes yahtzeeAnimation {
+  /* Keep translate(-50%, -50%) in every step — it provides the horizontal
+     centering off left:50%. Dropping it (as a bare scale()/rotate()) anchors
+     the element's left edge at center and shoots the text off the right. */
   0%, 100% {
-    transform: scale(0.3) rotate(-10deg);
+    transform: translate(-50%, -50%) scale(0.3) rotate(-10deg);
     opacity: 0;
     color: #ffd700;
   }
   25%, 75% {
-    transform: scale(1) rotate(10deg);
+    transform: translate(-50%, -50%) scale(1) rotate(10deg);
     opacity: 1;
     color: #ff4500;
   }
   50% {
-    transform: scale(.75) rotate(0deg);
+    transform: translate(-50%, -50%) scale(.75) rotate(0deg);
     opacity: 1;
     color: #ffd700;
   }
@@ -999,7 +1014,7 @@ h2 {
   letter-spacing: 0.02em;
 }
 @media (prefers-reduced-motion: reduce) {
-  .yahtzee-animation { animation: none; opacity: 1; transform: scale(1) rotate(0); }
+  .yahtzee-animation { animation: none; opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); }
   .emoji-animation { animation: none; opacity: 1; transform: translate(-50%, -50%) scale(1); }
   .confetti { display: none; }
 }

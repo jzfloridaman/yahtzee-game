@@ -52,13 +52,21 @@ export class AIController implements PlayerController {
 
     private pickCategory(category: Categories): void {
         const game = useGameStore();
-        game.applySelectCategory(category);
+        const { bonusTurnQueued } = game.applySelectCategory(category);
 
         setTimeout(() => {
             const yahtzee = game.currentGame;
             if (!yahtzee) return;
             if (yahtzee.isGameOver) {
                 game.endGame();
+                return;
+            }
+            // Double Category granted a bonus turn — take it (same player,
+            // fresh rolls) instead of advancing. The strategy pursues the
+            // bonus category on the replay. Leaving this unhandled stranded
+            // pendingBonusCategory on the AI's engine.
+            if (bonusTurnQueued) {
+                game.startBonusTurn();
                 return;
             }
             // nextPlayer fires onTurnStart on the new current player. If

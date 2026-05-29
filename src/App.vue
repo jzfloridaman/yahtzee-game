@@ -142,6 +142,9 @@
 
     <AchievementToast />
 
+    <!-- Multiplayer turn-transition banner -->
+    <TurnBanner />
+
     <div class="hidden grid-cols-3 grid-cols-4">Tailwind forced classes</div>
   </div>
 </template>
@@ -154,6 +157,7 @@ import GameOver from './components/GameOver.vue'
 import LevelSelect from './components/LevelSelect.vue'
 import ProfilePanel from './components/ProfilePanel.vue'
 import AchievementToast from './components/AchievementToast.vue'
+import TurnBanner from './components/TurnBanner.vue'
 import { useGameStore } from './stores/gameStore'
 import { GameMode as GameModeEnum } from './enums/GameMode'
 import { GameVariant } from './enums/GameVariant'

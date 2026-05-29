@@ -471,3 +471,24 @@ function positionOver(rect: DOMRect): Partial<CSSStyleDeclaration> {
         height: `${rect.height}px`,
     };
 }
+
+// ---- Player score pop ----
+// A "+N" that rises and fades above a player's header chip when their total
+// climbs, mirroring the cell-level score banner. Anchors to the chip via
+// `[data-player-chip="<index>"]`. The chip's count-up + pulse are handled in
+// GameBoard.vue (Vue-side); this is just the floating delta.
+export function showPlayerScorePop(playerIndex: number, delta: number): void {
+    if (delta <= 0 || typeof document === 'undefined') return;
+    const layer = ensureFxLayer();
+    const chip = document.querySelector<HTMLElement>(`[data-player-chip="${playerIndex}"]`);
+    if (!layer || !chip) return;
+
+    const rect = chip.getBoundingClientRect();
+    const pop = document.createElement('div');
+    pop.className = 'cell-fx-player-pop';
+    pop.textContent = `+${delta}`;
+    pop.style.left = `${rect.left + rect.width / 2}px`;
+    pop.style.top = `${rect.top + 2}px`;
+    layer.appendChild(pop);
+    fade(pop, reducedMotion() ? 700 : 1100);
+}

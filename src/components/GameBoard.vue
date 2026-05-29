@@ -20,14 +20,15 @@
 
     <header id="players-container" class="players-header">
       <div v-for="(_, index) in playerCount" :key="index"
-           :class="['player-chip', { active: currentPlayer === index }]">
+           :data-player-chip="index"
+           :class="['player-chip', { active: currentPlayer === index, 'score-bump': bumpFlags[index] }]">
         <div class="player-avatar">
           <i v-if="isPlayerAI(index)" class="fas fa-robot"></i>
           <template v-else>{{ getPlayerName(index).charAt(0).toUpperCase() }}</template>
         </div>
         <div class="player-meta">
           <div class="player-name">{{ getPlayerName(index) }}</div>
-          <div class="player-score">{{ getPlayerScore(index) }}</div>
+          <div class="player-score">{{ displayScore(index) }}</div>
         </div>
       </div>
     </header>
@@ -280,7 +281,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted, watch } from 'vue'
+import { computed, ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useGameStore } from '../stores/gameStore'
 import { usePeerStore } from '../stores/peerStore'
 import { usePlayerProfileStore } from '../stores/playerProfileStore'
@@ -306,6 +307,7 @@ import {
   showBonusTurnGlow,
   showScoreBreakdown,
   showGoalMet,
+  showPlayerScorePop,
 } from '../utils/cellAnimations'
 
 const emit = defineEmits<{
@@ -474,6 +476,67 @@ const toggleHold = (index: number) => {
 const getPlayerScore = (index: number): number => {
   return currentGame.value?.getPlayerScore(index) || 0;
 }
+
+// --- Animated header-chip scores -----------------------------------------
+// displayScores holds the value actually rendered in each chip. When a
+// player's real total climbs we tween the displayed number up, pulse the
+// chip, and float a "+N" above it. Decreases (restart) snap without anim.
+const displayScores = ref<number[]>([]);
+const bumpFlags = ref<boolean[]>([]);
+const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia
+  ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  : false;
+const scoreTweenHandles: Record<number, number> = {};
+const scoreBumpHandles: Record<number, ReturnType<typeof setTimeout>> = {};
+
+// Reactive snapshot of every player's real total; drives the watcher below.
+const realScores = computed(() =>
+  Array.from({ length: playerCount.value }, (_, i) => getPlayerScore(i))
+);
+
+function tweenScore(i: number, from: number, to: number): void {
+  if (scoreTweenHandles[i]) cancelAnimationFrame(scoreTweenHandles[i]);
+  if (prefersReducedMotion) { displayScores.value[i] = to; return; }
+  const dur = 600;
+  const start = performance.now();
+  const step = (now: number) => {
+    const t = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - t, 3);
+    displayScores.value[i] = Math.round(from + (to - from) * eased);
+    if (t < 1) scoreTweenHandles[i] = requestAnimationFrame(step);
+    else displayScores.value[i] = to;
+  };
+  scoreTweenHandles[i] = requestAnimationFrame(step);
+}
+
+function bumpChip(i: number): void {
+  bumpFlags.value[i] = false;
+  void nextTick(() => { bumpFlags.value[i] = true; });
+  if (scoreBumpHandles[i]) clearTimeout(scoreBumpHandles[i]);
+  scoreBumpHandles[i] = setTimeout(() => { bumpFlags.value[i] = false; }, 600);
+}
+
+watch(realScores, (next, prev) => {
+  // Initial fill or roster change: sync without animating.
+  if (!prev || prev.length !== next.length) {
+    displayScores.value = [...next];
+    bumpFlags.value = next.map(() => false);
+    return;
+  }
+  next.forEach((val, i) => {
+    const shown = displayScores.value[i] ?? val;
+    if (val > shown) {
+      tweenScore(i, shown, val);
+      bumpChip(i);
+      showPlayerScorePop(i, val - shown);
+    } else if (val !== shown) {
+      displayScores.value[i] = val; // decrease / reset — no anim
+    }
+  });
+}, { immediate: true });
+
+const displayScore = (index: number): number =>
+  displayScores.value[index] ?? getPlayerScore(index);
 
 const getScoreDisplay = (category: Categories): string => {
   // If category is already selected, just return the stored score

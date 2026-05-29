@@ -19,6 +19,44 @@
         <button @click="handleNewGame" class="bg-white text-red-700 font-bold px-4 py-2 rounded hover:bg-gray-200 transition">New Game</button>
       </div>
     </div>
+    <!-- Quit Game Confirmation (local-initiated, all modes) -->
+    <div v-if="showQuitConfirm" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-70">
+      <div class="bg-red-700 text-white p-8 rounded-lg shadow-lg text-center max-w-xs mx-auto">
+        <h2 class="text-2xl font-bold mb-2">Quit Game?</h2>
+        <p class="mb-4">{{ isOnlineGame ? 'End this online match? Your opponent will be asked to agree.' : 'Are you sure you want to quit? Your progress will be lost.' }}</p>
+        <div class="flex justify-center gap-4">
+          <button @click="confirmQuit" class="bg-white text-red-700 font-bold px-4 py-2 rounded">{{ isOnlineGame ? 'Ask Opponent' : 'Quit' }}</button>
+          <button @click="cancelQuit" class="bg-green-600 text-white px-4 py-2 rounded">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <!-- Online: waiting for opponent to respond to our quit request -->
+    <div v-if="gameStore.quitAwaitingResponse" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-70">
+      <div class="bg-red-700 text-white p-8 rounded-lg shadow-lg text-center max-w-xs mx-auto">
+        <h2 class="text-2xl font-bold mb-2">Waiting…</h2>
+        <p class="mb-4">Waiting for your opponent to respond.</p>
+        <button @click="gameStore.cancelQuitRequest()" class="bg-white text-red-700 font-bold px-4 py-2 rounded">Cancel</button>
+      </div>
+    </div>
+    <!-- Online: opponent asked to end the game -->
+    <div v-if="gameStore.quitRequestPending" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-70">
+      <div class="bg-red-700 text-white p-8 rounded-lg shadow-lg text-center max-w-xs mx-auto">
+        <h2 class="text-2xl font-bold mb-2">End Game?</h2>
+        <p class="mb-4">Your opponent wants to end the game. Do you agree?</p>
+        <div class="flex justify-center gap-4">
+          <button @click="gameStore.respondToQuit(true)" class="bg-white text-red-700 font-bold px-4 py-2 rounded">End Game</button>
+          <button @click="gameStore.respondToQuit(false)" class="bg-green-600 text-white px-4 py-2 rounded">Keep Playing</button>
+        </div>
+      </div>
+    </div>
+    <!-- Online: opponent declined our quit request -->
+    <div v-if="gameStore.quitDeclined" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-70">
+      <div class="bg-red-700 text-white p-8 rounded-lg shadow-lg text-center max-w-xs mx-auto">
+        <h2 class="text-2xl font-bold mb-2">Request Declined</h2>
+        <p class="mb-4">Your opponent wants to keep playing.</p>
+        <button @click="gameStore.quitDeclined = false" class="bg-white text-red-700 font-bold px-4 py-2 rounded">OK</button>
+      </div>
+    </div>
     <!-- Top icon nav. First flex child of #app; non-scrolling. Each icon
          toggles a dropdown panel anchored below the bar. Left side hosts
          a contextual Back button shown on every screen except the main
@@ -118,9 +156,9 @@
 
           <div v-else-if="activePanel === 'options'" class="nav-panel-body">
             <h3 class="nav-panel-h3">Game Options</h3>
-            <button v-if="peerStore.isHost" class="nav-panel-action-btn danger" @click="endHostGame">End Game</button>
+            <button v-if="peerStore.isHost" class="nav-panel-action-btn danger" @click="attemptQuit">End Game</button>
             <button v-if="peerStore.isHost || !peerStore.isConnected" class="nav-panel-action-btn primary" @click="restartGame">Restart Game</button>
-            <button v-if="peerStore.isHost || !peerStore.isConnected" class="nav-panel-action-btn success" @click="newGame">Select Game</button>
+            <button v-if="peerStore.isHost || !peerStore.isConnected" class="nav-panel-action-btn success" @click="attemptQuit">Select Game</button>
             <button v-if="peerStore.isConnected" class="nav-panel-action-btn warning" @click="requestResync">Request Resync</button>
           </div>
         </div>
@@ -357,24 +395,6 @@ const endGame = () => {
   gameStore.endGame();
 }
 
-const endHostGame = () => {
-
-  peerStore.sendData({
-    type: 'gameOver',
-    data: {
-      gameId: 'game over'
-    }
-  });
-
-  /// wait some time then close all menus, end game, and disconnect
-  setTimeout(() => {
-    closeAllMenus();
-    gameStore.endGame();
-    peerStore.disconnect();
-  }, 1000);
-
-}
-
 const restartGame = () => {
   closeAllMenus();
   gameStore.restartGame();
@@ -431,11 +451,33 @@ const closeAllMenus = () => { activePanel.value = null }
 const isOnMainMenu = computed(() =>
   !gameStore.gameIsActive && !gameStore.gameIsOver && !gameStore.showAdventureMenu)
 
+// Quit-game confirmation. Abandoning an in-progress game now requires a
+// confirm step (all modes). Online play routes through a consensual request
+// the opponent must agree to. Game-over / adventure level-select have nothing
+// to lose, so they skip the prompt.
+const showQuitConfirm = ref(false)
+const isOnlineGame = computed(() =>
+  gameStore.gameMode === GameModeEnum.OnlineMultiPlayer && peerStore.isConnected)
+
+const attemptQuit = () => {
+  closeAllMenus()
+  showQuitConfirm.value = true
+}
+
+const confirmQuit = () => {
+  showQuitConfirm.value = false
+  if (isOnlineGame.value) gameStore.requestQuit()
+  else newGame()
+}
+const cancelQuit = () => { showQuitConfirm.value = false }
+
 const goBack = () => {
   if (gameStore.showAdventureMenu) {
-    closeAdventure()
+    closeAdventure()                                  // level-select: nothing in progress
+  } else if (gameStore.gameIsActive && !gameStore.gameIsOver) {
+    attemptQuit()                                     // active game: confirm first
   } else {
-    newGame()
+    newGame()                                         // game over / safe
   }
 }
 

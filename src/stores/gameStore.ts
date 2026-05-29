@@ -155,6 +155,13 @@ export const useGameStore = defineStore('game', {
     // clobbered by the incoming snapshot.
     pendingRollAnimation: false,
 
+    // Quit-game confirmation flow. In online play a quit is consensual: the
+    // quitter sends `quitRequest` and the opponent must agree. These flags drive
+    // the modals in App.vue. Cleared on teardown via clearQuitFlags().
+    quitRequestPending: false,    // peer asked us to end; show "End game?" modal
+    quitAwaitingResponse: false,  // we asked; show "waiting for opponent" modal
+    quitDeclined: false,          // peer said no; show brief notice modal
+
     // Adventure Mode — authored levels with progression. Persisted to
     // localStorage. `currentAdventureLevel` is set while playing an
     // Adventure level (null for Random Puzzle / Rainbow / multi).
@@ -556,6 +563,23 @@ export const useGameStore = defineStore('game', {
           this.endGame();
           break;
 
+        case 'quitRequest':
+          // Opponent wants to end the game; App.vue renders the prompt.
+          this.quitRequestPending = true;
+          break;
+
+        case 'quitResponse':
+          // Opponent answered our quit request.
+          this.quitAwaitingResponse = false;
+          if (data.accepted) this.newGame();
+          else this.quitDeclined = true;
+          break;
+
+        case 'quitCancelled':
+          // Opponent withdrew a pending quit request; dismiss our prompt.
+          this.quitRequestPending = false;
+          break;
+
         case 'gameState':
           if (!peer.isHost && this.game) {
             const incomingSeq = typeof data.seq === 'number' ? data.seq : 0;
@@ -904,6 +928,7 @@ export const useGameStore = defineStore('game', {
 
     newGame() {
       this.clearTurnTimer()
+      this.clearQuitFlags()
       if (this.gameMode === GameMode.OnlineMultiPlayer) {
         usePeerStore().disconnect()
       }
@@ -914,6 +939,36 @@ export const useGameStore = defineStore('game', {
       // Full return to the top-level menu; tear down Adventure context too.
       this.showAdventureMenu = false
       this.currentAdventureLevel = null
+    },
+
+    // Quit-game flow. requestQuit kicks off a consensual end-of-game in online
+    // play; single/local games quit immediately. respondToQuit answers an
+    // incoming request; cancelQuitRequest withdraws one we sent.
+    requestQuit() {
+      if (this.gameMode !== GameMode.OnlineMultiPlayer) { this.newGame(); return; }
+      const peer = usePeerStore();
+      if (!peer.isConnected) { this.newGame(); return; } // opponent already gone
+      peer.sendData({ type: 'quitRequest' });
+      this.quitAwaitingResponse = true;
+    },
+
+    respondToQuit(accepted: boolean) {
+      const peer = usePeerStore();
+      this.quitRequestPending = false;
+      if (peer.isConnected) peer.sendData({ type: 'quitResponse', accepted });
+      if (accepted) this.newGame();
+    },
+
+    cancelQuitRequest() {
+      const peer = usePeerStore();
+      if (peer.isConnected) peer.sendData({ type: 'quitCancelled' });
+      this.quitAwaitingResponse = false;
+    },
+
+    clearQuitFlags() {
+      this.quitRequestPending = false;
+      this.quitAwaitingResponse = false;
+      this.quitDeclined = false;
     },
 
     // Variant of newGame that returns to the Adventure level-select screen

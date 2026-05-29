@@ -21,7 +21,8 @@ export type ModifierSfxKind =
     | 'loopingCategory'
     | 'bonusTurn'
     | 'goalChime'
-    | 'starWin';
+    | 'starWin'
+    | 'timerWarning';
 
 let _ctx: AudioContext | null = null;
 
@@ -201,6 +202,11 @@ export function playModifierSfx(kind: ModifierSfxKind): void {
             tone({ freq: 880,  duration: 0.18, type: 'sine', peakGain: 0.3 });
             tone({ freq: 1108, duration: 0.18, type: 'sine', peakGain: 0.3, delay: 0.08 });
             tone({ freq: 1318, duration: 0.28, type: 'sine', peakGain: 0.3, delay: 0.16 });
+            break;
+        case 'timerWarning':
+            // Urgent double beep — time running out.
+            tone({ freq: 880, duration: 0.12, type: 'square', peakGain: 0.28 });
+            tone({ freq: 880, duration: 0.12, type: 'square', peakGain: 0.28, delay: 0.16 });
             break;
     }
 }

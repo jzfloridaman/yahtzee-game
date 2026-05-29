@@ -29,12 +29,16 @@ export class DiceManager implements IDiceManager {
     }
 
     setDice(dice: Die[]) {
-        // Ensure we're creating new Die objects with all properties
+        // Ensure we're creating new Die objects with all properties.
+        // `isRolling` is purely-visual, device-local state — never adopt it
+        // from a wire snapshot (the sender's dice have already settled, so it
+        // would clobber an animation the receiver just started). The local
+        // playRollDiceAnimation owns this flag.
         this.dice = dice.map(die => {
             const next: Die = {
                 value: die.value,
                 held: die.held,
-                isRolling: die.isRolling,
+                isRolling: false,
             };
             if (this.assignColor) {
                 next.color = die.color ?? 'blank';

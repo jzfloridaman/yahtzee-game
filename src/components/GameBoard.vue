@@ -222,7 +222,7 @@
         <span class="thinking-dots"><span>.</span><span>.</span><span>.</span></span>
       </div>
 
-      <div v-else-if="isOnlineGame && !isHostTurn" class="ai-thinking-banner">
+      <div v-else-if="isOnlineGame && !isMyTurn" class="ai-thinking-banner">
         <i class="fas fa-spinner fa-spin text-blue-300"></i>
         <span>{{ peerStore.isHost ? 'Waiting for Player 2…' : 'Waiting for Player 1…' }}</span>
       </div>
@@ -255,14 +255,21 @@
                             @use="onConsumableUse(c.def.id)" />
         </div>
         <button @click="rollDice" id="roll-button"
-                :disabled="!canRoll || isRolling || aiTurnInProgress">
-          <span class="roll-label">{{ newRoll ? 'START ROLL' : 'ROLL' }}</span>
+                :class="{ 'roll-locked': isMustPick }"
+                :disabled="!canRoll || isRolling || aiTurnInProgress || !isMyTurn || isMustPick">
+          <span class="roll-label">{{ isMustPick ? 'TIME — PICK A CATEGORY' : (newRoll ? 'START ROLL' : 'ROLL') }}</span>
         </button>
         <div class="rolls-left" :aria-label="`${rollsLeft} rolls remaining`">
           <span class="dot" :class="{ used: newRoll || rollsLeft < 3 }"></span>
           <span class="dot" :class="{ used: newRoll || rollsLeft < 2 }"></span>
           <span class="dot" :class="{ used: newRoll || rollsLeft < 1 }"></span>
         </div>
+      </div>
+      <div v-if="timerActive" class="turn-timer-bar"
+           :class="{ 'timer-warning': isTimerWarning, 'timer-mustpick': isMustPick }"
+           :style="{ '--progress-width': timerProgressPercent + '%' }"
+           role="timer" :aria-label="`${formattedTime} remaining`">
+        <span class="turn-timer-label">{{ timerLabel }} · {{ formattedTime }}</span>
       </div>
       <div v-if="reCycleTargeting" class="re-cycle-prompt">
         <span>Tap a Looping Category cell to advance it.</span>
@@ -396,13 +403,39 @@ const aiTurnInProgress = computed(() => isPlayerAI(currentPlayer.value))
 
 // Online game state
 const isOnlineGame = computed(() => gameStore.currentGameMode === GameMode.OnlineMultiPlayer)
-const isHostTurn = computed(() => {
+// True when it's the local player's seat. Host is always player 0, client is
+// always player 1. Always true outside online MP. Gates all action input so a
+// player can't roll/hold/score on the opponent's turn.
+const isMyTurn = computed(() => {
   if (!isOnlineGame.value || !gameStore.currentGame) return true
-  // Host is always player 0, client is always player 1
-  // If it's host's turn (currentPlayer === 0) and we're the host, or
-  // if it's client's turn (currentPlayer === 1) and we're the client
-  return (gameStore.currentGame.currentPlayer === 0 && peerStore.isHost) || 
-         (gameStore.currentGame.currentPlayer === 1 && !peerStore.isHost)
+  return (gameStore.currentGame.currentPlayer === 0) === peerStore.isHost
+})
+
+// ---- Online turn timer (host-authoritative; both sides render it) ----
+// `game.turnTimer` carries the host's deadline + phase; we render a smooth
+// local countdown against it. `nowMs` ticks ~5x/sec to drive the bar.
+const nowMs = ref(Date.now())
+let timerTicker: ReturnType<typeof setInterval> | null = null
+const turnTimer = computed(() => currentGame.value?.turnTimer ?? null)
+const timerActive = computed(() =>
+  isOnlineGame.value && peerStore.isConnected && !!turnTimer.value && !gameStore.gameIsOver)
+const isMustPick = computed(() => turnTimer.value?.phase === 'mustPick')
+const remainingMs = computed(() =>
+  turnTimer.value ? Math.max(0, turnTimer.value.deadline - nowMs.value) : 0)
+const phaseDurationMs = computed(() => isMustPick.value ? 10000 : 30000)
+const timerProgressPercent = computed(() =>
+  Math.max(0, Math.min(100, (remainingMs.value / phaseDurationMs.value) * 100)))
+const formattedTime = computed(() => {
+  const total = Math.ceil(remainingMs.value / 1000)
+  const m = Math.floor(total / 60)
+  const s = total % 60
+  return `${m}:${s.toString().padStart(2, '0')}`
+})
+const isTimerWarning = computed(() =>
+  timerActive.value && remainingMs.value <= 5000 && remainingMs.value > 0)
+const timerLabel = computed(() => {
+  if (isMustPick.value) return isMyTurn.value ? 'Pick now' : 'Picking…'
+  return isMyTurn.value ? 'Your turn' : `${getPlayerName(currentPlayer.value)}'s turn`
 })
 
 const totalTopScorePercent = computed(() => {
@@ -434,6 +467,7 @@ const getDieIcon = (die: number): string => {
 }
 
 const toggleHold = (index: number) => {
+  if (!isMyTurn.value) return;
   gameStore.toggleHold(index);
 }
 
@@ -476,6 +510,8 @@ const selectCategory = (category: Categories) => {
 }
 
 const handleSelectCategory = (category: Categories) => {
+  // Online MP: ignore taps when it isn't your seat's turn.
+  if (!isMyTurn.value) return;
   // Re-cycle targeting mode intercepts the next category tap.
   if (reCycleTargeting.value) {
     const ok = gameStore.useConsumable('reCycleLooping', { category })
@@ -690,10 +726,30 @@ function subscribeToEngines() {
   }
 }
 
-onMounted(() => { subscribeToEngines() })
-onUnmounted(() => { unsubscribers.forEach(u => u()); unsubscribers.length = 0 })
+onMounted(() => {
+  subscribeToEngines()
+  // Drive the smooth countdown render on both host and client.
+  timerTicker = setInterval(() => { nowMs.value = Date.now() }, 200)
+})
+onUnmounted(() => {
+  unsubscribers.forEach(u => u()); unsubscribers.length = 0
+  if (timerTicker) { clearInterval(timerTicker); timerTicker = null }
+})
 // Re-subscribe whenever the game instance changes (restart, new game).
 watch(currentGame, () => { subscribeToEngines() })
+
+// Last-5s warning: one synth beep on entering the warning window (the
+// `!prev` edge guard keeps it to a single fire per phase, not every tick).
+watch(isTimerWarning, (now, prev) => {
+  if (now && !prev && gameStore.sfxEnabled) playModifierSfx('timerWarning')
+})
+
+// If the peer drops mid-turn, stop the host's authoritative timer so it
+// can't keep auto-advancing against a vanished opponent. The Connection
+// Lost modal (App.vue) surfaces the disconnect to the remaining player.
+watch(() => peerStore.connectionLost, (lost) => {
+  if (lost) gameStore.clearTurnTimer()
+})
 </script>
 
 <style scoped>
@@ -701,6 +757,60 @@ watch(currentGame, () => { subscribeToEngines() })
   display: flex;
   gap: 0.35rem;
   align-items: center;
+}
+
+/* Online turn-timer bar — drains right-to-left as time runs out. Mirrors the
+   upper-score progress-bar pattern (::after track + ::before fill). */
+.turn-timer-bar {
+  position: relative;
+  width: 100%;
+  height: 1.35rem;
+  margin: 0.5rem 0 0;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+.turn-timer-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: var(--progress-width, 100%);
+  background: linear-gradient(90deg, var(--accent-soft, #6366f1), var(--accent, #818cf8));
+  transition: width 0.2s linear;
+}
+.turn-timer-label {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+.turn-timer-bar.timer-mustpick::before {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+.turn-timer-bar.timer-warning {
+  animation: timer-pulse 0.7s ease-in-out infinite;
+}
+.turn-timer-bar.timer-warning::before {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+@keyframes timer-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.0); transform: scale(1); }
+  50%      { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.35); transform: scale(1.015); }
+}
+#roll-button.roll-locked {
+  opacity: 0.6;
+  filter: grayscale(0.3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .turn-timer-bar.timer-warning { animation: none; }
 }
 .re-cycle-prompt {
   margin: 0.4rem auto 0;

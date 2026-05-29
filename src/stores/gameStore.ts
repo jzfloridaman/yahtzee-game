@@ -17,6 +17,7 @@ import { usePlayerProfileStore } from './playerProfileStore'
 import type { GameSummary } from '../profile/types'
 import { Categories } from '../enums/Categories'
 import type { SeatSpec, ControllerKind } from '../controllers'
+import { GreedyStrategy } from '../strategies/ai/GreedyStrategy'
 
 import { showYahtzeeAnimation, showEmojiAnimation } from '../utils/animations'
 import { showScoreCellFlight, showScoreZeroChip } from '../utils/cellAnimations'
@@ -49,6 +50,19 @@ interface AdventureProgress {
 const MAX_HISTORY_ITEMS = 10;
 const ADVENTURE_STORAGE_KEY = 'puzzleAdventureProgress';
 const DAILY_STORAGE_KEY = 'puzzleDaily';
+
+// Online-MP turn timer (host-authoritative). The action phase resets to 30s
+// on every roll; when it expires the player gets a 10s must-pick phase with
+// rolling locked; when that expires the host auto-picks the best category.
+const ACTION_PHASE_MS = 30_000;
+const MUSTPICK_PHASE_MS = 10_000;
+const TIMER_CHECK_MS = 250;
+// The raw interval handle lives outside reactive Pinia state so the 4Hz
+// expiry check doesn't churn reactivity. The reactive countdown the UI binds
+// to is game.turnTimer.deadline, which only changes on phase transitions/resets.
+let _turnTimerInterval: ReturnType<typeof setInterval> | null = null;
+// Single strategy instance reused for timeout auto-picks.
+const _timeoutStrategy = new GreedyStrategy();
 
 function loadAdventureProgress(): AdventureProgress {
   try {
@@ -119,6 +133,12 @@ export const useGameStore = defineStore('game', {
     broadcastSeq: 0,
     lastReceivedSeq: -1,
 
+    // Set when a roll is observed on the client (its own roll, or the host's
+    // 'rollDice' hint) and consumed on the next gameState apply so the roll
+    // animation fires on the freshly-synced dice values rather than being
+    // clobbered by the incoming snapshot.
+    pendingRollAnimation: false,
+
     // Adventure Mode — authored levels with progression. Persisted to
     // localStorage. `currentAdventureLevel` is set while playing an
     // Adventure level (null for Random Puzzle / Rainbow / multi).
@@ -158,6 +178,14 @@ export const useGameStore = defineStore('game', {
     },
     isOnlineClient(): boolean {
       return this.gameMode === GameMode.OnlineMultiPlayer && !usePeerStore().isHost;
+    },
+    // True when this device owns the seat whose turn it currently is. Always
+    // true outside online MP. Gates the action dispatchers so a player can't
+    // act on the opponent's turn.
+    isLocalSeatActive(): boolean {
+      if (this.gameMode !== GameMode.OnlineMultiPlayer) return true;
+      if (!this.game) return false;
+      return this.game.players[this.game.currentPlayer]?.controller.kind === 'local';
     },
   },
 
@@ -234,6 +262,8 @@ export const useGameStore = defineStore('game', {
       // Kick off the first player's turn. No-op for local human / remote
       // peer; AIController uses this to start its decision loop.
       this.game.players[this.game.currentPlayer]?.controller.onTurnStart()
+      // Start the first turn's clock (host-only / online-only).
+      this.startTurnTimer()
     },
 
     sendGameState() {
@@ -246,6 +276,60 @@ export const useGameStore = defineStore('game', {
           data: this.game.getGameState()
         });
       }
+    },
+
+    // -- Online-MP turn timer (host-authoritative) --
+    // The host runs a single countdown for whichever seat is active and
+    // broadcasts the deadline via gameState; the client only renders it. All
+    // three methods no-op off-host / outside online MP.
+
+    // Arm (or re-arm) the 30s action phase. Called at every turn boundary and
+    // on every roll. Broadcasts so the client picks up the fresh deadline.
+    startTurnTimer() {
+      if (!this.isOnlineHost || !this.game || this.game.isGameOver) return;
+      if (!usePeerStore().isConnected) return;
+      this.game.turnTimer = { phase: 'action', deadline: Date.now() + ACTION_PHASE_MS };
+      if (_turnTimerInterval) clearInterval(_turnTimerInterval);
+      _turnTimerInterval = setInterval(() => this._tickTurnTimer(), TIMER_CHECK_MS);
+      this.sendGameState();
+    },
+
+    // Stop the countdown and drop the timer. Safe to call on host or client.
+    clearTurnTimer() {
+      if (_turnTimerInterval) {
+        clearInterval(_turnTimerInterval);
+        _turnTimerInterval = null;
+      }
+      if (this.game) this.game.turnTimer = null;
+    },
+
+    // Host-authoritative expiry check, fired ~4x/sec. Transitions
+    // action -> mustPick (locks rolling), then mustPick -> auto-pick + advance.
+    _tickTurnTimer() {
+      if (!this.isOnlineHost || !this.game || this.game.isGameOver
+          || !this.game.turnTimer || !usePeerStore().isConnected) {
+        this.clearTurnTimer();
+        return;
+      }
+      if (this.game.turnTimer.deadline - Date.now() > 0) return;
+
+      if (this.game.turnTimer.phase === 'action') {
+        // Action phase expired — lock rolling, grant a 10s grace window.
+        this.game.turnTimer = { phase: 'mustPick', deadline: Date.now() + MUSTPICK_PHASE_MS };
+        this.sendGameState();
+        return;
+      }
+
+      // Must-pick phase expired — auto-pick the best available category and
+      // advance. requestCategory routes through the existing scoring/advance/
+      // broadcast path; nextPlayer (inside it) re-arms the timer for the next
+      // turn, or endGame clears it on the final score.
+      // Cast through unknown: Pinia unwraps YahtzeeGame in `this`, stripping
+      // the class's private members, so it isn't nominally assignable to the
+      // full type the strategy expects (same limitation handled structurally
+      // elsewhere in this file).
+      const category = _timeoutStrategy.pickForcedCategory(this.game as unknown as YahtzeeGame);
+      this.game.players[this.game.currentPlayer]?.controller.requestCategory(category);
     },
 
     // -- Low-level primitives. No peer messaging — the controller orchestrates
@@ -267,6 +351,8 @@ export const useGameStore = defineStore('game', {
         this.game.rollDice();
       }
       this.playRollDiceAnimation();
+      // Every roll refreshes the action timer back to the full 30s (host only).
+      this.startTurnTimer();
     },
 
     applyHold(index: number) {
@@ -387,16 +473,20 @@ export const useGameStore = defineStore('game', {
 
     rollDice() {
       if (!this.game) return;
+      // Online MP: only act on your own seat's turn.
+      if (this.gameMode === GameMode.OnlineMultiPlayer && !this.isLocalSeatActive) return;
       this.game.players[this.game.currentPlayer].controller.requestRoll();
     },
 
     toggleHold(index: number) {
       if (!this.game || this.game.newRoll) return;
+      if (this.gameMode === GameMode.OnlineMultiPlayer && !this.isLocalSeatActive) return;
       this.game.players[this.game.currentPlayer].controller.requestHold(index);
     },
 
     selectCategory(category: Categories) {
       if (!this.game || this.game.newRoll) return;
+      if (this.gameMode === GameMode.OnlineMultiPlayer && !this.isLocalSeatActive) return;
       const puzzleEngine = this.game.getPuzzleEngine();
       const pendingBonus = puzzleEngine?.getPendingBonusCategory() ?? null;
       // During a pending bonus turn, only the bonus category is selectable.
@@ -435,9 +525,15 @@ export const useGameStore = defineStore('game', {
             }
             this.lastReceivedSeq = incomingSeq;
             this.game.updateFromState(data.data);
-            // Animation is driven by the dedicated 'rollDice' message; do
-            // not animate on every state update or hold-broadcasts would
-            // also spin the unheld dice.
+            // Roll animation is deferred until the authoritative dice values
+            // land here (the 'rollDice' hint arrives first and only sets the
+            // flag). Holds / category selects / resyncs never set the flag, so
+            // they don't spuriously spin the dice. A turn-boundary reset
+            // (newRoll) clears any stale flag without animating.
+            if (this.pendingRollAnimation) {
+              this.pendingRollAnimation = false;
+              if (!data.data.newRoll) this.playRollDiceAnimation();
+            }
             if (data.data.isGameOver) {
               this.gameIsOver = true;
             }
@@ -449,8 +545,10 @@ export const useGameStore = defineStore('game', {
             // Client is requesting a roll — route to its (remote) controller
             remoteSeat()?.controller.requestRoll();
           } else {
-            // Host's animation hint — the dice values arrive separately in gameState
-            this.playRollDiceAnimation();
+            // Host's animation hint — defer the spin until the dice values
+            // arrive in the following gameState, otherwise setDice would
+            // rebuild the dice and reset isRolling underneath the animation.
+            this.pendingRollAnimation = true;
           }
           break;
 
@@ -514,6 +612,9 @@ export const useGameStore = defineStore('game', {
     },
 
     endGame() {
+      // Stop the turn clock before any teardown so it can't auto-advance a
+      // finished game.
+      this.clearTurnTimer();
       if (this.game) {
         const scores: PlayerScore[] = Array.from(
           { length: this.game.getPlayerCount() },
@@ -615,6 +716,8 @@ export const useGameStore = defineStore('game', {
       // Notify the new current player's controller. Local human / remote
       // peer are no-ops; AIController starts its turn from here.
       this.game.players[this.game.currentPlayer]?.controller.onTurnStart()
+      // Fresh 30s clock for the new player (host-only / online-only).
+      this.startTurnTimer()
     },
 
     // Reset per-turn state for a Puzzle Mode bonus turn (Double Category),
@@ -626,6 +729,7 @@ export const useGameStore = defineStore('game', {
       this.game.rollsLeft = 2;
       this.game.newRoll = true;
       this.game.players[this.game.currentPlayer]?.controller.onTurnStart();
+      this.startTurnTimer();
     },
 
     // Audio settings
@@ -666,10 +770,12 @@ export const useGameStore = defineStore('game', {
           this.sendGameState()
         }
         this.game.players[this.game.currentPlayer]?.controller.onTurnStart()
+        this.startTurnTimer()
       }
     },
 
     newGame() {
+      this.clearTurnTimer()
       if (this.gameMode === GameMode.OnlineMultiPlayer) {
         usePeerStore().disconnect()
       }

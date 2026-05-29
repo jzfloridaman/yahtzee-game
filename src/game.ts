@@ -15,6 +15,11 @@ import type { PuzzleConfig } from './puzzle/types';
 
 type ScorecardEntry = { value: number | null; selected: boolean; group: CategoryGroup };
 
+// Host-authoritative per-action turn timer (online multiplayer only).
+// `deadline` is the host's epoch ms; both sides render a local countdown
+// against it. `phase` gates whether rolling is still allowed.
+export type TurnTimerState = { deadline: number; phase: 'action' | 'mustPick' };
+
 interface GameStateData {
   currentPlayer: number;
   dice: Die[];
@@ -26,6 +31,7 @@ interface GameStateData {
   selectedCategories?: Categories[];
   isGameOver: Boolean;
   playersGamesCompleted: number;
+  turnTimer?: TurnTimerState | null;
 }
 
 // Game state
@@ -36,6 +42,9 @@ export class YahtzeeGame {
 
     public newRoll: boolean = true;
     public rollsLeft: number = 2;
+    // Online-MP turn timer; null when no timer is running. Set by the host
+    // (authoritative) and mirrored to the client via getGameState/updateFromState.
+    public turnTimer: TurnTimerState | null = null;
     public currentPlayer: number = 0;  // reference to current player in players array
     public playersGamesCompleted: number = 0;
     public gameType: GameMode = GameMode.SinglePlayer;
@@ -357,6 +366,9 @@ export class YahtzeeGame {
             });
         }
 
+        // Mirror the host's turn timer (client renders from this; host owns it).
+        this.turnTimer = stateData.turnTimer ?? null;
+
         if(stateData.isGameOver){
             console.log('Setting game over');
             this.setGameOver();
@@ -375,7 +387,8 @@ export class YahtzeeGame {
             scorecards: this.players.map(player => player.getScorecard() as Partial<Record<string, ScorecardEntry>>),
             newRoll: this.newRoll,
             isGameOver: this.isGameOver,
-            playersGamesCompleted: this.playersGamesCompleted
+            playersGamesCompleted: this.playersGamesCompleted,
+            turnTimer: this.turnTimer
         };
     }
 }

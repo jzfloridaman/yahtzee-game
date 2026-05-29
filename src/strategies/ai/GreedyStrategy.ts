@@ -45,6 +45,20 @@ export class GreedyStrategy {
         return { action: 'rollAgain', holds };
     }
 
+    // Force a category pick against the current dice regardless of rollsLeft.
+    // Used by the online-MP turn timer when a player runs out of time: takes
+    // the highest available score, falling back to the dump order when every
+    // option is zero. Always returns a valid category.
+    pickForcedCategory(game: YahtzeeGame): Categories {
+        const dice = game.dice();
+        const player = game.players[game.currentPlayer];
+        const scorecard = player.getScorecard();
+        const engine = game.getPuzzleEngine?.(game.currentPlayer) ?? null;
+        const canScore = (cat: Categories) => engine ? engine.canScore(cat) : true;
+        const potentials = this.scorePotentials(scorecard, dice, canScore, engine);
+        return this.pickBestCategory(potentials, scorecard, canScore);
+    }
+
     // Score every unselected, scorable category against the current dice.
     // For loopingCategory slots, swap in the currently-active cycle category
     // so the AI sees the score the engine would actually bank.

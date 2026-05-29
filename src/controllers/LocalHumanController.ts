@@ -19,14 +19,18 @@ export class LocalHumanController implements PlayerController {
 
         if (game.isOnlineClient) {
             peer.sendData({ type: 'rollDice' });
-            game.playRollDiceAnimation();
+            // Defer the spin: the host applies the roll and sends back the
+            // authoritative dice via gameState, which rebuilds the dice
+            // objects. Animating now would mutate objects that get discarded,
+            // so flag it and let the gameState-apply path animate the new dice.
+            game.pendingRollAnimation = true;
             return;
         }
 
         game.applyRoll();
         if (game.isOnlineHost) {
-            // Fire the animation hint before the new dice values so the
-            // client starts spinning before the values update underneath.
+            // Animation hint for the client; the dice values follow in the
+            // gameState broadcast, where the client consumes the hint.
             peer.sendData({ type: 'rollDice' });
             game.sendGameState();
         }
